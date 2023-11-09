@@ -4,8 +4,6 @@ import csv
 
 pygame.init()
 
-
-
 # Define a list to store the lists of points
 shapes = []
 
