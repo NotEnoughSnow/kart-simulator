@@ -1,33 +1,15 @@
-"""This example spawns (bouncing) balls randomly on a L-shape constructed of 
-two segment shapes. Not interactive.
-"""
-
-__version__ = "$Id:$"
-__docformat__ = "reStructuredText"
-
 import math
 import numpy as np
-
-# Python imports
 import random
 from typing import List
-
-# Library imports
 import pygame
-
-# pymunk imports
 import pymunk
 import pymunk.pygame_util
-# Import the csv module
 import csv
 import ast
 
 
 class Game(object):
-    """
-    This class implements a simple scene in which there is a static platform (made up of a couple of lines)
-    that don't move. Balls appear occasionally and drop onto the platform. They bounce around.
-    """
 
     def __init__(self) -> None:
         # Space
@@ -62,10 +44,6 @@ class Game(object):
         self._ticks_to_next_ball = 10
 
     def run(self) -> None:
-        """
-        The main loop of the game.
-        :return: None
-        """
 
         self._create_ball()
 
@@ -90,10 +68,12 @@ class Game(object):
             angle_diff = self._steerAngle * 0.2
             self._playerBody.angle += angle_diff
 
-            x = self._playerBody.velocity[0] * math.cos(angle_diff) - self._playerBody.velocity[1] * math.sin(angle_diff)
-            y = self._playerBody.velocity[0] * math.sin(angle_diff) + self._playerBody.velocity[1] * math.cos(angle_diff)
+            x = self._playerBody.velocity[0] * math.cos(angle_diff) - self._playerBody.velocity[1] * math.sin(
+                angle_diff)
+            y = self._playerBody.velocity[0] * math.sin(angle_diff) + self._playerBody.velocity[1] * math.cos(
+                angle_diff)
 
-            self._playerBody.velocity = (x,y)
+            self._playerBody.velocity = (x, y)
 
             self._steerAngle /= 3
             self._playerBody.velocity /= 1.005
@@ -107,10 +87,6 @@ class Game(object):
             pygame.display.set_caption("fps: " + str(self._clock.get_fps()))
 
     def _add_static_scenery(self) -> None:
-        """
-        Create the static bodies.
-        :return: None
-        """
         static_body = self._space.static_body
 
         shapes_arr = []
@@ -124,12 +100,14 @@ class Game(object):
         static_lines = []
 
         for shape in shapes_arr:
-            for i in range(len(shape)-1):
-                static_lines.append(pymunk.Segment(static_body, shape[i], shape[i+1], 0.0))
+            for i in range(len(shape) - 1):
+                static_lines.append(pymunk.Segment(static_body, shape[i], shape[i + 1], 0.0))
 
         for line in static_lines:
             line.elasticity = 0
             line.friction = 1
+
+        print(len(static_lines))
 
         self._space.add(*static_lines)
 
@@ -146,10 +124,6 @@ class Game(object):
         self._space.add(shape_sensor2)
 
     def _process_events(self) -> None:
-        """
-        Handle game and events like keyboard input. Call once per frame only.
-        :return: None
-        """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self._running = False
@@ -159,7 +133,6 @@ class Game(object):
                 pygame.image.save(self._screen, "bouncing_balls.png")
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
                 pass
-
 
     def _steer(self, value):
         if value == 0:
@@ -180,12 +153,8 @@ class Game(object):
             self._playerBody.apply_impulse_at_local_point((0, -4 * value), (0, 0))
 
     def _create_ball(self) -> None:
-        """
-        Create a ball.
-        :return:
-        """
         mass = 1
-        radius = 20
+        radius = 5
         inertia = pymunk.moment_for_circle(mass, 20, radius, (0, 0))
         body = pymunk.Body(mass, inertia)
         body.position = 500, 500
@@ -200,26 +169,16 @@ class Game(object):
         self._playerBody = body
 
     def _clear_screen(self) -> None:
-        """
-        Clears the screen.
-        :return: None
-        """
         self._screen.fill(pygame.Color("black"))
 
     def _draw_objects(self) -> None:
-        """
-        Draw the objects.
-        :return: None
-        """
         self._space.debug_draw(self._draw_options)
 
     def start_callback(self, arbiter, space, data):
-        # Do something when the kart touches the start sensor
         print("Start lap")
         return True
 
     def end_callback(self, arbiter, space, data):
-        # Do something when the kart touches the end sensor
         print("End lap")
         return True
 
@@ -227,6 +186,7 @@ class Game(object):
 def main():
     game = Game()
     game.run()
+
 
 if __name__ == "__main__":
     main()
