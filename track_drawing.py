@@ -1,6 +1,7 @@
 # Import pygame and initialize it
 import pygame
 import csv
+import ast
 
 pygame.init()
 
@@ -21,6 +22,8 @@ screen = pygame.display.set_mode((screen_width, screen_height))
 
 # Define the line color and width
 line_color = (0, 0, 0)  # Black
+last_line_color = (255, 0, 0)  # Red
+track_line_color = (0, 0, 255)  # Blue
 line_width = 5
 
 # Define a list to store the points
@@ -29,11 +32,23 @@ points = []
 # Define a boolean variable to indicate if the mouse button is pressed
 drawing = False
 
+mode = "sectors"
+print(("working in %s mode" % mode))
+shapes_arr =[]
+
+with open("shapes.txt", "r") as f:
+    reader = csv.reader(f, delimiter=",")
+    points = list(reader)
+    shapes_arr = [list(map(ast.literal_eval, shape)) for shape in points]
+
+
 # Define the main loop
 running = True
 while running:
     # Fill the screen with the background color
     screen.fill(screen_color)
+
+    keys = pygame.key.get_pressed()
 
     # Check for events
     for event in pygame.event.get():
@@ -47,9 +62,9 @@ while running:
             shapes[shape_index].append(event.pos)
 
         # If the user moves the mouse while pressing the button, add more points
-        elif event.type == pygame.MOUSEMOTION:
-            if drawing:
-                shapes[shape_index].append(event.pos)
+        #elif event.type == pygame.MOUSEMOTION:
+        #    if drawing:
+        #        shapes[shape_index].append(event.pos)
 
         # If the user releases the mouse button, stop drawing and print the points
         elif event.type == pygame.MOUSEBUTTONUP:
@@ -62,21 +77,39 @@ while running:
                 shapes.append([])
                 print(len(shapes))
 
+            if event.key == pygame.K_z and keys[pygame.K_LCTRL]:
+                if len(shapes[shape_index]) > 0:
+                    shapes[shape_index].pop()
+
+            if event.key == pygame.K_x and keys[pygame.K_LCTRL]:
+                if len(shapes) > 0:
+                    shapes.pop()
+                    shapes.append([])
+
             if event.key == pygame.K_RETURN:
-                # Open a text file in write mode
-                with open("shapes.txt", "w") as f:
-                    # Create a csv writer object
-                    wr = csv.writer(f)
-                    # Write each shape as a row in the file
-                    wr.writerows(shapes)
-                print(shapes[shape_index])
-
-
+                if mode == "track":
+                    with open("test_shapes.txt", "w") as f:
+                        wr = csv.writer(f)
+                        wr.writerows(shapes)
+                    print(shapes[shape_index])
+                if mode == "sectors":
+                    with open("sectors.txt", "w") as f:
+                        wr = csv.writer(f)
+                        wr.writerows(shapes)
+                    print(shapes[shape_index])
 
     # Draw the lines between the points for each shape
-    for shape in shapes:
-        if len(shape) > 1:
-            pygame.draw.lines(screen, line_color, False, shape, line_width)
+    for i in range(len(shapes)):
+        if len(shapes[i]) > 2:
+            pygame.draw.lines(screen, line_color, False, shapes[i][0:], line_width)
+            pygame.draw.lines(screen, last_line_color, False, shapes[i][-2:], line_width)
+        elif len(shapes[i]) > 1:
+            pygame.draw.lines(screen, line_color, False, shapes[i], line_width)
+
+    if mode == "sectors":
+        for shape in shapes_arr:
+            pygame.draw.lines(screen, track_line_color, False, shape, line_width)
+
 
     # Update the display
     pygame.display.flip()
