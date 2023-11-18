@@ -16,9 +16,6 @@ class Game(object):
         self._space = pymunk.Space()
         # self._space.gravity = (0.0, 900.0)
 
-        self._space.add_collision_handler(0, 1).begin = self.start_callback
-        self._space.add_collision_handler(0, 2).begin = self.end_callback
-
         # Physics
         # Time step
         self._dt = 1.0 / 60.0
@@ -90,12 +87,17 @@ class Game(object):
         static_body = self._space.static_body
 
         shapes_arr = []
+        sectors_arr = []
 
-        # read track vertices from file
         with open("shapes.txt", "r") as f:
             reader = csv.reader(f, delimiter=",")
             shapes = list(reader)
             shapes_arr = [list(map(ast.literal_eval, shape)) for shape in shapes]
+
+        with open("sectors.txt", "r") as f:
+            reader = csv.reader(f, delimiter=",")
+            shapes = list(reader)
+            sectors_arr = [list(map(ast.literal_eval, shape)) for shape in shapes]
 
         static_lines = []
 
@@ -106,22 +108,46 @@ class Game(object):
         for line in static_lines:
             line.elasticity = 0
             line.friction = 1
+            line.sensor = True
+            line.collision_type = 1
 
         print(len(static_lines))
 
         self._space.add(*static_lines)
 
+        #sectors
         sensor_bodies = self._space.static_body
-        shape_sensor = pymunk.Segment(sensor_bodies, (600, 800), (400, 600), 0.0)
-        shape_sensor.sensor = True
-        shape_sensor.collision_type = 1
 
-        shape_sensor2 = pymunk.Segment(sensor_bodies, (800, 1000), (500, 600), 0.0)
-        shape_sensor2.sensor = True
-        shape_sensor2.collision_type = 2
+        static_sector_lines = []
 
-        self._space.add(shape_sensor)
-        self._space.add(shape_sensor2)
+        for shape in sectors_arr:
+            for i in range(len(shape) - 1):
+                static_sector_lines.append(pymunk.Segment(sensor_bodies, shape[i], shape[i + 1], 0.0))
+
+        for i in range(len(static_sector_lines)):
+            static_sector_lines[i].elasticity = 0
+            static_sector_lines[i].friction = 1
+            static_sector_lines[i].sensor = True
+
+        for i in range(1, len(static_sector_lines)):
+            static_sector_lines[i].collision_type = i + 3
+
+        static_sector_lines[0].collision_type = 2
+
+        self._space.add(*static_sector_lines)
+
+        #track collision
+        self._space.add_collision_handler(0, 1).begin = self.touch_track
+
+        #start finish collision
+        self._space.add_collision_handler(0, 2).begin = self.lap_callback
+
+        #sectors collision
+        for i in range(1, len(static_sector_lines)):
+            col = self._space.add_collision_handler(0, i+3)
+            col.data["number"] = i+1
+            col.begin = self.sector_callback
+
 
     def _process_events(self) -> None:
         for event in pygame.event.get():
@@ -154,14 +180,14 @@ class Game(object):
 
     def _create_ball(self) -> None:
         mass = 1
-        radius = 5
+        radius = 13
         inertia = pymunk.moment_for_circle(mass, 20, radius, (0, 0))
         body = pymunk.Body(mass, inertia)
-        body.position = 500, 500
+        body.position = 130, 110
         shape = pymunk.Circle(body, radius, (0, 0))
         shape.elasticity = 0
         shape.friction = 1
-        body.angle = math.pi
+        body.angle = math.pi*3/2
         shape.collision_type = 0
 
         self._space.add(body, shape)
@@ -174,14 +200,17 @@ class Game(object):
     def _draw_objects(self) -> None:
         self._space.debug_draw(self._draw_options)
 
-    def start_callback(self, arbiter, space, data):
-        print("Start lap")
+    def lap_callback(self, arbiter, space, data):
+        print("set lap")
         return True
 
-    def end_callback(self, arbiter, space, data):
-        print("End lap")
+    def touch_track(self, arbiter, space, data):
+        print("exiting track")
         return True
 
+    def sector_callback(self, arbiter, space, data):
+        print("set sector", data["number"])
+        return True
 
 def main():
     game = Game()
