@@ -47,9 +47,6 @@ class FeedForwardNN(nn.Module):
 
         activation1 = torch.relu(self.layer1(obs))
         activation2 = torch.relu(self.layer2(activation1))
-        output = torch.tanh(self.layer3(activation2))
-
-        for i in range(output.shape[0]):
-            print(output[i].item())
+        output = self.layer3(activation2)
 
         return output
