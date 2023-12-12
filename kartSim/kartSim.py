@@ -7,6 +7,7 @@ import pygame_gui
 import pymunk
 import pymunk.pygame_util
 from gym import spaces
+from pymunk import Vec2d
 
 import core.env as core
 
@@ -18,6 +19,7 @@ window_width = 1500
 window_length = 1000
 VISION_COUNT = 64
 VISION_LENGTH = 600
+VISION_FOV = 90
 
 ui_start_x = 1000
 
@@ -29,45 +31,58 @@ not_break_image = pygame.image.load(os.path.join('resources', 'not_break.png'))
 
 class KartSim(core.Env):
 
-    def __init__(self, render_mode):
-        self.touch_track_counter = 0
+    def __init__(self, render_mode, manual):
+
+        # responsible for assigning control to player
+        self.manual = manual
+        self.render_mode = render_mode
+
+        speed = 20.0
+
+        if manual:
+            speed = 1.0
+
+
+        if render_mode == "human":
+            pygame.init()
+            pygame.display.init()
+            self._window_surface = pygame.display.set_mode((window_width, window_length))
+
+            # UI
+            self._guiManager = pygame_gui.UIManager((window_width, window_length))
+            self._guiManager.set_visual_debug_mode(True)
+
+            gui_window = pygame_gui.elements.UIWindow(rect=pygame.rect.Rect((ui_start_x, 0), (500, 1000)),
+                                                      window_display_title='',
+                                                      manager=self._guiManager)
+
+            self.break_ui = pygame_gui.elements.UIImage(relative_rect=pygame.Rect((50, 0), (100, 100)),
+                                                        container=gui_window,
+                                                        image_surface=not_break_image,
+                                                        manager=self._guiManager)
+
+            self.accelerate_ui = pygame_gui.elements.UIImage(relative_rect=pygame.Rect((250, 0), (100, 100)),
+                                                             container=gui_window,
+                                                             image_surface=not_accelerate_image,
+                                                             manager=self._guiManager)
+
+            self._draw_options = pymunk.pygame_util.DrawOptions(self._window_surface)
+
+            # clock
+            self._clock = pygame.time.Clock()
+
+
         self._space = pymunk.Space()
         # self._space.gravity = (0.0, 900.0)
 
         # Physics
         # Time step
-        self._dt = 1.0 / 60.0
-        # Number of physics steps per screen frame
-        self._physics_steps_per_frame = 1
+        self._dt = speed / 60.0
+        self._t = 0
 
-        # pygame
-        pygame.init()
-        self._window_surface = pygame.display.set_mode((window_width, window_length))
 
         self._background = pygame.Surface((window_width, window_length))
-
         self._background.fill(pygame.Color("black"))
-
-        self._clock = pygame.time.Clock()
-
-        self._guiManager = pygame_gui.UIManager((window_width, window_length))
-        self._guiManager.set_visual_debug_mode(True)
-
-        gui_window = pygame_gui.elements.UIWindow(rect=pygame.rect.Rect((ui_start_x, 0), (500, 1000)),
-                                                  window_display_title='window',
-                                                  manager=self._guiManager)
-
-        self.break_ui = pygame_gui.elements.UIImage(relative_rect=pygame.Rect((50, 0), (100, 100)),
-                                                    container=gui_window,
-                                                    image_surface=not_break_image,
-                                                    manager=self._guiManager)
-
-        self.accelerate_ui = pygame_gui.elements.UIImage(relative_rect=pygame.Rect((250, 0), (100, 100)),
-                                                         container=gui_window,
-                                                         image_surface=not_accelerate_image,
-                                                         manager=self._guiManager)
-
-        self._draw_options = pymunk.pygame_util.DrawOptions(self._window_surface)
 
         self._playerShape = None
         self._playerBody = None
@@ -77,12 +92,9 @@ class KartSim(core.Env):
         self._running = True
         self._ticks_to_next_ball = 10
 
-        self._create_ball()
-        # Static barrier walls (lines) that the balls bounce off of
-        self._add_static_scenery()
-
+        # FIXME restore shapes to (-1,1), (0,1), (0,1)
         self.action_space = spaces.Box(
-            np.array([-1, 0, 0]).astype(np.float32),
+            np.array([-1, -1, -1]).astype(np.float32),
             np.array([+1, +1, +1]).astype(np.float32),
         )  # steer, gas, brake
 
@@ -92,25 +104,52 @@ class KartSim(core.Env):
             # 2 points for vision ray count + position, angles, velocity
         )
 
-        self.reward = 0.0
+        self.initial_pos = 130, 110
+        self.initial_angle = math.pi * 3 / 2
+        self.vision_points = []
+        self.break_value = 0
+        self.accel_value = 0
+        self.steer_value = 0
 
-        self.render_mode = render_mode
+        # reward variables
+        self.reward = 0.0
+        self.prev_reward = 0.0
+
+        # track values
+        self.out_of_track = False
+        self.sector_flags = {}
+        self._num_sectors = 1
+        self._last_sector_time = 0
+
+        self._create_ball()
+        self._add_static_scenery()
+
+        self._init_sectors()
+
 
     def step(self, action: Union[np.ndarray, int]):
 
+        if self.render_mode == "human":
+            self.render(self.render_mode)
+
+        break_value = 0
+        accel_value = 0
+        steer_value = 0
+
         if action is not None:
-            self._steer(-action[0])
-            self._accelerate(action[1])
-            self._break(action[2])
+            steer_value = self._steer(-action[0])
+            accel_value = self._accelerate(action[1])
+            break_value = self._break(action[2])
+
+        self.break_value = break_value
+        self.accel_value = accel_value
+        self.steer_value = steer_value
 
         # Progress time forward
         # TODO step based on FPS
-        for x in range(self._physics_steps_per_frame):
-            self._space.step(self._dt)
+        self._space.step(self._dt)
         # TODO lap and time counters
 
-        time_delta = self._clock.tick(50)
-        pygame.display.set_caption("fps: " + str(self._clock.get_fps()))
 
         # FIXME move angle calculations to a diff place
         # FIXME angle changes when car moving only and based on car's vel
@@ -130,10 +169,6 @@ class KartSim(core.Env):
         # TODO stopping speed
         # TODO max speed
 
-        # updating events
-        self._process_events()
-        self._guiManager.update(time_delta)
-
         # observation
         self.state = self.observation()
 
@@ -144,19 +179,35 @@ class KartSim(core.Env):
         if action is not None:  # First step without action, called from reset()
             self.reward -= 0.1
 
+            step_reward = self.reward - self.prev_reward
+            self.prev_reward = self.reward
+
             # TODO assign sector and lap based rewards
 
             # TODO if finish lap then truncated
             if False:
-                truncated = True
+                terminated = True
 
             # TODO if collide with track then terminate
-            if False:
-                terminated = True
+            if self.out_of_track:
+                truncated = True
                 step_reward = -100
 
-        if self.render_mode == "human":
-            self.render()
+        # logic for track handling for player
+        # FIXME rewards are unnecesary
+        if self.manual:
+
+            self.reward -= 0.1
+
+            step_reward = self.reward - self.prev_reward
+            self.prev_reward = self.reward
+
+            if self.out_of_track:
+                step_reward = -100
+                truncated = True
+
+        self._t += 1
+
         return self.state, step_reward, terminated, truncated, {}
 
     def reset(
@@ -166,20 +217,52 @@ class KartSim(core.Env):
             options: Optional[dict] = None,
     ):
         super().reset()
+        #print("resetting")
         # TODO physics and world reset code
+        self.out_of_track = False
+        self.sector_flags = {}
+        self.break_value = 0
+        self.accel_value = 0
+        self.steer_value = 0
+        self.reward = 0
+        self.prev_reward = 0
+        self._playerBody.position = self.initial_pos
+        self._playerBody.velocity = 0,0
+        self._playerBody.angle = self.initial_angle
+        self._t = 0
+        self._last_sector_time = 0
+
+        self._init_sectors()
+
         return self.step(None)[0], {}
 
-    def render(self):
+    def render(self, mode):
+
+
+        pygame.display.update()
+        #pygame.display.flip()
+
+        # TODO figure out time
+        time_delta = self._clock.tick(50)
+        pygame.display.set_caption("fps: " + str(self._clock.get_fps()))
+
+
         # resetting screen
         self._window_surface.blit(self._background, (0, 0))
-        # self._window_surface.fill(pygame.Color("black"))
+        #self._window_surface.fill(pygame.Color("black"))
+
+        # updating events
+        self._process_events()
+        self._guiManager.update(time_delta)
 
         # drawing
         self._draw_objects()
         self._guiManager.draw_ui(self._background)
 
-        pygame.display.update()
-        # pygame.display.flip()
+        #self._draw_cone(self._playerBody, VISION_LENGTH, VISION_COUNT, VISION_FOV)
+        self._draw_rays(Vec2d(ui_start_x + 250, 850), self.vision_points, 0.3, True, True)
+        self._draw_UI_icons(self.accel_value, self.break_value, self.steer_value)
+
 
         # return self.isopen
 
@@ -192,7 +275,8 @@ class KartSim(core.Env):
     def _process_events(self) -> None:
 
         # enable player control
-        self.playerInput()
+        if self.manual:
+            self.playerInput()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -205,30 +289,44 @@ class KartSim(core.Env):
                 pass
 
     def playerInput(self):
+
+        break_value = 0
+        accel_value = 0
+        steer_value = 0
+
+
         # Get the state of each key
         keys = pygame.key.get_pressed()
         # key controls
         if keys[pygame.K_w]:
-            self._accelerate(1)
+            accel_value = self._accelerate(1)
         else:
-            self._accelerate(0)
+            accel_value = self._accelerate(-1)
         if keys[pygame.K_SPACE]:
-            self._break(1)
+            break_value = self._break(1)
         else:
-            self._break(0)
+            break_value = self._break(-1)
         if keys[pygame.K_d] and self._steerAngle < 1:
-            self._steer(1)
+            steer_value = self._steer(1)
         if keys[pygame.K_a] and self._steerAngle > -1:
-            self._steer(-1)
+            steer_value = self._steer(-1)
 
-    def _cast_rays(self, body, length, ray_count):
+
+
+        self.break_value = break_value
+        self.accel_value = accel_value
+        self.steer_value = steer_value
+
+
+
+
+    def _draw_cone(self, body, length, ray_count, fov):
+        draw_cone = True
+
 
         theta = body.angle + math.radians(90)
-        fov = math.radians(90)
+        fov = math.radians(fov)
 
-        draw_lines = True
-        draw_contact = True
-        draw_cone = False
 
         # Define the angle increment for the rays
         angle_increment = fov / (ray_count - 1)
@@ -236,7 +334,9 @@ class KartSim(core.Env):
         # Define the start angle for the rays
         start_angle = theta - fov / 2
 
+
         # pygame.draw.circle(self._window_surface, (0, 255, 0, 0.1), body.position, self._vision_radius, width=1)
+
 
         cone_start_x = length * math.cos(start_angle) + body.position.x
         cone_start_y = length * math.sin(start_angle) + body.position.y
@@ -253,6 +353,32 @@ class KartSim(core.Env):
                             cone_rect,
                             -(start_angle + fov),
                             -start_angle, width=1)
+
+    def _draw_rays(self, anchor, contact_point, scalar, draw_contact, draw_lines):
+
+        for point in contact_point:
+            point = point[0]*scalar, point[1]*scalar
+
+            # Draw a red dot at the point of intersection
+            if draw_contact and contact_point != (0, 0):
+                pygame.draw.circle(self._window_surface, (255, 0, 0), point + anchor, 2)
+
+            # Draw the segment
+            if draw_lines and contact_point != (0, 0):
+                pygame.draw.line(self._window_surface, (255, 255, 255), anchor, point + anchor, 1)
+
+    def _cast_rays(self, body, length, ray_count, fov):
+
+        theta = body.angle + math.radians(90)
+        fov = math.radians(fov)
+
+
+        # Define the angle increment for the rays
+        angle_increment = fov / (ray_count - 1)
+
+        # Define the start angle for the rays
+        start_angle = theta - fov / 2
+
 
         # Create a list of angles for the segments
         angles = [i * math.pi / (ray_count / 2) for i in range(ray_count)]
@@ -286,21 +412,13 @@ class KartSim(core.Env):
             else:
                 vision_contacts.append(contact_point[1] - self._playerBody.position)
 
-            # Draw a red dot at the point of intersection
-            if draw_contact and contact_point[0] != 0:
-                pygame.draw.circle(self._window_surface, (255, 0, 0), contact_point[1], 2)
-
-            # Draw the segment
-            if draw_lines and contact_point[0] != 0:
-                pygame.draw.line(self._window_surface, (255, 255, 255), body.position, contact_point[1], 1)
-
         return vision_contacts
 
     def _add_static_scenery(self) -> None:
         static_body = self._space.static_body
 
-        shapes_arr = Utils.readTrackFile("shapes.txt")
-        sectors_arr = Utils.readTrackFile("sectors.txt")
+        shapes_arr = Utils.readTrackFile("kartSim\\resources\shapes.txt")
+        sectors_arr = Utils.readTrackFile("kartSim\\resources\sectors.txt")
 
         static_lines = []
 
@@ -349,11 +467,37 @@ class KartSim(core.Env):
         # start finish collision
         self._space.add_collision_handler(0, 2).begin = self.lap_callback
 
+        num_sectors = 1
         # sectors collision
         for i in range(1, len(static_sector_lines)):
             col = self._space.add_collision_handler(0, i + 3)
             col.data["number"] = i + 1
             col.begin = self.sector_callback
+            num_sectors += 1
+
+        self._num_sectors = num_sectors
+
+    def _init_sectors(self):
+
+        self.sector_flags["lap"] = 0
+
+        for i in range(2,self._num_sectors+1):
+            self.sector_flags["sector "+str(i)] = 0
+
+    def _draw_UI_icons(self, acc_value, break_value, steer_value):
+
+        if not break_value:
+            self.break_ui.set_image(not_break_image)
+        else:
+            self.break_ui.set_image(break_image)
+
+        if not acc_value:
+            self.accelerate_ui.set_image(not_accelerate_image)
+        else:
+            self.accelerate_ui.set_image(accelerate_image)
+
+
+
 
     def _steer(self, value):
         """steering control
@@ -362,9 +506,10 @@ class KartSim(core.Env):
         :return:
         """
         if value == 0:
-            return
+            return value
         else:
             self._steerAngle += 0.1 * value
+            return value
 
     def _accelerate(self, value):
         """acceleration control
@@ -372,12 +517,18 @@ class KartSim(core.Env):
         :param value: (0..1)
         :return:
         """
-        if value == 0:
-            self.accelerate_ui.set_image(not_accelerate_image)
-            return
+        # FIXME temp fix for ensuing that value is within (0,1)
+        if value < 0:
+            value = 0
         else:
-            self.accelerate_ui.set_image(accelerate_image)
-            self._playerBody.apply_impulse_at_local_point((0, 3 * value), (0, 0))
+            value = 1
+
+        if value == 0:
+            return value
+        else:
+            self._playerBody.apply_impulse_at_local_point((0, 4 * value), (0, 0))
+            return value
+
 
     def _break(self, value):
         """breaking control
@@ -385,23 +536,29 @@ class KartSim(core.Env):
         :param value: (0..1)
         :return:
         """
-        if value == 0:
-            self.break_ui.set_image(not_break_image)
-            return
+        # FIXME temp fix for ensuing that value is within (0,1)
+        if value < 0:
+            value = 0
         else:
-            self.break_ui.set_image(break_image)
-            self._playerBody.apply_impulse_at_local_point((0, -4 * value), (0, 0))
+            value = 1
+
+
+        if value == 0:
+            return value
+        else:
+            self._playerBody.apply_impulse_at_local_point((0, -3 * value), (0, 0))
+            return value
 
     def _create_ball(self) -> None:
         mass = 1
         radius = 13
         inertia = pymunk.moment_for_circle(mass, 20, radius, (0, 0))
         body = pymunk.Body(mass, inertia)
-        body.position = 130, 110
+        body.position = self.initial_pos
         shape = pymunk.Circle(body, radius, (0, 0))
         shape.elasticity = 0
         shape.friction = 1
-        body.angle = math.pi * 3 / 2
+        body.angle = self.initial_angle
         shape.collision_type = 0
 
         self._space.add(body, shape)
@@ -412,12 +569,42 @@ class KartSim(core.Env):
         self._space.debug_draw(self._draw_options)
 
     def lap_callback(self, arbiter, space, data):
-        print("set lap")
+        name = "lap"
+        finish_flag = True
+
+        if self.sector_flags.get(name) == 0:
+            self.sector_flags[name] = self._t
+            self._last_sector_time = self._t
+            self.reward += self._calculate_reward(self._t)
+            #print("starting lap")
+
+        for value in self.sector_flags.values():
+            if value == 0:
+                finish_flag = False
+
+        if finish_flag:
+            # register lap time
+            #print("finished lap")
+            self.sector_flags[name] = self._t - self.sector_flags[name]
+            self.reward += 1000
+            self.reward += self._calculate_reward(self._t - self._last_sector_time)
+
 
         return True
 
     def sector_callback(self, arbiter, space, data):
-        print("set sector", data["number"])
+
+        name = "sector "+str(data["number"])
+
+        if self.sector_flags.get(name) == 0:
+            #print("visited " + name + " for the first time")
+            time_diff = self._t - self._last_sector_time
+            self.sector_flags[name] = time_diff
+            self._last_sector_time = self._t
+            self.reward += self._calculate_reward(time_diff)
+
+
+
         return True
 
     def track_callback_begin(self, arbiter, space, data):
@@ -425,13 +612,15 @@ class KartSim(core.Env):
         return True
 
     def track_callback_isTouch(self, arbiter, space, data):
-        self.touch_track_counter += 1
+        self.out_of_track = True
         return True
 
     def track_callback_end(self, arbiter, space, data):
-        # print(self.touch_track_counter)
-        self.touch_track_counter = 0
+        #print(self.touch_track_counter)
         return True
+
+    def _calculate_reward(self, time):
+        return 1/3*math.exp(1/100*-time+7)
 
     def observation(self):
         obs = []
@@ -444,7 +633,7 @@ class KartSim(core.Env):
         angl = [self._playerBody.angle, self._steerAngle]
 
         # todo account for missing points
-        points = self._cast_rays(self._playerBody, VISION_LENGTH, VISION_COUNT)
+        self.vision_points = self._cast_rays(self._playerBody, VISION_LENGTH, VISION_COUNT, VISION_FOV)
 
         # experimental
         # vibrations TODO
@@ -455,5 +644,5 @@ class KartSim(core.Env):
             [pos]
             + [[vel]]
             + [angl]
-            + points
+            + self.vision_points
         )
