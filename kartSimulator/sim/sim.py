@@ -140,7 +140,6 @@ class KartSim(core.Env):
         self.accel_value = accel_value
         self.steer_value = steer_value
 
-        # Progress time forward
         # TODO step based on FPS
         self._space.step(self._dt)
         # TODO lap and time counters
@@ -211,8 +210,6 @@ class KartSim(core.Env):
             options: Optional[dict] = None,
     ):
         super().reset()
-        # print("resetting")
-        # TODO physics and world reset code
         self.out_of_track = False
         self.sector_flags = {}
         self.break_value = 0
@@ -265,7 +262,6 @@ class KartSim(core.Env):
 
     def _process_events(self) -> None:
 
-        # enable player control
         if self.manual:
             self.playerInput()
 
@@ -306,7 +302,6 @@ class KartSim(core.Env):
         self.steer_value = steer_value
 
     def _draw_cone(self, body, length, ray_count, fov):
-        draw_cone = True
 
         theta = body.angle + math.radians(90)
         fov = math.radians(fov)
@@ -326,14 +321,14 @@ class KartSim(core.Env):
         cone_end_y = length * math.sin(start_angle + fov) + body.position.y
 
         cone_rect = pygame.Rect(body.position.x - length, body.position.y - length, length * 2, length * 2)
-        if draw_cone:
-            pygame.draw.line(self._window_surface, (0, 255, 0), body.position, (cone_start_x, cone_start_y), 1)
-            pygame.draw.line(self._window_surface, (0, 255, 0), body.position, (cone_end_x, cone_end_y), 1)
-            pygame.draw.arc(self._window_surface,
-                            (0, 255, 0, 0.1),
-                            cone_rect,
-                            -(start_angle + fov),
-                            -start_angle, width=1)
+
+        pygame.draw.line(self._window_surface, (0, 255, 0), body.position, (cone_start_x, cone_start_y), 1)
+        pygame.draw.line(self._window_surface, (0, 255, 0), body.position, (cone_end_x, cone_end_y), 1)
+        pygame.draw.arc(self._window_surface,
+                        (0, 255, 0, 0.1),
+                        cone_rect,
+                        -(start_angle + fov),
+                        -start_angle, width=1)
 
     def _draw_rays(self, anchor, contact_point, scalar, draw_contact, draw_lines):
 
