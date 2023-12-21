@@ -5,11 +5,6 @@ from kartSimulator.evolutionary.simulation import SimRace
 def run():
 
     problem = SimRace()
-
-    #problem = get_problem("zdt1")
-
-
-
     algorithm = NSGA2(pop_size=100)
 
     res = minimize(problem,
@@ -18,5 +13,4 @@ def run():
                    seed=1,
                    verbose=False)
 
-    # calculate a hash to show that all executions end with the same result
-    print("hash", res.F)
+    # TODO prep network for external training
