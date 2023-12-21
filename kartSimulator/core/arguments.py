@@ -18,9 +18,9 @@ def get_args():
 	"""
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--mode', dest='mode', type=str, default='train')              # can be 'train' or 'test'
-	parser.add_argument('--actor_model', dest='actor_model', type=str, default='')     # your actor model filename
-	parser.add_argument('--critic_model', dest='critic_model', type=str, default='')   # your critic model filename
+	parser.add_argument('--mode', dest='mode', type=str, default='play')              # can be 'train', 'test' or 'play'
+	parser.add_argument('--actor_model', dest='actor_model', type=str, default='')     # actor model filename
+	parser.add_argument('--critic_model', dest='critic_model', type=str, default='')   # critic model filename
 
 	args = parser.parse_args()
 

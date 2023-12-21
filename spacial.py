@@ -321,7 +321,7 @@ class Game(object):
         radius = 13
         inertia = pymunk.moment_for_circle(mass, 20, radius, (0, 0))
         body = pymunk.Body(mass, inertia)
-        body.position = 50, 50
+        body.position = 500,500
         shape = pymunk.Circle(body, radius, (0, 0))
         shape.elasticity = 0
         shape.friction = 1
