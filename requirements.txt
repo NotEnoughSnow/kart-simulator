@@ -1,0 +1,11 @@
+gym
+numpy
+Pillow
+pygame
+pygame-ce
+pygame-gui
+pymoo
+pymunk
+torch
+torchrl
+tqdm
