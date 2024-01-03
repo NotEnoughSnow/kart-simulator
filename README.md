@@ -37,6 +37,8 @@ Optimize the weights of the NN using a multi-objective evolutionary algorithm. U
 
 Train a NN model with PPO either given the optimized starting weights or from scratch.
 (Currently only supports from scratch training)
+This module was heavily inspired by :
+https://github.com/ericyangyu/PPO-for-Beginners
 
 - test
 
