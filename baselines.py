@@ -7,12 +7,12 @@ from stable_baselines3 import PPO
 #import supersuit as ss
 from stable_baselines3.ppo import MlpPolicy
 
-import kartSimulator.sim.empty as empty_sim
+import kartSimulator.sim.empty_gym as empty_gym_sim
 
 
 def train(env_fn, steps: int = 100, seed: int = 0, **env_kwargs):
     # Train a single model to play as each agent in an AEC environment
-    env = env_fn.KartSim(render_mode="human", manual=False, train=True)
+    env = env_fn.KartSim(render_mode=None, manual=False, train=True)
 
     env.reset()
 
@@ -20,6 +20,8 @@ def train(env_fn, steps: int = 100, seed: int = 0, **env_kwargs):
     #env = ss.multiagent_wrappers.pad_observations_v0(env)
     #env = ss.pettingzoo_env_to_vec_env_v1(env)
     #env = ss.concat_vec_envs_v1(env, 8, num_cpus=1, base_class="stable_baselines3")
+
+    # policy_kwargs = {},
 
     # Model
     model = PPO(
@@ -29,12 +31,13 @@ def train(env_fn, steps: int = 100, seed: int = 0, **env_kwargs):
         batch_size=256,
         learning_rate=0.001,
         ent_coef=0.001,
+        tensorboard_log="logs_300/",
     )
     #     model = RecurrentPPO("MlpLstmPolicy", env, verbose=1, batch_size=256,)
     #     model = DQN("MlpPolicy", env, verbose=1, batch_size=256,)
 
     # Train
-    model.learn(total_timesteps=steps, progress_bar=True)
+    model.learn(total_timesteps=steps, reset_num_timesteps=4000, progress_bar=True)
 
     model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
 
@@ -46,7 +49,8 @@ def train(env_fn, steps: int = 100, seed: int = 0, **env_kwargs):
 
 def eval(env_fn, num_games: int = 100, render_mode: str = None, **env_kwargs):
     # Evaluate a trained agent vs a random agent
-    env = env_fn.env(render_mode=render_mode, **env_kwargs)
+    env = env_fn.KartSim(render_mode=None, manual=False, train=True)
+
     print(
         f"\nStarting evaluation on {str(env.metadata['name'])} (num_games={num_games}, render_mode={render_mode})"
     )
@@ -55,6 +59,8 @@ def eval(env_fn, num_games: int = 100, render_mode: str = None, **env_kwargs):
         latest_policy = max(
             glob.glob(f"{env.metadata['name']}*.zip"), key=os.path.getctime
         )
+        print(env.metadata['name'])
+
     except ValueError:
         print("Policy not found.")
         exit(0)
@@ -89,7 +95,7 @@ def eval(env_fn, num_games: int = 100, render_mode: str = None, **env_kwargs):
                     act = env.action_space(agent).sample()
                 else:
                     act = model.predict(obs, deterministic=True)[0]
-            env.step(act)
+        env.step(act)
     env.close()
 
     avg_reward = sum(rewards.values()) / len(rewards.values())
@@ -102,7 +108,41 @@ def eval(env_fn, num_games: int = 100, render_mode: str = None, **env_kwargs):
     print("Full rewards: ", rewards)
     return avg_reward
 
-env_kwargs = dict(num_agents=2, num_hostages=1, num_goals=0, max_cycles=25, continuous_actions=False)
-env_fn = empty_sim
-train(env_fn, steps=50000, seed=0, render_mode=None, **env_kwargs)
+def simple_eval(env_fn):
+
+    env = env_fn.KartSim(render_mode="human", manual=False, train=False)
+    print(env.metadata['name'])
+
+    try:
+        latest_policy = max(
+            glob.glob(f"{env.metadata['name']}*.zip"), key=os.path.getctime
+        )
+
+    except ValueError:
+        print("Policy not found.")
+        exit(0)
+
+    model = PPO.load(latest_policy)
+
+    obs = env.reset()[0]
+    terminated = False
+    truncated = False
+
+    while not terminated and not truncated:
+        action, _state = model.predict(obs, deterministic=False)
+
+        print("actions", action)
+
+        obs, reward, terminated, truncated, _ = env.step(action)
+
+        # VecEnv resets automatically
+        # if done:
+        #   obs = vec_env.reset()
+
+env_fn = empty_gym_sim
+#train(env_fn, steps=300000, seed=0, render_mode=None, **env_kwargs)
 #eval(env_fn, num_games=10, render_mode='human', **env_kwargs)
+simple_eval(env_fn)
+
+
+# std_full mlpolicy

@@ -7,6 +7,7 @@ import pygame_gui
 import pymunk
 import pymunk.pygame_util
 from gym import spaces
+import gym
 from pymunk import Vec2d
 
 import kartSimulator.core.env as core
@@ -43,7 +44,9 @@ break_image = pygame.image.load(os.path.join('kartSimulator\\resources', 'break.
 not_break_image = pygame.image.load(os.path.join('kartSimulator\\resources', 'not_break.png'))
 
 
-class KartSim(core.Env):
+class KartSim(gym.Env):
+
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 60, "name": "kart2D"}
 
     def __init__(self, render_mode=None, manual=False, train=False):
 
@@ -112,13 +115,13 @@ class KartSim(core.Env):
 
         # FIXME restore shapes to (-1,1), (0,1), (0,1)
         self.action_space = spaces.Box(
-            low=-1, high=1, shape=(5,), dtype=np.uint8
+            low=-1, high=1, shape=(5,), dtype=np.float32
         )
         # do nothing, left, right, gas, brake
 
         # TODO use variables
         self.observation_space = spaces.Box(
-            low=-400, high=400, shape=(1 + 2 * 2, ), dtype=np.uint8
+            low=-400, high=400, shape=(1 + 2 * 2, ), dtype=np.float32
             # 2 points for vision ray count + position, angles, velocity
         )
 
@@ -162,8 +165,6 @@ class KartSim(core.Env):
         accel_value = 0
         steer_right_value = 0
         steer_left_value = 0
-
-        print("action", action)
 
         if action is not None:
             # [0] does nothing
@@ -262,7 +263,11 @@ class KartSim(core.Env):
         self._init_sectors(self._sector_midpoints)
         self.next_sector_name = "sector 1"
 
-        return self.step(None)[0], {}
+        observation = self.observation()
+
+        #return self.step(None)[0], {}
+        return observation, {}
+
 
     def render(self, mode):
 

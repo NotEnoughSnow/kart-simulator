@@ -1,19 +1,182 @@
+import gym
+import numpy as np
+import torch, torch.nn as nn
+import time
 
+from kartSimulator.core.snn_network import SNN
+import snn_utils
+from torch.distributions import MultivariateNormal
+import snntorch.functional as SF
 
 class SNNPPO:
 
+    def __init__(self, env, **hyperparameters):
+        # Make sure the environment is compatible with our code
+        assert (type(env.observation_space) == gym.spaces.Box)
+        assert (type(env.action_space) == gym.spaces.Box)
 
-    def __init__(self, policy_class, env, **hyperparameters):
-        pass
 
-    def learn(self):
-        pass
+        # Initialize hyperparameters for training with PPO
+        self._init_hyperparameters(hyperparameters)
+
+        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device(
+            "mps") if torch.backends.mps.is_available() else torch.device("cpu")
+
+        self.env = env
+        self.obs_dim = env.observation_space.shape[0]
+        self.act_dim = env.action_space.shape[0]
+
+        # TODO num steps
+        # Define the number of time steps for the simulation
+        self.num_steps = 50
+
+        # Initialize actor and critic networks
+        self.actor = SNN(self.obs_dim, self.act_dim, self.num_steps).to(self.device)  # ALG STEP 1
+        self.critic = SNN(self.obs_dim, 1, self.num_steps).to(self.device)
+
+        # TODO betas
+        self.actor_optim = torch.optim.Adam(self.actor.parameters(), lr=self.lr, betas=(0.9, 0.999))
+        self.critic_optim = torch.optim.Adam(self.critic.parameters(), lr=self.lr, betas=(0.9, 0.999))
+
+        # Initialize the covariance matrix used to query the actor for actions
+        self.cov_var = torch.full(size=(self.act_dim,), fill_value=0.5)
+        self.cov_mat = torch.diag(self.cov_var)
+
+        # This logger will help us with printing out summaries of each iteration
+        self.logger = {
+            'delta_t': time.time_ns(),
+            't_so_far': 0,  # timesteps so far
+            'i_so_far': 0,  # iterations so far
+            'batch_lens': [],  # episodic lengths in batch
+            'batch_rews': [],  # episodic returns in batch
+            'actor_losses': [],  # losses of actor network in current iteration
+        }
+
+    def learn(self, total_timesteps):
+        print(f"Learning... Running {self.max_timesteps_per_episode} timesteps per episode, ", end='')
+        print(f"{self.timesteps_per_batch} timesteps per batch for a total of {total_timesteps} timesteps")
+
+        t_so_far = 0  # Timesteps simulated so far
+        i_so_far = 0  # Iterations ran so far
+
+        while t_so_far < total_timesteps:  # ALG STEP 2
+
+            batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens = self.rollout()
+
+            # Calculate the sum of the lengths of the trajectories
+            t_so_far += np.sum(batch_lens)
+
+            # Increment the number of iterations
+            i_so_far += 1
+
+            # Log the timesteps and iterations
+            self.logger['t_so_far'] = t_so_far
+            self.logger['i_so_far'] = i_so_far
+
+            # Evaluate the batch using the SNN
+            V, _ = self.evaluate(batch_obs, batch_acts)
+
+            # Detach V from the graph to prevent gradients from flowing into the critic
+            V = V.detach()
+
+            # Calculate the advantage
+            A_k = batch_rtgs - V
+
+            # Normalize the advantages
+            A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
+
+            # Update the network for a number of epochs
+            for _ in range(self.n_updates_per_iteration):
+                # Re-evaluate the batch to get the current log probabilities and values
+                V, curr_log_probs = self.evaluate(batch_obs, batch_acts)
+
+                # Calculate the ratio of the new to old probabilities
+                ratios = torch.exp(curr_log_probs - batch_log_probs)
+
+                # Calculate the surrogate losses
+                surr1 = ratios * A_k
+                surr2 = torch.clamp(ratios, 1 - self.clip, 1 + self.clip) * A_k
+
+                # Calculate the actor and critic losses
+                actor_loss = (-torch.min(surr1, surr2)).mean()
+                critic_loss = SF.mse_count_loss(correct_rate=0.8, incorrect_rate=0.2)
+
+                # Perform backpropagation and update the actor and critic networks
+                self.actor_optim.zero_grad()
+                actor_loss.backward(retain_graph=True)
+                self.actor_optim.step()
+
+                self.critic_optim.zero_grad()
+                critic_loss.backward()
+                self.critic_optim.step()
+
+                # Log actor loss
+                self.logger['actor_losses'].append(actor_loss.detach())
+
+            # Print a summary of our training so far
+            self._log_summary()
+
+            # Save our model if it's time
+            if i_so_far % self.save_freq == 0:
+                torch.save(self.actor.state_dict(), './snn_ppo_actor.pth')
+                torch.save(self.critic.state_dict(), './snn_ppo_critic.pth')
 
     def evaluate(self):
         pass
 
     def rollout(self):
-        pass
+        batch_obs = []
+        batch_acts = []
+        batch_log_probs = []
+        batch_rews = []
+        batch_rtgs = []
+        batch_lens = []
+
+        # Episodic data. Keeps track of rewards per episode, will get cleared
+        # upon each new episode
+        ep_rews = []
+
+        t = 0  # Keeps track of how many timesteps we've run so far this batch
+
+        while t < self.timesteps_per_batch:
+            ep_rews = []  # rewards collected per episode
+
+            obs = self.env.reset()[0]
+            truncated = False
+            terminated = False
+
+
+            # TODO understand vars timesteps per ep, batch, ep, timesteps, ect..
+            for ep_t in range(self.max_timesteps_per_episode):
+
+                t += 1  # Increment timesteps ran this batch so far
+
+                # TODO encode obs to obs_spikes
+                spike_obs = snn_utils.encode_to_spikes(obs, self.num_steps)
+
+                batch_obs.append(spike_obs)
+
+                # Calculate action and make a step in the env.
+                # Note that rew is short for reward.
+                # FIXME actions are not in range(-1,1)
+                action, log_prob = self.get_action(spike_obs)
+
+                obs, rew, terminated, truncated, _ = self.env.step(action)
+
+                # Track recent reward, action, and action log probability
+                ep_rews.append(rew)
+                batch_acts.append(action)
+                batch_log_probs.append(log_prob)
+
+                # print(rew)
+
+                # If the environment tells us the episode is terminated, break
+                if terminated or truncated:
+                    break
+
+            # Track episodic lengths and rewards
+            batch_lens.append(ep_t + 1)
+            batch_rews.append(ep_rews)
 
     def compute_rtgs(self, batch_rews):
         """
@@ -45,6 +208,7 @@ class SNNPPO:
 
         return batch_rtgs
 
+
     def get_action(self, obs):
         """
             Queries an action from the actor network, should be called from rollout.
@@ -57,7 +221,11 @@ class SNNPPO:
                 log_prob - the log probability of the selected action in the distribution
         """
         # Query the actor network for a mean action
-        mean = self.actor(obs)
+        mean_spikes = self.actor(obs)
+
+        # FIXME
+        # Convert spike train outputs to action vector
+        mean = snn_utils.decode_spikes(mean_spikes, self.num_steps)
 
         # Create a distribution with the mean action and std from the covariance matrix above.
         # For more information on how this distribution works, check out Andrew Ng's lecture on it:

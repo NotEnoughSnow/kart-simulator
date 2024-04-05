@@ -36,7 +36,7 @@ mode = "sectors"
 print(("working in %s mode" % mode))
 shapes_arr =[]
 
-with open("kartSim/resources/shapes.txt", "r") as f:
+with open("kartSimulator/sim/resources/boxes.txt", "r") as f:
     reader = csv.reader(f, delimiter=",")
     points = list(reader)
     shapes_arr = [list(map(ast.literal_eval, shape)) for shape in points]
@@ -88,12 +88,17 @@ while running:
 
             if event.key == pygame.K_RETURN:
                 if mode == "track":
-                    with open("test_shapes.txt", "w") as f:
+                    with open("shapes_test.txt", "w") as f:
                         wr = csv.writer(f)
                         wr.writerows(shapes)
                     print(shapes[shape_index])
                 if mode == "sectors":
-                    with open("kartSim/resources/sectors.txt", "w") as f:
+                    with open("kartSimulator/sim/resources/sectors_box.txt", "w") as f:
+                        wr = csv.writer(f)
+                        wr.writerows(shapes)
+                    print(shapes[shape_index])
+                if mode == "boxes":
+                    with open("boxes.txt", "w") as f:
                         wr = csv.writer(f)
                         wr.writerows(shapes)
                     print(shapes[shape_index])
