@@ -25,6 +25,9 @@ class PPO:
         self.obs_dim = env.observation_space.shape[0]
         self.act_dim = env.action_space.shape[0]
 
+        print(f"obs shape :{env.observation_space.shape} \n"
+              f"action shape :{env.observation_space.shape}")
+
         # Initialize actor and critic networks
         self.actor = policy_class(self.obs_dim, self.act_dim)  # ALG STEP 1
         self.critic = policy_class(self.obs_dim, 1)
@@ -33,10 +36,14 @@ class PPO:
         self.actor_optim = Adam(self.actor.parameters(), lr=self.lr)
         self.critic_optim = Adam(self.critic.parameters(), lr=self.lr)
 
+
         # TODO values
         # Initialize the covariance matrix used to query the actor for actions
         self.cov_var = torch.full(size=(self.act_dim,), fill_value=0.5)
         self.cov_mat = torch.diag(self.cov_var)
+
+        print(f"cov matrix init :{self.cov_mat}")
+
 
         # This logger will help us with printing out summaries of each iteration
         self.logger = {
@@ -57,6 +64,7 @@ class PPO:
         i_so_far = 0  # Iterations ran so far
 
         while t_so_far < total_timesteps:  # ALG STEP 2
+
 
             batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens = self.rollout()
 
@@ -79,6 +87,8 @@ class PPO:
             # our advantages and makes convergence much more stable and faster. I added this because
             # solving some environments was too unstable without it.
             A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
+
+
 
             # This is the loop where we update our network for some n epochs
             for _ in range(self.n_updates_per_iteration):
@@ -110,6 +120,15 @@ class PPO:
                 actor_loss.backward(retain_graph=True)
                 self.actor_optim.step()
 
+                # Calculate gradients and perform backward propagation for critic network
+                self.critic_optim.zero_grad()
+                critic_loss.backward()
+                self.critic_optim.step()
+
+                # Log actor loss
+                self.logger['actor_losses'].append(actor_loss.detach())
+
+
             # Print a summary of our training so far
             self._log_summary()
 
@@ -117,6 +136,12 @@ class PPO:
             if i_so_far % self.save_freq == 0:
                 torch.save(self.actor.state_dict(), './ppo_actor.pth')
                 torch.save(self.critic.state_dict(), './ppo_critic.pth')
+
+        torch.save(self.actor.state_dict(), './ppo_actor.pth')
+        torch.save(self.critic.state_dict(), './ppo_critic.pth')
+
+        print("saved models")
+
 
 
 
@@ -175,9 +200,9 @@ class PPO:
         #TODO understand these
 
         # Reshape data as tensors in the shape specified in function description, before returning
-        batch_obs = torch.tensor(batch_obs, dtype=torch.float)
-        batch_acts = torch.tensor(batch_acts, dtype=torch.float)
-        batch_log_probs = torch.tensor(batch_log_probs, dtype=torch.float)
+        batch_obs = torch.tensor(np.array(batch_obs), dtype=torch.float)
+        batch_acts = torch.tensor(np.array(batch_acts), dtype=torch.float)
+        batch_log_probs = torch.tensor(np.array(batch_log_probs), dtype=torch.float)
         batch_rtgs = self.compute_rtgs(batch_rews)  # ALG STEP 4
 
         # Log the episodic returns and episodic lengths in this batch.
@@ -324,10 +349,12 @@ class PPO:
         avg_ep_rews = np.mean([np.sum(ep_rews) for ep_rews in self.logger['batch_rews']])
         avg_actor_loss = np.mean([losses.float().mean() for losses in self.logger['actor_losses']])
 
+
         # Round decimal places for more aesthetic logging messages
         avg_ep_lens = str(round(avg_ep_lens, 2))
         avg_ep_rews = str(round(avg_ep_rews, 2))
         avg_actor_loss = str(round(avg_actor_loss, 5))
+
 
         # Print logging statements
         print(flush=True)

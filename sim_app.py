@@ -16,10 +16,10 @@ window_length = 1000
 
 ui_start_x = 1000
 
-accelerate_image = pygame.image.load(os.path.join('resources', 'accelerate.png'))
-not_accelerate_image = pygame.image.load(os.path.join('resources', 'not_accelerate.png'))
-break_image = pygame.image.load(os.path.join('resources', 'break.png'))
-not_break_image = pygame.image.load(os.path.join('resources', 'not_break.png'))
+accelerate_image = pygame.image.load(os.path.join('kartSimulator/resources', 'accelerate.png'))
+not_accelerate_image = pygame.image.load(os.path.join('kartSimulator/resources', 'not_accelerate.png'))
+break_image = pygame.image.load(os.path.join('kartSimulator/resources', 'break.png'))
+not_break_image = pygame.image.load(os.path.join('kartSimulator/resources', 'not_break.png'))
 
 
 class Game(object):
@@ -225,12 +225,12 @@ class Game(object):
         shapes_arr = []
         sectors_arr = []
 
-        with open("shapes.txt", "r") as f:
+        with open("kartSimulator/sim/resources/shapes.txt", "r") as f:
             reader = csv.reader(f, delimiter=",")
             shapes = list(reader)
             shapes_arr = [list(map(ast.literal_eval, shape)) for shape in shapes]
 
-        with open("sectors.txt", "r") as f:
+        with open("kartSimulator/sim/resources/sectors.txt", "r") as f:
             reader = csv.reader(f, delimiter=",")
             shapes = list(reader)
             sectors_arr = [list(map(ast.literal_eval, shape)) for shape in shapes]
@@ -376,7 +376,7 @@ class Game(object):
         angl = [self._playerBody.angle, self._steerAngle]
 
         # todo points need to be relative
-        points = self._cast_rays(self._playerBody, 600)
+        points = self._cast_rays(self._playerBody, 300)
 
 
         # experimental
