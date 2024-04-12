@@ -42,8 +42,6 @@ class FeedForwardNN(nn.Module):
                 output - the output of our forward pass
         """
 
-        print("state", obs)
-
         # Convert observation to tensor if it's a numpy array
         if isinstance(obs, np.ndarray):
             obs = torch.tensor(obs, dtype=torch.float)

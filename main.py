@@ -6,6 +6,7 @@ from kartSimulator.core.arguments import get_args
 from kartSimulator.core import eval_policy
 from kartSimulator.core.network import FeedForwardNN
 from kartSimulator.core.ppo import PPO
+from kartSimulator.core.ppo_one_iter import PPO as PPO_ONE
 from kartSimulator.core.line_policy import L_Policy
 import kartSimulator.evolutionary.core as EO
 
@@ -43,6 +44,10 @@ def play(env):
 
     env.close()
 
+def train_one_iter(env, hyperparameters):
+    model = PPO_ONE(env=env, policy_class=FeedForwardNN)
+
+    model.learn(total_timesteps=1)
 
 def train(env, hyperparameters, actor_model, critic_model):
     model = PPO(env=env, policy_class=FeedForwardNN, **hyperparameters)
@@ -147,6 +152,9 @@ def main(args):
     if args.mode == "play":
         env = sim.KartSim(render_mode="human", manual=True, train=False)
         play(env=env)
+    if args.mode == "one_iter":
+        env = sim.KartSim(render_mode=None, manual=False, train=True)
+        train_one_iter(env=env, hyperparameters=hyperparameters)
     if args.mode == "train":
         env = sim.KartSim(render_mode=None, manual=False, train=True)
         train(env=env, hyperparameters=hyperparameters, actor_model=args.actor_model, critic_model=args.critic_model)
@@ -164,7 +172,7 @@ if __name__ == "__main__":
     # you can also directly set the args
     # args.mode = "train"
 
-    args.mode = "play"
+    args.mode = "one_iter"
     args.sim = "empty_gym"
 
     main(args)

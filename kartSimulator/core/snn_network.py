@@ -1,6 +1,5 @@
 import snntorch as snn
 from snntorch import spikegen
-import torch.nn as nn
 import torch, torch.nn as nn
 
 
