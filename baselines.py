@@ -4,7 +4,7 @@ import time
 
 import numpy as np
 from stable_baselines3 import PPO
-#import supersuit as ss
+# import supersuit as ss
 from stable_baselines3.ppo import MlpPolicy
 
 import kartSimulator.sim.empty_gym as empty_gym_sim
@@ -16,19 +16,21 @@ def train(env_fn, steps: int = 100, seed: int = 0, **env_kwargs):
 
     env.reset()
 
-    #print(f"Starting training on {str(env.metadata['name'])}.")
-    #env = ss.multiagent_wrappers.pad_observations_v0(env)
-    #env = ss.pettingzoo_env_to_vec_env_v1(env)
-    #env = ss.concat_vec_envs_v1(env, 8, num_cpus=1, base_class="stable_baselines3")
+    # print(f"Starting training on {str(env.metadata['name'])}.")
+    # env = ss.multiagent_wrappers.pad_observations_v0(env)
+    # env = ss.pettingzoo_env_to_vec_env_v1(env)
+    # env = ss.concat_vec_envs_v1(env, 8, num_cpus=1, base_class="stable_baselines3")
 
-    # policy_kwargs = {},
+    policy_kwargs = dict(full_std = True)
 
     # Model
     model = PPO(
         MlpPolicy,
         env,
+        policy_kwargs=policy_kwargs,
         verbose=1,
         batch_size=256,
+        use_sde=True,
         learning_rate=0.001,
         ent_coef=0.001,
         tensorboard_log="logs_300/",
@@ -46,6 +48,7 @@ def train(env_fn, steps: int = 100, seed: int = 0, **env_kwargs):
     print(f"Finished training on {str(env.unwrapped.metadata['name'])}.")
 
     env.close()
+
 
 def eval(env_fn, num_games: int = 100, render_mode: str = None, **env_kwargs):
     # Evaluate a trained agent vs a random agent
@@ -108,8 +111,8 @@ def eval(env_fn, num_games: int = 100, render_mode: str = None, **env_kwargs):
     print("Full rewards: ", rewards)
     return avg_reward
 
-def simple_eval(env_fn):
 
+def simple_eval(env_fn):
     env = env_fn.KartSim(render_mode="human", manual=False, train=False)
     print(env.metadata['name'])
 
@@ -139,10 +142,10 @@ def simple_eval(env_fn):
         # if done:
         #   obs = vec_env.reset()
 
-env_fn = empty_gym_sim
-#train(env_fn, steps=300000, seed=0, render_mode=None, **env_kwargs)
-#eval(env_fn, num_games=10, render_mode='human', **env_kwargs)
-simple_eval(env_fn)
 
+env_fn = empty_gym_sim
+train(env_fn, steps=300000, seed=0, render_mode=None)
+# eval(env_fn, num_games=10, render_mode='human', **env_kwargs)
+# simple_eval(env_fn)
 
 # std_full mlpolicy
