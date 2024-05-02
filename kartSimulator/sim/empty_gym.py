@@ -6,14 +6,16 @@ import numpy as np
 import pygame_gui
 import pymunk
 import pymunk.pygame_util
+import torch
 from gym import spaces
 import gym
 from pymunk import Vec2d
 
-import kartSimulator.core.env as core
 import kartSimulator.sim.utils as Utils
 
 import pygame
+
+from kartSimulator.sim.utils import normalize_vec
 
 PPM = 100
 
@@ -30,11 +32,14 @@ MAX_VELOCITY = 0.22 * PPM
 # or        1.82 rad/sec
 RAD_VELOCITY = 2.84
 
+ANGLE_DIFF = -math.pi * 1/2
+
 window_width = 1500
 window_length = 1000
-VISION_COUNT = 64
-VISION_LENGTH = 600
-VISION_FOV = 90
+VISION_COUNT = 360
+VISION_LENGTH = 100
+NO_VISION_CONSTANT = VISION_LENGTH / 6
+VISION_FOV = 360
 
 ui_start_x = 1000
 
@@ -45,13 +50,11 @@ not_break_image = pygame.image.load(os.path.join('kartSimulator\\resources', 'no
 
 
 class KartSim(gym.Env):
-
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 60, "name": "kart2D"}
 
-    def __init__(self, render_mode=None, manual=False, train=False):
+    def __init__(self, render_mode=None, train=False):
 
         # responsible for assigning control to player
-        self.manual = manual
         self.render_mode = render_mode
 
         speed = 1.0
@@ -121,13 +124,14 @@ class KartSim(gym.Env):
 
         # TODO use variables
         self.observation_space = spaces.Box(
-            low=-400, high=400, shape=(1 + 2 * 2, ), dtype=np.float32
+            low=-400, high=400, shape=(1 + 2 * 2,), dtype=np.float32
             # 2 points for vision ray count + position, angles, velocity
         )
 
         self.initial_pos = 300, 450
-        self.initial_angle = math.pi * 3 / 2
+        self.initial_angle = 0 + ANGLE_DIFF
         self.vision_points = []
+        self.vision_lengths = []
         self.break_value = 0
         self.accel_value = 0
         self.steer_right_value = 0
@@ -150,6 +154,10 @@ class KartSim(gym.Env):
         self._create_ball()
         self._add_static_scenery()
 
+        self.halfwinsize = 5
+        torch.manual_seed(0)
+        self.conv_layer = torch.nn.Conv1d(in_channels=1, out_channels=1, kernel_size=(2 * self.halfwinsize + 1),
+                                          padding='valid')
 
     def step(self, action: Union[np.ndarray, int]):
 
@@ -158,8 +166,8 @@ class KartSim(gym.Env):
 
             # if i assign this to FPS, both of them become 0
             # what?
-            #self.FPS = self._clock.get_fps()
-            #print("what ", self._clock.get_fps())
+            # self.FPS = self._clock.get_fps()
+            # print("what ", self._clock.get_fps())
 
         break_value = 0
         accel_value = 0
@@ -168,6 +176,7 @@ class KartSim(gym.Env):
 
         if action is not None:
             # [0] does nothing
+
             steer_right_value = self._steer_right(action[1])
             steer_left_value = self._steer_left(action[2])
             accel_value = self._accelerate(action[3])
@@ -201,7 +210,7 @@ class KartSim(gym.Env):
         # TODO max speed
 
         # observation
-        state = self.observation()
+        state = self.observation_LIDAR()
 
         step_reward = 0
         terminated = False
@@ -209,9 +218,9 @@ class KartSim(gym.Env):
 
         # FIXME should look better
         next_target_distance = (self._playerBody.position - self.sector_info[self.next_sector_name][1]).__abs__()
-        self.next_target_distance = np.exp(4-(next_target_distance/200))-20
+        self.next_target_distance = np.exp(4 - (next_target_distance / 200)) - 20
 
-        if action is not None or self.manual:  # First step without action, called from reset()
+        if action is not None:  # First step without action, called from reset()
             self.reward -= 1
             self.reward += self.next_target_distance
 
@@ -232,10 +241,15 @@ class KartSim(gym.Env):
 
         self._t += 1
 
+        if (self._playerBody.angle - ANGLE_DIFF) > (2 * math.pi):
+            self._playerBody.angle = 0 + ANGLE_DIFF
+        if (self._playerBody.angle - ANGLE_DIFF) < -(2 * math.pi):
+            self._playerBody.angle = 0 + ANGLE_DIFF
 
-        #print( self._playerBody.position)
+        # print( self._playerBody.position)
 
-        #(shape[0][0] + shape[1][0]) / 2
+        # (shape[0][0] + shape[1][0]) / 2
+
 
         return state, step_reward, terminated, truncated, {}
 
@@ -263,11 +277,10 @@ class KartSim(gym.Env):
         self._init_sectors(self._sector_midpoints)
         self.next_sector_name = "sector 1"
 
-        observation = self.observation()
+        observation = self.observation_LIDAR()
 
-        #return self.step(None)[0], {}
+        # return self.step(None)[0], {}
         return observation, {}
-
 
     def render(self, mode):
 
@@ -309,9 +322,6 @@ class KartSim(gym.Env):
 
     def _process_events(self) -> None:
 
-        if self.manual:
-            self.playerInput()
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.close()
@@ -321,32 +331,6 @@ class KartSim(gym.Env):
                 pygame.image.save(self._window_surface, "screenshots/karts.png")
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
                 pass
-
-    def playerInput(self):
-
-        break_value = 0
-        accel_value = 0
-        steer_value = 0
-
-        # Get the state of each key
-        keys = pygame.key.get_pressed()
-        # key controls
-        if keys[pygame.K_w]:
-            accel_value = self._accelerate(1)
-        else:
-            accel_value = self._accelerate(-1)
-        if keys[pygame.K_SPACE]:
-            break_value = self._break(1)
-        else:
-            break_value = self._break(-1)
-        if keys[pygame.K_d]:
-            steer_value = self._steer_right(1)
-        if keys[pygame.K_a]:
-            steer_value = self._steer_left(1)
-
-        self.break_value = break_value
-        self.accel_value = accel_value
-        self.steer_value = steer_value
 
     def _draw_cone(self, body, length, ray_count, fov):
 
@@ -389,6 +373,54 @@ class KartSim(gym.Env):
             # Draw the segment
             if draw_lines and contact_point != (0, 0):
                 pygame.draw.line(self._window_surface, (255, 255, 255), anchor, point + anchor, 1)
+
+    def _cast_rays_lengths(self, body, length, ray_count, fov):
+
+        theta = body.angle + math.radians(90)
+        fov = math.radians(fov)
+
+        # Define the angle increment for the rays
+        angle_increment = fov / (ray_count - 1)
+
+        # Define the start angle for the rays
+        start_angle = theta - fov / 2
+
+        # Create a list oaf angles for the segments
+        angles = [i * math.pi / (ray_count / 2) for i in range(ray_count)]
+
+        vision_contacts = []
+        vision_lengths = []
+
+        # Draw the rays
+        for i in range(ray_count):
+            # Calculate the angle of the ray
+            angle = start_angle + i * angle_increment
+            # Calculate the end point of the ray
+            end_x = length * math.cos(angle) + body.position.x
+            end_y = length * math.sin(angle) + body.position.y
+            end = (end_x, end_y)
+
+            filter = pymunk.ShapeFilter(mask=0x1)
+
+            # Perform a segment query against the space
+            query = self._space.segment_query(body.position, end, 1, filter)
+
+            query_res = [[np.linalg.norm(info.point - body.position), info.point] for info in query]
+
+            if len(query_res) == 0:
+                query_res.append((length, (0, 0)))
+
+            contact_point = min(query_res)
+
+            if contact_point[0] > length - 2:
+                contact_point = (0, (0, 0))
+                vision_contacts.append([0, 0])
+                vision_lengths.append(length + NO_VISION_CONSTANT)
+            else:
+                vision_contacts.append(contact_point[1] - self._playerBody.position)
+                vision_lengths.append(contact_point[0])
+
+        return vision_contacts, vision_lengths
 
     def _cast_rays(self, body, length, ray_count, fov):
 
@@ -465,10 +497,9 @@ class KartSim(gym.Env):
         for shape in sectors_arr:
             static_sector_lines.append(pymunk.Segment(sensor_bodies, shape[0], shape[1], 0.0))
             # FIXME use np.average ?
-            sector_midpoints.append([(shape[0][0] + shape[1][0])/2,(shape[0][1] + shape[1][1])/2])
+            sector_midpoints.append([(shape[0][0] + shape[1][0]) / 2, (shape[0][1] + shape[1][1]) / 2])
 
         self._sector_midpoints = sector_midpoints
-
 
         for i in range(len(static_sector_lines)):
             static_sector_lines[i].elasticity = 0
@@ -495,19 +526,16 @@ class KartSim(gym.Env):
             col.begin = self.sector_callback
             num_sectors += 1
 
-
         self._num_sectors = num_sectors
 
         self._init_sectors(sector_midpoints)
-
 
     def _init_sectors(self, sector_midpoints):
 
         for i in range(1, self._num_sectors + 1):
             self.sector_info["sector " + str(i)] = []
             self.sector_info["sector " + str(i)].append(0)
-            self.sector_info["sector " + str(i)].append(sector_midpoints[i-1])
-
+            self.sector_info["sector " + str(i)].append(sector_midpoints[i - 1])
 
     def _draw_UI_icons(self, acc_value, break_value, steer_right_value, steer_left_value):
 
@@ -613,7 +641,7 @@ class KartSim(gym.Env):
             self.next_sector_name = "sector " + str(data["number"] + 1)
 
         if self.sector_info.get(name)[0] == 0:
-            #print("visited " + name + " for the first time")
+            # print("visited " + name + " for the first time")
             time_diff = self._t - self._last_sector_time
             self.sector_info[name][0] = time_diff
             self._last_sector_time = self._t
@@ -621,7 +649,6 @@ class KartSim(gym.Env):
 
             if data["number"] == self._num_sectors:
                 self.finish = True
-
 
         return True
 
@@ -640,6 +667,17 @@ class KartSim(gym.Env):
     def _calculate_reward(self, time):
         return 1 / 3 * math.exp(1 / 100 * -time + 7)
 
+    def process_vision(self, data):
+
+        data = torch.tensor(data)
+
+        wraparound_data = torch.cat(
+            [data[-self.halfwinsize:], data, data[:self.halfwinsize]]).float()
+
+        convolved_data = self.conv_layer(wraparound_data.unsqueeze(0).unsqueeze(0))
+
+        return convolved_data.squeeze().squeeze().detach().numpy()
+
     def observation(self):
         obs = []
 
@@ -653,13 +691,51 @@ class KartSim(gym.Env):
         # todo account for missing points
         self.vision_points = self._cast_rays(self._playerBody, VISION_LENGTH, VISION_COUNT, VISION_FOV)
 
-        # experimental
-        # vibrations TODO
-        # engine sounds TODO
-        # g-force TODO
-
         return np.concatenate(
             [self.position]
             + [[self.velocity]]
             + [angl]
+        )
+
+    def observation_LIDAR(self):
+        obs = []
+
+        # TODO refactor stuff, modular
+
+        # player vel
+        self.velocity = self._playerBody.velocity.__abs__()
+        velocity = self.velocity
+        velocity = np.clip(
+            np.abs(normalize_vec([velocity],
+                                 maximum=MAX_VELOCITY,
+                                 minimum=0)),
+            a_max=1,
+            a_min=0)
+
+        # normalize steer_angle
+        steer_angle = normalize_vec([self._steerAngle], 0.0142, -0.0142)
+
+        # player angle
+        angl = [self._playerBody.angle - ANGLE_DIFF, steer_angle[0]]
+
+        self.vision_points, vision_lengths = self._cast_rays_lengths(self._playerBody, VISION_LENGTH, VISION_COUNT,
+                                                                     VISION_FOV)
+        # apply circularity and convolution
+        vision_lengths = self.process_vision(vision_lengths)
+
+        max_input = VISION_LENGTH + NO_VISION_CONSTANT
+
+        maximum = (self.conv_layer.weight.data.clamp(min=0).sum() * max_input + self.conv_layer.bias.data).item()
+        minimum = (self.conv_layer.weight.data.clamp(max=0).sum() * max_input + self.conv_layer.bias.data).item()
+
+        # normalize rays
+        vision_lengths = normalize_vec(vision_lengths, maximum=maximum, minimum=minimum)
+
+        self.vision_lengths = vision_lengths
+
+
+        return np.concatenate(
+            [velocity]
+            + [angl]
+            + [self.vision_lengths]
         )

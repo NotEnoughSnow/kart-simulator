@@ -1,11 +1,16 @@
 import sys
 
 import torch
+import csv
+import ast
+import numpy as np
+import h5py
 
 from kartSimulator.core.arguments import get_args
 from kartSimulator.core import eval_policy
 from kartSimulator.core.network import FeedForwardNN
 from kartSimulator.core.ppo import PPO
+from kartSimulator.core.ppo_snn import SNNPPO
 from kartSimulator.core.ppo_one_iter import PPO as PPO_ONE
 from kartSimulator.core.line_policy import L_Policy
 import kartSimulator.evolutionary.core as EO
@@ -16,22 +21,46 @@ import kartSimulator.sim.empty_gym as empty_gym
 import kartSimulator.sim_turtlebot.sim_turtlebot as turtlebot_sim
 import kartSimulator.sim_turtlebot.calibrate as turtlebot_calibrate
 import kartSimulator.sim_1D as oneD_sim
+import pygame
 
 
-def play(env):
-    running = False
+def play(env, record, player_name="Amin", expert_ep_count=3):
+    running = True
+    expert_run = []
+    i = 0
 
-    while not running:
+    while running and i < expert_ep_count:
         env.reset()
         total_reward = 0.0
         steps = 0
         terminated = False
         truncated = False
 
-        while not terminated and not truncated:
-            s, r, terminated, truncated, _ = env.step(None)
+        expert_data = []
+        expert_episode = []
 
-            total_reward += r
+        while not terminated and not truncated:
+            action = torch.zeros(5)
+
+            keys = pygame.key.get_pressed()
+            # key controls
+            if keys[pygame.K_w]:
+                action[3] = 1
+            if keys[pygame.K_SPACE]:
+                action[4] = 1
+            if keys[pygame.K_d]:
+                action[1] = 1
+            if keys[pygame.K_a]:
+                action[2] = 1
+
+            obs, reward, terminated, truncated, _ = env.step(action)
+
+            #print(obs)
+
+            # build expert episode
+            expert_data.append([steps, obs, action.numpy(), reward, terminated, truncated])
+
+            total_reward += reward
             steps += 1
 
             if truncated:
@@ -42,12 +71,55 @@ def play(env):
                 print(f"total rewards this ep:{total_reward}")
                 # TODO times
 
+        # wrap expert data and steps in expert episode
+        expert_episode = [expert_data, steps]
+
+        # build expert run
+        expert_run.append(expert_episode)
+        if record:
+            i += 1
+
+    if record:
+        # write expert runs to file then exit application
+        write_file(expert_run, player_name)
+        env.close()
+        exit()
+
     env.close()
+
+
+def write_file(expert_runs, player_name, filename="expert.hdf5"):
+    with h5py.File(filename, "w") as f:
+        for run_index, expert_episode in enumerate(expert_runs):
+            run_group = f.create_group(f"run_{run_index}")
+            # Store the player's name as an attribute of the run
+            run_group.attrs['player_name'] = player_name
+
+            # Access the elements directly by index
+            episode_data = expert_episode[0]
+            episode_steps = expert_episode[1]
+
+            episode_group = run_group.create_group(f"episode_{run_index}")
+            episode_group.attrs['total_steps'] = episode_steps
+
+
+            # Create datasets for timestep data
+            for timestep_index, timestep in enumerate(episode_data):
+                timestep_group = episode_group.create_group(f"timestep_{timestep_index}")
+                timestep_group.create_dataset("time", data=timestep[0])
+                timestep_group.create_dataset("observations", data=np.array(timestep[1], dtype=float))
+                timestep_group.create_dataset("actions", data=np.array(timestep[2], dtype=float))
+                timestep_group.create_dataset("reward", data=timestep[3])
+                timestep_group.create_dataset("terminated", data=timestep[4])
+                timestep_group.create_dataset("truncated", data=timestep[5])
+
+
 
 def train_one_iter(env, hyperparameters):
     model = PPO_ONE(env=env, policy_class=FeedForwardNN)
 
     model.learn(total_timesteps=1)
+
 
 def train(env, hyperparameters, actor_model, critic_model):
     model = PPO(env=env, policy_class=FeedForwardNN, **hyperparameters)
@@ -66,6 +138,14 @@ def train(env, hyperparameters, actor_model, critic_model):
         print(f"Training from scratch.", flush=True)
 
     # load actor / critic
+
+    model.learn(total_timesteps=100000)
+
+
+def train(env, hyperparameters):
+    model = SNNPPO(env=env, policy_class=FeedForwardNN, **hyperparameters)
+
+    print(f"Training from scratch.", flush=True)
 
     model.learn(total_timesteps=100000)
 
@@ -116,8 +196,7 @@ def test(env, actor_model):
 
     eval_policy.eval_policy(policy=policy, env=env, render=True)
 
-    #eval_policy.visualize(policy,env)
-
+    # eval_policy.visualize(policy,env)
 
 
 def main(args):
@@ -150,14 +229,17 @@ def main(args):
     assert sim is not None
 
     if args.mode == "play":
-        env = sim.KartSim(render_mode="human", manual=True, train=False)
-        play(env=env)
+        env = sim.KartSim(render_mode="human", train=False)
+        play(env=env, record=False)
     if args.mode == "one_iter":
         env = sim.KartSim(render_mode=None, manual=False, train=True)
         train_one_iter(env=env, hyperparameters=hyperparameters)
     if args.mode == "train":
         env = sim.KartSim(render_mode=None, manual=False, train=True)
         train(env=env, hyperparameters=hyperparameters, actor_model=args.actor_model, critic_model=args.critic_model)
+    if args.mode == "snn":
+        env = sim.KartSim(render_mode=None, manual=False, train=True)
+        train(env=env, hyperparameters=hyperparameters)
     if args.mode == "optimize":
         # TODO implement evolutionary optimization
         pass
@@ -172,7 +254,7 @@ if __name__ == "__main__":
     # you can also directly set the args
     # args.mode = "train"
 
-    args.mode = "one_iter"
+    args.mode = "play"
     args.sim = "empty_gym"
 
     main(args)
