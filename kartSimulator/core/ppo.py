@@ -7,7 +7,6 @@ from torch import nn
 from torch.distributions import MultivariateNormal
 from torch.optim.adam import Adam
 
-
 class PPO:
 
 
@@ -42,7 +41,6 @@ class PPO:
         self.cov_var = torch.full(size=(self.act_dim,), fill_value=0.5)
         self.cov_mat = torch.diag(self.cov_var)
 
-        print(f"cov matrix init :{self.cov_mat}")
 
 
         # This logger will help us with printing out summaries of each iteration
@@ -196,8 +194,6 @@ class PPO:
             # Track episodic lengths and rewards
             batch_lens.append(ep_t + 1)
             batch_rews.append(ep_rews)
-
-        #TODO understand these
 
         # Reshape data as tensors in the shape specified in function description, before returning
         batch_obs = torch.tensor(np.array(batch_obs), dtype=torch.float)

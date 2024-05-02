@@ -4,7 +4,7 @@ import torch, torch.nn as nn
 import time
 
 from kartSimulator.core.snn_network import SNN
-import snn_utils
+from kartSimulator.core import snn_utils
 from torch.distributions import MultivariateNormal
 import snntorch.functional as SF
 
@@ -63,6 +63,8 @@ class SNNPPO:
 
             batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens = self.rollout()
 
+            batch_obs_ts = snn_utils.encode_to_spikes_batched(batch_obs, num_steps=self.num_steps)
+
             # Calculate the sum of the lengths of the trajectories
             t_so_far += np.sum(batch_lens)
 
@@ -74,7 +76,7 @@ class SNNPPO:
             self.logger['i_so_far'] = i_so_far
 
             # Evaluate the batch using the SNN
-            V, _ = self.evaluate(batch_obs, batch_acts)
+            V, _ = self.evaluate(batch_obs_ts, batch_acts)
 
             # Detach V from the graph to prevent gradients from flowing into the critic
             V = V.detach()
@@ -88,20 +90,16 @@ class SNNPPO:
             # Update the network for a number of epochs
             for _ in range(self.n_updates_per_iteration):
                 # Re-evaluate the batch to get the current log probabilities and values
-                V, curr_log_probs = self.evaluate(batch_obs, batch_acts)
+                V, curr_log_probs = self.evaluate(batch_obs_ts, batch_acts)
 
-                # Calculate the ratio of the new to old probabilities
                 ratios = torch.exp(curr_log_probs - batch_log_probs)
 
-                # Calculate the surrogate losses
                 surr1 = ratios * A_k
                 surr2 = torch.clamp(ratios, 1 - self.clip, 1 + self.clip) * A_k
 
-                # Calculate the actor and critic losses
                 actor_loss = (-torch.min(surr1, surr2)).mean()
-                critic_loss = SF.mse_count_loss(correct_rate=0.8, incorrect_rate=0.2)
+                critic_loss = nn.MSELoss()(V, batch_rtgs)
 
-                # Perform backpropagation and update the actor and critic networks
                 self.actor_optim.zero_grad()
                 actor_loss.backward(retain_graph=True)
                 self.actor_optim.step()
@@ -121,8 +119,11 @@ class SNNPPO:
                 torch.save(self.actor.state_dict(), './snn_ppo_actor.pth')
                 torch.save(self.critic.state_dict(), './snn_ppo_critic.pth')
 
-    def evaluate(self):
-        pass
+        torch.save(self.actor.state_dict(), './ppo_actor.pth')
+        torch.save(self.critic.state_dict(), './ppo_critic.pth')
+
+        print("saved models")
+
 
     def rollout(self):
         batch_obs = []
@@ -151,17 +152,14 @@ class SNNPPO:
 
                 t += 1  # Increment timesteps ran this batch so far
 
-                # TODO encode obs to obs_spikes
-                spike_obs = snn_utils.encode_to_spikes(obs, self.num_steps)
-
-                batch_obs.append(spike_obs)
+                batch_obs.append(obs)
 
                 # Calculate action and make a step in the env.
                 # Note that rew is short for reward.
                 # FIXME actions are not in range(-1,1)
-                action, log_prob = self.get_action(spike_obs)
+                action, log_prob = self.get_action(obs)
 
-                obs, rew, terminated, truncated, _ = self.env.step(action)
+                obs, rew, terminated, truncated, _ = self.env.step(action.squeeze())
 
                 # Track recent reward, action, and action log probability
                 ep_rews.append(rew)
@@ -177,6 +175,55 @@ class SNNPPO:
             # Track episodic lengths and rewards
             batch_lens.append(ep_t + 1)
             batch_rews.append(ep_rews)
+
+            # Reshape data as tensors in the shape specified in function description, before returning
+            batch_obs = torch.tensor(np.array(batch_obs), dtype=torch.float)
+            batch_acts = torch.tensor(np.array(batch_acts), dtype=torch.float).squeeze()
+            batch_log_probs = torch.tensor(np.array(batch_log_probs), dtype=torch.float).squeeze()
+            batch_rtgs = self.compute_rtgs(batch_rews)  # ALG STEP 4
+
+            # Log the episodic returns and episodic lengths in this batch.
+            self.logger['batch_rews'] = batch_rews
+            self.logger['batch_lens'] = batch_lens
+
+            return batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens
+
+    def evaluate(self, batch_obs_ts, batch_acts):
+        """
+            Estimate the values of each observation, and the log probs of
+            each action in the most recent batch with the most recent
+            iteration of the actor network. Should be called from learn.
+
+            Parameters:
+                batch_obs - the observations from the most recently collected batch as a tensor.
+                            Shape: (number of timesteps in batch, dimension of observation)
+                batch_acts - the actions from the most recently collected batch as a tensor.
+                            Shape: (number of timesteps in batch, dimension of action)
+
+            Return:
+                V - the predicted values of batch_obs
+                log_probs - the log probabilities of the actions taken in batch_acts given batch_obs
+                :param batch_acts:
+                :param batch_obs_ts:
+        """
+
+        # Query critic network for a value V for each batch_obs. Shape of V should be same as batch_rtgs
+        V_ts = self.critic(batch_obs_ts)[0]
+
+        V = snn_utils.decode_first_spike_batched(V_ts).squeeze().requires_grad_(True)
+
+        # Calculate the log probabilities of batch actions using most recent actor network.
+        # This segment of code is similar to that in get_action()
+        mean_ts = self.actor(batch_obs_ts)[0].detach()
+
+        mean = snn_utils.decode_first_spike_batched(mean_ts)
+
+        dist = MultivariateNormal(mean, self.cov_mat)
+        log_probs = dist.log_prob(batch_acts).requires_grad_(True)
+
+        # Return the value vector V of each observation in the batch
+        # and log probabilities log_probs of each action in the batch
+        return V, log_probs
 
     def compute_rtgs(self, batch_rews):
         """
@@ -220,16 +267,18 @@ class SNNPPO:
                 action - the action to take, as a numpy array
                 log_prob - the log probability of the selected action in the distribution
         """
-        # Query the actor network for a mean action
-        mean_spikes = self.actor(obs)
 
-        # FIXME
+        obs = torch.tensor(obs)
+
+        obs_st = snn_utils.encode_to_spikes_batched(obs.unsqueeze(0), num_steps=self.num_steps)
+
+        # Query the actor network for a mean action
+        mean_st = self.actor(obs_st)[0].detach()
+
         # Convert spike train outputs to action vector
-        mean = snn_utils.decode_spikes(mean_spikes, self.num_steps)
+        mean = snn_utils.decode_first_spike_batched(mean_st)
 
         # Create a distribution with the mean action and std from the covariance matrix above.
-        # For more information on how this distribution works, check out Andrew Ng's lecture on it:
-        # https://www.youtube.com/watch?v=JjB58InuTqM
         dist = MultivariateNormal(mean, self.cov_mat)
 
         # Sample an action from the distribution
