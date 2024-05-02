@@ -12,7 +12,7 @@ import kartSimulator.sim.empty_gym as empty_gym_sim
 
 def train(env_fn, steps: int = 100, seed: int = 0, **env_kwargs):
     # Train a single model to play as each agent in an AEC environment
-    env = env_fn.KartSim(render_mode=None, manual=False, train=True)
+    env = env_fn.KartSim(render_mode=None, manual=False, train=True, obs_type="position")
 
     env.reset()
 
@@ -21,14 +21,14 @@ def train(env_fn, steps: int = 100, seed: int = 0, **env_kwargs):
     # env = ss.pettingzoo_env_to_vec_env_v1(env)
     # env = ss.concat_vec_envs_v1(env, 8, num_cpus=1, base_class="stable_baselines3")
 
-    policy_kwargs = dict(full_std = True)
+    policy_kwargs = dict(full_std=True)
 
     # Model
     model = PPO(
         MlpPolicy,
         env,
         policy_kwargs=policy_kwargs,
-        verbose=1,
+        verbose=2,
         batch_size=256,
         use_sde=True,
         learning_rate=0.001,
@@ -147,5 +147,3 @@ env_fn = empty_gym_sim
 train(env_fn, steps=300000, seed=0, render_mode=None)
 # eval(env_fn, num_games=10, render_mode='human', **env_kwargs)
 # simple_eval(env_fn)
-
-# std_full mlpolicy
