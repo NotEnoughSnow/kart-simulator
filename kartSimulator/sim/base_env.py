@@ -18,7 +18,7 @@ from kartSimulator.sim.utils import normalize_vec
 
 from kartSimulator.sim.maps.map_generator import MapGenerator
 from kartSimulator.sim.maps.map_loader import MapLoader
-from kartSimulator.sim.maps.empty_map import EmptyMap
+from kartSimulator.sim.maps.random_point import RandomPoint
 
 from kartSimulator.sim.ui_manager import UImanager
 

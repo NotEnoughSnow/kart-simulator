@@ -11,5 +11,5 @@ class AbstractMap(ABC):
         pass
 
     @abstractmethod
-    def create_goals(self):
+    def create_goals(self, mode):
         pass
