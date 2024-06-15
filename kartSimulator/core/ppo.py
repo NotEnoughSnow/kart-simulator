@@ -6,6 +6,7 @@ import torch
 from torch import nn
 from torch.distributions import MultivariateNormal
 from torch.optim.adam import Adam
+from torch.utils.tensorboard import SummaryWriter
 
 class PPO:
 
@@ -16,6 +17,8 @@ class PPO:
         # Make sure the environment is compatible with our code
         assert (type(env.observation_space) == gym.spaces.Box)
         assert (type(env.action_space) == gym.spaces.Box)
+
+        self.writer = SummaryWriter('ppo_logs_100')
 
         # Initialize hyperparameters for training with PPO
         self._init_hyperparameters(hyperparameters)
@@ -180,6 +183,7 @@ class PPO:
 
                 obs, rew, terminated, truncated, _ = self.env.step(action)
 
+
                 # Track recent reward, action, and action log probability
                 ep_rews.append(rew)
                 batch_acts.append(action)
@@ -195,11 +199,20 @@ class PPO:
             batch_lens.append(ep_t + 1)
             batch_rews.append(ep_rews)
 
+            ep_rew_mean = np.sum(ep_rews)
+            #print(ep_rew_mean)
+
+
+            self.writer.add_scalar('rollout/ep_rew_mean', ep_rew_mean, self.logger['t_so_far'])
+
         # Reshape data as tensors in the shape specified in function description, before returning
         batch_obs = torch.tensor(np.array(batch_obs), dtype=torch.float)
         batch_acts = torch.tensor(np.array(batch_acts), dtype=torch.float)
         batch_log_probs = torch.tensor(np.array(batch_log_probs), dtype=torch.float)
         batch_rtgs = self.compute_rtgs(batch_rews)  # ALG STEP 4
+
+
+
 
         # Log the episodic returns and episodic lengths in this batch.
         self.logger['batch_rews'] = batch_rews
@@ -321,6 +334,18 @@ class PPO:
         self.save_freq = 10  # How often we save in number of iterations
         self.seed = None  # Sets the seed of our program, used for reproducibility of results
 
+        # Change any default values to custom values for specified hyperparameters
+        for param, val in hyperparameters.items():
+            exec('self.' + param + ' = ' + str(val))
+
+        # Sets the seed if specified
+        if self.seed != None:
+            # Check if our seed is valid first
+            assert (type(self.seed) == int)
+
+            # Set the seed
+            torch.manual_seed(self.seed)
+            print(f"Successfully set seed to {self.seed}")
     def _log_summary(self):
         """
             Print to stdout what we've logged so far in the most recent batch.
