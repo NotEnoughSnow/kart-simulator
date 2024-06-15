@@ -16,11 +16,14 @@ pip install -r requirements.txt
 
 ## Running 
 
-To run in manual play mode <br>
+The Quickest way to run it is by changing the args variables in the main function and running the main class.
+There's a description for each of the args variable below.
+
+To run from the command line <br>
 `python main.py`
 
-You can specify a run mode <br>
-`python main.py --mode <mode>`
+You can specify a run mode and an algorithm<br>
+`python main.py --mode <mode> --alg <algorithm>`
 
 Modes:
 
@@ -42,6 +45,16 @@ Train a NN model with PPO either given the optimized starting weights or from sc
 
 Test and evaluate the performance of the NN.
 (Not available yet)
+
+Algorithms:
+
+- default
+
+The manually built PPO (in progress)
+
+- baselines
+
+Uses stable-baselines3 
 
 
 ## About the project
