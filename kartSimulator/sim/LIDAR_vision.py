@@ -22,15 +22,19 @@ maximum = (conv_layer.weight.data.clamp(min=0).sum() * max_input + conv_layer.bi
 minimum = (conv_layer.weight.data.clamp(max=0).sum() * max_input + conv_layer.bias.data).item()
 
 
-def process_vision(data):
+def apply_convolution(wraparound_data):
+
+    convolved_data = conv_layer(wraparound_data.unsqueeze(0).unsqueeze(0))
+
+    return convolved_data.squeeze().squeeze().detach().numpy()
+
+def apply_circularity(data):
     data = torch.tensor(data)
 
     wraparound_data = torch.cat(
         [data[-halfwinsize:], data, data[:halfwinsize]]).float()
 
-    convolved_data = conv_layer(wraparound_data.unsqueeze(0).unsqueeze(0))
-
-    return convolved_data.squeeze().squeeze().detach().numpy()
+    return wraparound_data
 
 
 def draw_rays(window_surface, anchor, contact_point, scalar, draw_contact, draw_lines):
