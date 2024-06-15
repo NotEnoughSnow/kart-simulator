@@ -14,10 +14,13 @@ from kartSimulator.core.ppo_snn import SNNPPO
 from kartSimulator.core.ppo_one_iter import PPO as PPO_ONE
 from kartSimulator.core.line_policy import L_Policy
 import kartSimulator.evolutionary.core as EO
+import kartSimulator.sim.observation_types as obs_types
 
 import kartSimulator.sim.sim2D as kart_sim
 import kartSimulator.sim.empty as empty_sim
-import kartSimulator.sim.empty_gym as empty_gym
+import kartSimulator.sim.base_env as empty_gym
+import kartSimulator.sim.simple_env as empty_gym_full
+
 import kartSimulator.sim_turtlebot.sim_turtlebot as turtlebot_sim
 import kartSimulator.sim_turtlebot.calibrate as turtlebot_calibrate
 import kartSimulator.sim_1D as oneD_sim
@@ -44,14 +47,28 @@ def play(env, record, player_name="Amin", expert_ep_count=3):
 
             keys = pygame.key.get_pressed()
             # key controls
+            #if keys[pygame.K_w]:
+            #    action[3] = 1
+            #if keys[pygame.K_SPACE]:
+            #    action[4] = 1
+            #if keys[pygame.K_d]:
+            #    action[1] = 1
+            #if keys[pygame.K_a]:
+            #    action[2] = 1
+
             if keys[pygame.K_w]:
-                action[3] = 1
-            if keys[pygame.K_SPACE]:
-                action[4] = 1
+                action[0] = -1
+            if keys[pygame.K_s]:
+                action[0] = +1
             if keys[pygame.K_d]:
-                action[1] = 1
+                action[1] = +1
             if keys[pygame.K_a]:
-                action[2] = 1
+                action[1] = -1
+
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                    env.reset()
+
 
             obs, reward, terminated, truncated, _ = env.step(action)
 
@@ -63,13 +80,16 @@ def play(env, record, player_name="Amin", expert_ep_count=3):
             total_reward += reward
             steps += 1
 
-            if truncated:
-                print("hit a wall")
-                print(f"total rewards this ep:{total_reward}")
+        if truncated:
+            print("hit a wall")
+            print(f"total rewards this ep:{total_reward}")
 
-            if terminated:
-                print(f"total rewards this ep:{total_reward}")
-                # TODO times
+        if terminated:
+            print("finished")
+            print(f"total rewards this ep:{total_reward}")
+            # TODO times
+
+        print(steps)
 
         # wrap expert data and steps in expert episode
         expert_episode = [expert_data, steps]
@@ -139,10 +159,10 @@ def train(env, hyperparameters, actor_model, critic_model):
 
     # load actor / critic
 
-    model.learn(total_timesteps=100000)
+    model.learn(total_timesteps=10000)
 
 
-def train(env, hyperparameters):
+def train_SNN(env, hyperparameters):
     model = SNNPPO(env=env, policy_class=FeedForwardNN, **hyperparameters)
 
     print(f"Training from scratch.", flush=True)
@@ -201,50 +221,47 @@ def test(env, actor_model):
 
 def main(args):
     hyperparameters = {
-        'timesteps_per_batch': 2048,
-        'max_timesteps_per_episode': 400,
+        'timesteps_per_batch': 256,
+        'max_timesteps_per_episode': 2048,
         'gamma': 0.99,
         'n_updates_per_iteration': 10,
-        'lr': 3e-4,
+        'lr': 0.001,
         'clip': 0.2,
-        'render': True,
         'render_every_i': 10
     }
 
-    sim = None
+    # timesteps_per_batch : batch_size
+    # max_timesteps_per_episode : n_steps
+    # n_updates_per_iteration : n_epochs
+    # render_every_i : stats_window_size
 
-    if args.sim == "kart":
-        sim = kart_sim
-    if args.sim == "empty":
-        sim = empty_sim
-    if args.sim == "empty_gym":
-        sim = empty_gym
-    if args.sim == "1D":
-        sim = oneD_sim
-    if args.sim == "turtlebot":
-        sim = turtlebot_sim
-    if args.sim == "turtlebot_calibrate":
-        sim = turtlebot_calibrate
 
-    assert sim is not None
+    #env = empty_gym.KartSim(render_mode="human", train=False, obs_type="LIDAR")
+
+    obs = [obs_types.DISTANCE,
+           obs_types.TARGET_ANGLE,]
+
+    kwargs = {
+        "obs_seq": obs,
+    }
 
     if args.mode == "play":
-        env = sim.KartSim(render_mode="human", train=False)
+        env = empty_gym_full.KartSim(render_mode="human", train=False, **kwargs)
         play(env=env, record=False)
     if args.mode == "one_iter":
-        env = sim.KartSim(render_mode=None, manual=False, train=True)
+        env = empty_gym.KartSim(render_mode=None, train=True, **kwargs)
         train_one_iter(env=env, hyperparameters=hyperparameters)
     if args.mode == "train":
-        env = sim.KartSim(render_mode=None, manual=False, train=True)
+        env = empty_gym_full.KartSim(render_mode=None, train=True, **kwargs)
         train(env=env, hyperparameters=hyperparameters, actor_model=args.actor_model, critic_model=args.critic_model)
     if args.mode == "snn":
-        env = sim.KartSim(render_mode=None, manual=False, train=True)
-        train(env=env, hyperparameters=hyperparameters)
+        env = empty_gym.KartSim(render_mode=None, train=True, **kwargs)
+        train_SNN(env=env, hyperparameters=hyperparameters)
     if args.mode == "optimize":
         # TODO implement evolutionary optimization
         pass
     if args.mode == "test":
-        env = sim.KartSim(render_mode="human", manual=True, train=False)
+        env = empty_gym_full.KartSim(render_mode="human", train=False, **kwargs)
         test(env, actor_model="ppo_actor.pth")
 
 
@@ -255,6 +272,17 @@ if __name__ == "__main__":
     # args.mode = "train"
 
     args.mode = "play"
-    args.sim = "empty_gym"
 
     main(args)
+
+
+# TODO ask about:
+# what each metric means and what it says
+# the combination of metrics, fluctuates in range... is at ... goes down at..
+# ask for recommandations
+
+# TODO there is not yet sufficient paths that show the agent
+# the validity of not hitting a wall
+# most runs will end in the agent hitting the wall
+
+# TODO make simple track

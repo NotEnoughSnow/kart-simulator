@@ -7,12 +7,21 @@ from stable_baselines3 import PPO
 # import supersuit as ss
 from stable_baselines3.ppo import MlpPolicy
 
-import kartSimulator.sim.empty_gym as empty_gym_sim
+import kartSimulator.sim.base_env as empty_gym_sim
+import kartSimulator.sim.simple_env as empty_gym_full_sim
 
+import kartSimulator.sim.observation_types as obs_types
 
-def train(env_fn, steps: int = 100, seed: int = 0, **env_kwargs):
+# Create a function to generate a unique directory name
+def create_unique_log_dir(base_log_dir, name_prefix):
+    log_dir = os.path.join(base_log_dir, name_prefix)
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    return log_dir
+
+def train(env_fn,logs_dir, type, steps: int = 100, seed: int = 0, **kwargs):
     # Train a single model to play as each agent in an AEC environment
-    env = env_fn.KartSim(render_mode=None, manual=False, train=True, obs_type="position")
+    env = env_fn.KartSim(render_mode=None, train=True, **kwargs)
 
     env.reset()
 
@@ -23,25 +32,43 @@ def train(env_fn, steps: int = 100, seed: int = 0, **env_kwargs):
 
     policy_kwargs = dict(full_std=True)
 
+    unique_log_dir = create_unique_log_dir(logs_dir, type)
+
+    model_args = {
+        'batch_size': 256,
+        'learning_rate': 0.001,
+        'ent_coef': 0.001,
+        #'use_sde': True,
+        #'policy_kwargs': policy_kwargs,
+        'tensorboard_log': unique_log_dir,
+
+    }
+
     # Model
     model = PPO(
         MlpPolicy,
         env,
-        policy_kwargs=policy_kwargs,
         verbose=2,
-        batch_size=256,
-        use_sde=True,
-        learning_rate=0.001,
-        ent_coef=0.001,
-        tensorboard_log="logs_300/",
     )
     #     model = RecurrentPPO("MlpLstmPolicy", env, verbose=1, batch_size=256,)
     #     model = DQN("MlpPolicy", env, verbose=1, batch_size=256,)
 
     # Train
-    model.learn(total_timesteps=steps, reset_num_timesteps=4000, progress_bar=True)
+    model.learn(total_timesteps=steps, reset_num_timesteps=2000, progress_bar=True)
 
-    model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
+    policy_count = 0
+    try:
+        latest_policy = max(
+            glob.glob(f"{type}*.zip"), key=os.path.getctime
+        )
+        print("found :", latest_policy)
+        policy_count = int(latest_policy[-5]) + 1
+
+
+    except ValueError:
+        policy_count = 1
+
+    model.save(f"{type}_{policy_count}")
 
     print("Model has been saved.")
 
@@ -60,7 +87,7 @@ def eval(env_fn, num_games: int = 100, render_mode: str = None, **env_kwargs):
 
     try:
         latest_policy = max(
-            glob.glob(f"{env.metadata['name']}*.zip"), key=os.path.getctime
+            glob.glob(f"{type}.zip"), key=os.path.getctime
         )
         print(env.metadata['name'])
 
@@ -112,18 +139,20 @@ def eval(env_fn, num_games: int = 100, render_mode: str = None, **env_kwargs):
     return avg_reward
 
 
-def simple_eval(env_fn):
-    env = env_fn.KartSim(render_mode="human", manual=False, train=False)
+def simple_eval(env_fn, type, **kwargs):
+    env = env_fn.KartSim(render_mode="human", train=False, **kwargs)
     print(env.metadata['name'])
 
     try:
         latest_policy = max(
-            glob.glob(f"{env.metadata['name']}*.zip"), key=os.path.getctime
+            glob.glob(f"{type}*.zip"), key=os.path.getctime
         )
 
     except ValueError:
         print("Policy not found.")
         exit(0)
+
+    print("loading :", latest_policy)
 
     model = PPO.load(latest_policy)
 
@@ -132,9 +161,9 @@ def simple_eval(env_fn):
     truncated = False
 
     while not terminated and not truncated:
-        action, _state = model.predict(obs, deterministic=False)
+        action, _state = model.predict(obs, deterministic=True)
 
-        print("actions", action)
+        # print("actions", action)
 
         obs, reward, terminated, truncated, _ = env.step(action)
 
@@ -143,7 +172,26 @@ def simple_eval(env_fn):
         #   obs = vec_env.reset()
 
 
-env_fn = empty_gym_sim
-train(env_fn, steps=300000, seed=0, render_mode=None)
+obs_list = [obs_types.DISTANCE,
+            obs_types.TARGET_ANGLE,]
+
+kwargs = {
+    "obs_seq": obs_list,
+}
+
+type = "T3"
+logs_dir = "logs_300"
+
+# change sim
+# - empty_gym_sim
+# - empty_gym_full_sim
+env_fn = empty_gym_full_sim
+
+
+#train(env_fn,logs_dir, type, steps=10000, **kwargs)
+simple_eval(env_fn, type, **kwargs)
+
+
+
 # eval(env_fn, num_games=10, render_mode='human', **env_kwargs)
-# simple_eval(env_fn)
+
