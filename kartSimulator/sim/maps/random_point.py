@@ -5,7 +5,7 @@ import pymunk
 from kartSimulator.sim.maps.map_manager import AbstractMap as abs_map
 
 
-class EmptyMap(abs_map):
+class RandomPoint(abs_map):
 
     def __init__(self, space, spawn_range, wc):
         self.space = space

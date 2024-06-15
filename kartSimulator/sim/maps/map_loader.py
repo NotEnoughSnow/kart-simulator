@@ -37,7 +37,7 @@ class MapLoader(abs_map):
 
         return static_lines
 
-    def create_goals(self):
+    def create_goals(self, mode):
         sectors_arr = utils.readTrackFile("kartSimulator\\sim\\resources\\" + self.sector_name)
 
         # sectors
