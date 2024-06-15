@@ -16,14 +16,15 @@ from kartSimulator.core.line_policy import L_Policy
 import kartSimulator.evolutionary.core as EO
 import kartSimulator.sim.observation_types as obs_types
 
+import kartSimulator.core.baselines as baselines
+
 import kartSimulator.sim.sim2D as kart_sim
 import kartSimulator.sim.empty as empty_sim
-import kartSimulator.sim.base_env as empty_gym
-import kartSimulator.sim.simple_env as empty_gym_full
+import kartSimulator.sim.base_env as base_env
+import kartSimulator.sim.simple_env as simple_env
 
 import kartSimulator.sim_turtlebot.sim_turtlebot as turtlebot_sim
 import kartSimulator.sim_turtlebot.calibrate as turtlebot_calibrate
-import kartSimulator.sim_1D as oneD_sim
 import pygame
 
 
@@ -47,13 +48,13 @@ def play(env, record, player_name="Amin", expert_ep_count=3):
 
             keys = pygame.key.get_pressed()
             # key controls
-            #if keys[pygame.K_w]:
+            # if keys[pygame.K_w]:
             #    action[3] = 1
-            #if keys[pygame.K_SPACE]:
+            # if keys[pygame.K_SPACE]:
             #    action[4] = 1
-            #if keys[pygame.K_d]:
+            # if keys[pygame.K_d]:
             #    action[1] = 1
-            #if keys[pygame.K_a]:
+            # if keys[pygame.K_a]:
             #    action[2] = 1
 
             if keys[pygame.K_w]:
@@ -69,10 +70,9 @@ def play(env, record, player_name="Amin", expert_ep_count=3):
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                     env.reset()
 
-
             obs, reward, terminated, truncated, _ = env.step(action)
 
-            #print(obs)
+            # print(obs)
 
             # build expert episode
             expert_data.append([steps, obs, action.numpy(), reward, terminated, truncated])
@@ -122,7 +122,6 @@ def write_file(expert_runs, player_name, filename="expert.hdf5"):
             episode_group = run_group.create_group(f"episode_{run_index}")
             episode_group.attrs['total_steps'] = episode_steps
 
-
             # Create datasets for timestep data
             for timestep_index, timestep in enumerate(episode_data):
                 timestep_group = episode_group.create_group(f"timestep_{timestep_index}")
@@ -134,32 +133,78 @@ def write_file(expert_runs, player_name, filename="expert.hdf5"):
                 timestep_group.create_dataset("truncated", data=timestep[5])
 
 
-
 def train_one_iter(env, hyperparameters):
     model = PPO_ONE(env=env, policy_class=FeedForwardNN)
 
     model.learn(total_timesteps=1)
 
 
-def train(env, hyperparameters, actor_model, critic_model):
-    model = PPO(env=env, policy_class=FeedForwardNN, **hyperparameters)
+def train(env, total_timesteps, alg, type, logs_dir, record_tb, iterations, hyperparameters, actor_model, critic_model):
+    if alg == "default":
+        model = PPO(env=env, policy_class=FeedForwardNN, **hyperparameters)
 
-    # Tries to load in an existing actor/critic model to continue training on
-    if actor_model != '' and critic_model != '':
-        print(f"Loading in {actor_model} and {critic_model}...", flush=True)
-        model.actor.load_state_dict(torch.load(actor_model))
-        model.critic.load_state_dict(torch.load(critic_model))
-        print(f"Successfully loaded.", flush=True)
-    elif actor_model != '' or critic_model != '':  # Don't train from scratch if user accidentally forgets actor/critic model
-        print(
-            f"Error: Either specify both actor/critic models or none at all. We don't want to accidentally override anything!")
-        sys.exit(0)
-    else:
-        print(f"Training from scratch.", flush=True)
+        # Tries to load in an existing actor/critic model to continue training on
+        if actor_model != '' and critic_model != '':
+            print(f"Loading in {actor_model} and {critic_model}...", flush=True)
+            model.actor.load_state_dict(torch.load(actor_model))
+            model.critic.load_state_dict(torch.load(critic_model))
+            print(f"Successfully loaded.", flush=True)
+        elif actor_model != '' or critic_model != '':  # Don't train from scratch if user accidentally forgets actor/critic model
+            print(
+                f"Error: Either specify both actor/critic models or none at all. We don't want to accidentally override anything!")
+            sys.exit(0)
+        else:
+            print(f"Training from scratch.", flush=True)
 
-    # load actor / critic
+        if iterations == "one":
+            model = PPO_ONE(env=env, policy_class=FeedForwardNN, **hyperparameters)
+            model.learn(total_timesteps=1)
+        else:
+            model.learn(total_timesteps=total_timesteps)
+    if alg == "baselines":
+        baselines.train(env, logs_dir, record_tb, type, steps=total_timesteps)
 
-    model.learn(total_timesteps=10000)
+
+def test(env, alg, type, deterministic, actor_model):
+    """
+        Tests the model.
+
+        Parameters:
+            env - the environment to test the policy on
+            actor_model - the actor model to load in
+
+        Return:
+            None
+    """
+    if alg == "default":
+        print(f"Testing {actor_model}", flush=True)
+
+        # If the actor model is not specified, then exit
+        if actor_model == '':
+            print(f"Didn't specify model file. Exiting.", flush=True)
+            sys.exit(0)
+
+        # Extract out dimensions of observation and action spaces
+        obs_dim = env.observation_space.shape[0]
+        act_dim = env.action_space.shape[0]
+
+        # Build our policy the same way we build our actor model in PPO
+        policy = FeedForwardNN(obs_dim, act_dim)
+
+        # Load in the actor model saved by the PPO algorithm
+        policy.load_state_dict(torch.load(actor_model))
+
+        # Evaluate our policy with a separate module, eval_policy, to demonstrate
+        # that once we are done training the model/policy with ppo.py, we no longer need
+        # ppo.py since it only contains the training algorithm. The model/policy itself exists
+        # independently as a binary file that can be loaded in with torch.
+
+        eval_policy.eval_policy(policy=policy, env=env, render=True)
+
+        # eval_policy.visualize(policy,env)
+
+    if alg == "baselines":
+        baselines.eval(env, type, deterministic)
 
 
 def train_SNN(env, hyperparameters):
@@ -170,53 +215,9 @@ def train_SNN(env, hyperparameters):
     model.learn(total_timesteps=100000)
 
 
-def train_line(env, hyperparameters, actor_model, critic_model):
-    model = L_Policy(env=env, policy_class=FeedForwardNN, **hyperparameters)
-
-    model.learn(total_timesteps=10000)
-
-
 def optimize():
     # TODO
     EO.run()
-
-
-def test(env, actor_model):
-    """
-    	Tests the model.
-
-    	Parameters:
-    		env - the environment to test the policy on
-    		actor_model - the actor model to load in
-
-    	Return:
-    		None
-    """
-    print(f"Testing {actor_model}", flush=True)
-
-    # If the actor model is not specified, then exit
-    if actor_model == '':
-        print(f"Didn't specify model file. Exiting.", flush=True)
-        sys.exit(0)
-
-    # Extract out dimensions of observation and action spaces
-    obs_dim = env.observation_space.shape[0]
-    act_dim = env.action_space.shape[0]
-
-    # Build our policy the same way we build our actor model in PPO
-    policy = FeedForwardNN(obs_dim, act_dim)
-
-    # Load in the actor model saved by the PPO algorithm
-    policy.load_state_dict(torch.load(actor_model))
-
-    # Evaluate our policy with a separate module, eval_policy, to demonstrate
-    # that once we are done training the model/policy with ppo.py, we no longer need
-    # ppo.py since it only contains the training algorithm. The model/policy itself exists
-    # independently as a binary file that can be loaded in with torch.
-
-    eval_policy.eval_policy(policy=policy, env=env, render=True)
-
-    # eval_policy.visualize(policy,env)
 
 
 def main(args):
@@ -235,34 +236,53 @@ def main(args):
     # n_updates_per_iteration : n_epochs
     # render_every_i : stats_window_size
 
-
-    #env = empty_gym.KartSim(render_mode="human", train=False, obs_type="LIDAR")
+    env_fn = simple_env
 
     obs = [obs_types.DISTANCE,
-           obs_types.TARGET_ANGLE,]
+           obs_types.TARGET_ANGLE, ]
 
     kwargs = {
         "obs_seq": obs,
     }
 
+    type = "T3"
+    logs_dir = "logs_300"
+    deterministic = True
+    total_timesteps = 300000
+
     if args.mode == "play":
-        env = empty_gym_full.KartSim(render_mode="human", train=False, **kwargs)
+        env = env_fn.KartSim(render_mode="human", train=False, **kwargs)
         play(env=env, record=False)
-    if args.mode == "one_iter":
-        env = empty_gym.KartSim(render_mode=None, train=True, **kwargs)
-        train_one_iter(env=env, hyperparameters=hyperparameters)
+
     if args.mode == "train":
-        env = empty_gym_full.KartSim(render_mode=None, train=True, **kwargs)
-        train(env=env, hyperparameters=hyperparameters, actor_model=args.actor_model, critic_model=args.critic_model)
+        env = env_fn.KartSim(render_mode=None, train=True, **kwargs)
+        train(env=env,
+              total_timesteps=total_timesteps,
+              alg=args.alg,
+              type=type,
+              logs_dir=logs_dir,
+              record_tb=False,
+              iterations="mul",
+              hyperparameters=hyperparameters,
+              actor_model=args.actor_model,
+              critic_model=args.critic_model,
+              )
+
+    if args.mode == "test":
+        env = env_fn.KartSim(render_mode="human", train=False, **kwargs)
+        test(env,
+             alg=args.alg,
+             type=type,
+             deterministic=deterministic,
+             actor_model="ppo_actor.pth"),
+
     if args.mode == "snn":
-        env = empty_gym.KartSim(render_mode=None, train=True, **kwargs)
+        env = env_fn.KartSim(render_mode=None, train=True, **kwargs)
         train_SNN(env=env, hyperparameters=hyperparameters)
+
     if args.mode == "optimize":
         # TODO implement evolutionary optimization
         pass
-    if args.mode == "test":
-        env = empty_gym_full.KartSim(render_mode="human", train=False, **kwargs)
-        test(env, actor_model="ppo_actor.pth")
 
 
 if __name__ == "__main__":
@@ -271,18 +291,8 @@ if __name__ == "__main__":
     # you can also directly set the args
     # args.mode = "train"
 
-    args.mode = "play"
+    args.mode = "train"
+
+    args.alg = "baselines"
 
     main(args)
-
-
-# TODO ask about:
-# what each metric means and what it says
-# the combination of metrics, fluctuates in range... is at ... goes down at..
-# ask for recommandations
-
-# TODO there is not yet sufficient paths that show the agent
-# the validity of not hitting a wall
-# most runs will end in the agent hitting the wall
-
-# TODO make simple track

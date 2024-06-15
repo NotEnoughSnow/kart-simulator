@@ -18,7 +18,7 @@ from kartSimulator.sim.utils import normalize_vec
 
 from kartSimulator.sim.maps.map_generator import MapGenerator
 from kartSimulator.sim.maps.map_loader import MapLoader
-from kartSimulator.sim.maps.empty_map import EmptyMap
+from kartSimulator.sim.maps.random_point import RandomPoint
 
 from kartSimulator.sim.ui_manager import UImanager
 
@@ -130,9 +130,9 @@ class KartSim(gym.Env):
         self.next_target_rew_act = 0
 
         self._create_ball()
-        self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
-        # self.map = MapGenerator(self._space, WORLD_CENTER, 50)
-        #self.map = EmptyMap(self._space, spawn_range=400, wc=WORLD_CENTER)
+        #self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
+        #self.map = MapGenerator(self._space, WORLD_CENTER, 50)
+        self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
 
         # map walls
         # sector initiation

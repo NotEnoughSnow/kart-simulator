@@ -241,7 +241,7 @@ class MapGenerator(abs_map):
 
         return static_lines
 
-    def create_goals(self):
+    def create_goals(self, mode):
         # FIXME make maps
         # sectors
         sensor_bodies = self.space.static_body
