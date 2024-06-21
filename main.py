@@ -8,13 +8,15 @@ import h5py
 
 from kartSimulator.core.arguments import get_args
 from kartSimulator.core import eval_policy
-from kartSimulator.core.network import FeedForwardNN
 from kartSimulator.core.ppo import PPO
 from kartSimulator.core.ppo_snn import SNNPPO
 from kartSimulator.core.ppo_one_iter import PPO as PPO_ONE
 from kartSimulator.core.line_policy import L_Policy
 import kartSimulator.evolutionary.core as EO
 import kartSimulator.sim.observation_types as obs_types
+
+from kartSimulator.core.actor_network import ActorNetwork
+from kartSimulator.core.standard_network import FFNetwork
 
 import kartSimulator.core.baselines as baselines
 
@@ -133,15 +135,9 @@ def write_file(expert_runs, player_name, filename="expert.hdf5"):
                 timestep_group.create_dataset("truncated", data=timestep[5])
 
 
-def train_one_iter(env, hyperparameters):
-    model = PPO_ONE(env=env, policy_class=FeedForwardNN)
-
-    model.learn(total_timesteps=1)
-
-
 def train(env, total_timesteps, alg, type, logs_dir, record_tb, iterations, hyperparameters, actor_model, critic_model):
     if alg == "default":
-        model = PPO(env=env, policy_class=FeedForwardNN, **hyperparameters)
+        model = PPO(env=env, location=type, **hyperparameters)
 
         # Tries to load in an existing actor/critic model to continue training on
         if actor_model != '' and critic_model != '':
@@ -157,7 +153,7 @@ def train(env, total_timesteps, alg, type, logs_dir, record_tb, iterations, hype
             print(f"Training from scratch.", flush=True)
 
         if iterations == "one":
-            model = PPO_ONE(env=env, policy_class=FeedForwardNN, **hyperparameters)
+            model = PPO_ONE(env=env, **hyperparameters)
             model.learn(total_timesteps=1)
         else:
             model.learn(total_timesteps=total_timesteps)
@@ -189,7 +185,8 @@ def test(env, alg, type, deterministic, actor_model):
         act_dim = env.action_space.shape[0]
 
         # Build our policy the same way we build our actor model in PPO
-        policy = FeedForwardNN(obs_dim, act_dim)
+        #policy = ActorNetwork(obs_dim, act_dim)
+        policy = FFNetwork(obs_dim, act_dim)
 
         # Load in the actor model saved by the PPO algorithm
         policy.load_state_dict(torch.load(actor_model))
@@ -208,7 +205,7 @@ def test(env, alg, type, deterministic, actor_model):
 
 
 def train_SNN(env, hyperparameters):
-    model = SNNPPO(env=env, policy_class=FeedForwardNN, **hyperparameters)
+    model = SNNPPO(env=env, **hyperparameters)
 
     print(f"Training from scratch.", flush=True)
 
@@ -293,6 +290,6 @@ if __name__ == "__main__":
 
     args.mode = "train"
 
-    args.alg = "baselines"
+    args.alg = "default"
 
     main(args)
