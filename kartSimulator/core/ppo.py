@@ -7,18 +7,28 @@ from torch import nn
 from torch.distributions import MultivariateNormal
 from torch.optim.adam import Adam
 from torch.utils.tensorboard import SummaryWriter
+import kartSimulator.sim.utils as utils
+
+from kartSimulator.core.actor_network import ActorNetwork
+from kartSimulator.core.critic_network import CriticNetwork
+from kartSimulator.core.standard_network import FFNetwork
 
 class PPO:
 
 
 
-    def __init__(self, policy_class, env, **hyperparameters):
+    def __init__(self, env, location, **hyperparameters):
 
         # Make sure the environment is compatible with our code
         assert (type(env.observation_space) == gym.spaces.Box)
         assert (type(env.action_space) == gym.spaces.Box)
 
-        self.writer = SummaryWriter('ppo_logs_100')
+        base_dir = 'ppo_logs_100'
+        experiment_type = location
+
+        run_directory = utils.get_next_run_directory(base_dir, experiment_type)
+
+        self.writer = SummaryWriter(run_directory)
 
         # Initialize hyperparameters for training with PPO
         self._init_hyperparameters(hyperparameters)
@@ -31,8 +41,11 @@ class PPO:
               f"action shape :{env.observation_space.shape}")
 
         # Initialize actor and critic networks
-        self.actor = policy_class(self.obs_dim, self.act_dim)  # ALG STEP 1
-        self.critic = policy_class(self.obs_dim, 1)
+        #self.actor = ActorNetwork(self.obs_dim, self.act_dim)  # ALG STEP 1
+        #self.critic = CriticNetwork(self.obs_dim, 1)
+
+        self.actor = FFNetwork(self.obs_dim, self.act_dim)  # ALG STEP 1
+        self.critic = FFNetwork(self.obs_dim, 1)
 
         # Initialize optimizers for actor and critic
         self.actor_optim = Adam(self.actor.parameters(), lr=self.lr)
@@ -80,7 +93,7 @@ class PPO:
             self.logger['i_so_far'] = i_so_far
 
             # Calculate advantage at k-th iteration
-            V, _ = self.evaluate(batch_obs, batch_acts)
+            V, _, _ = self.evaluate(batch_obs, batch_acts)
             A_k = batch_rtgs - V.detach()
 
             # One of the only tricks I use that isn't in the pseudocode. Normalizing advantages
@@ -89,12 +102,13 @@ class PPO:
             # solving some environments was too unstable without it.
             A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
 
-
+            explained_variance = 1 - torch.var(batch_rtgs - V) / torch.var(batch_rtgs)
+            self.writer.add_scalar('train/explained_variance', explained_variance, self.logger['t_so_far'])
 
             # This is the loop where we update our network for some n epochs
             for _ in range(self.n_updates_per_iteration):
                 # Calculate V_phi and pi_theta(a_t | s_t)
-                V, curr_log_probs = self.evaluate(batch_obs, batch_acts)
+                V, curr_log_probs, dist = self.evaluate(batch_obs, batch_acts)
 
                 # Calculate the ratio pi_theta(a_t | s_t) / pi_theta_k(a_t | s_t)
                 # NOTE: we just subtract the logs, which is the same as
@@ -104,6 +118,8 @@ class PPO:
                 # https://cs.stackexchange.com/questions/70518/why-do-we-use-the-log-in-gradient-based-reinforcement-algorithms
                 # TL;DR makes gradient ascent easier behind the scenes.
                 ratios = torch.exp(curr_log_probs - batch_log_probs)
+
+                approx_kl = (batch_log_probs - curr_log_probs).mean()
 
                 # Calculate surrogate losses.
                 surr1 = ratios * A_k
@@ -116,6 +132,9 @@ class PPO:
                 actor_loss = (-torch.min(surr1, surr2)).mean()
                 critic_loss = nn.MSELoss()(V, batch_rtgs)
 
+                clipped = (ratios < 1 - self.clip) | (ratios > 1 + self.clip)
+                clip_fraction = torch.mean(clipped.float())
+
                 # Calculate gradients and perform backward propagation for actor network
                 self.actor_optim.zero_grad()
                 actor_loss.backward(retain_graph=True)
@@ -125,6 +144,20 @@ class PPO:
                 self.critic_optim.zero_grad()
                 critic_loss.backward()
                 self.critic_optim.step()
+
+                # calculating metrics
+                loss = actor_loss + critic_loss
+                policy_gradient_loss = actor_loss
+                value_loss = critic_loss
+
+
+                self.writer.add_scalar('train/clip_range', self.clip, self.logger['t_so_far'])
+                self.writer.add_scalar('train/clip_fraction', clip_fraction, self.logger['t_so_far'])
+                self.writer.add_scalar('train/approx_kl', approx_kl, self.logger['t_so_far'])
+                self.writer.add_scalar('train/policy_gradient_loss', policy_gradient_loss, self.logger['t_so_far'])
+                self.writer.add_scalar('train/value_loss', value_loss, self.logger['t_so_far'])
+                self.writer.add_scalar('train/loss', loss, self.logger['t_so_far'])
+
 
                 # Log actor loss
                 self.logger['actor_losses'].append(actor_loss.detach())
@@ -181,7 +214,7 @@ class PPO:
                 # FIXME actions are not in range(-1,1)
                 action, log_prob = self.get_action(obs)
 
-                obs, rew, terminated, truncated, _ = self.env.step(action)
+                obs, rew, terminated, truncated, info = self.env.step(action)
 
 
                 # Track recent reward, action, and action log probability
@@ -190,6 +223,9 @@ class PPO:
                 batch_log_probs.append(log_prob)
 
                 #print(rew)
+
+                self.writer.add_scalar('time/fps', info["fps"], self.logger['t_so_far'])
+
 
                 # If the environment tells us the episode is terminated, break
                 if terminated or truncated:
@@ -204,14 +240,13 @@ class PPO:
 
 
             self.writer.add_scalar('rollout/ep_rew_mean', ep_rew_mean, self.logger['t_so_far'])
+            self.writer.add_scalar('rollout/ep_len_mean', (ep_t + 1), self.logger['t_so_far'])
 
         # Reshape data as tensors in the shape specified in function description, before returning
         batch_obs = torch.tensor(np.array(batch_obs), dtype=torch.float)
         batch_acts = torch.tensor(np.array(batch_acts), dtype=torch.float)
         batch_log_probs = torch.tensor(np.array(batch_log_probs), dtype=torch.float)
         batch_rtgs = self.compute_rtgs(batch_rews)  # ALG STEP 4
-
-
 
 
         # Log the episodic returns and episodic lengths in this batch.
@@ -242,13 +277,27 @@ class PPO:
 
         # Calculate the log probabilities of batch actions using most recent actor network.
         # This segment of code is similar to that in get_action()
+        #mean, log_std = self.actor(batch_obs)
+        #std = log_std.exp()
+
+        #cov_mat = torch.diag_embed(std ** 2)
+
         mean = self.actor(batch_obs)
-        dist = MultivariateNormal(mean, self.cov_mat)
+        cov_mat = self.cov_mat
+
+        dist = MultivariateNormal(mean, cov_mat)
+
+        entropy_loss = -dist.entropy().mean()
+
+        self.writer.add_scalar('train/entropy_loss', entropy_loss, self.logger['t_so_far'])
+        #self.writer.add_scalar('train/std', std.mean(), self.logger['t_so_far'])
+
+
         log_probs = dist.log_prob(batch_acts)
 
         # Return the value vector V of each observation in the batch
         # and log probabilities log_probs of each action in the batch
-        return V, log_probs
+        return V, log_probs, dist
 
     def compute_rtgs(self, batch_rews):
         """
@@ -292,12 +341,17 @@ class PPO:
                 log_prob - the log probability of the selected action in the distribution
         """
         # Query the actor network for a mean action
-        mean = self.actor(obs)
+        #mean, log_std = self.actor(obs)
+        #std = log_std.exp()
 
-        # Create a distribution with the mean action and std from the covariance matrix above.
-        # For more information on how this distribution works, check out Andrew Ng's lecture on it:
-        # https://www.youtube.com/watch?v=JjB58InuTqM
-        dist = MultivariateNormal(mean, self.cov_mat)
+        #cov_mat = torch.diag_embed(std ** 2)
+
+        mean = self.actor(obs)
+        cov_mat = self.cov_mat
+
+        # Create a distribution with the mean action and std. We use torch.diag to create
+        # a diagonal covariance matrix from the std.
+        dist = MultivariateNormal(mean, cov_mat)
 
         # Sample an action from the distribution
         action = dist.sample()

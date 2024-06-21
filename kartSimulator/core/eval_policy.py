@@ -69,7 +69,10 @@ def rollout(policy, env, render):
             t += 1
 
             # Query deterministic action from policy and run it
+            #action, _ = policy(obs)
+
             action = policy(obs).detach().numpy()
+
             obs, rew, terminated, truncated, _ = env.step(action)
 
             # Sum all episodic rewards as we go along

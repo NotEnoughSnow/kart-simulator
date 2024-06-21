@@ -35,7 +35,7 @@ class RandomPoint(abs_map):
             random_goal = [self.wc[0] + goal_x, self.wc[1] + goal_y]
 
         if mode == "static":
-            random_goal = [self.wc[0] - 200, self.wc[1] - 200]
+            random_goal = [self.wc[0] + 200, self.wc[1] - 200]
 
 
         # random_goal = [600, 600]
