@@ -1,5 +1,19 @@
 import ast
 import csv
+import os
+
+def get_next_run_directory(base_dir, experiment_type):
+    """
+    Returns the next run directory path for the given experiment type
+    by incrementing the run number.
+    """
+    run_number = 1
+    while True:
+        run_path = os.path.join(base_dir, experiment_type, f'PPO_{run_number}')
+        if not os.path.exists(run_path):
+            os.makedirs(run_path)
+            return run_path
+        run_number += 1
 
 
 def readTrackFile(name):

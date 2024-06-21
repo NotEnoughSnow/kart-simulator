@@ -7,12 +7,14 @@ from torch import nn
 from torch.distributions import MultivariateNormal
 from torch.optim.adam import Adam
 
+from kartSimulator.core.actor_network import ActorNetwork
+from kartSimulator.core.critic_network import CriticNetwork
 
 class PPO:
 
 
 
-    def __init__(self, policy_class, env, **hyperparameters):
+    def __init__(self, env, **hyperparameters):
 
         # Make sure the environment is compatible with our code
         assert (type(env.observation_space) == gym.spaces.Box)
@@ -29,8 +31,8 @@ class PPO:
               f"action shape :{env.observation_space.shape}")
 
         # Initialize actor and critic networks
-        self.actor = policy_class(self.obs_dim, self.act_dim)
-        self.critic = policy_class(self.obs_dim, 1)
+        self.actor = ActorNetwork(self.obs_dim, self.act_dim)
+        self.critic = CriticNetwork(self.obs_dim, 1)
 
         # Initialize optimizers for actor and critic
         self.actor_optim = Adam(self.actor.parameters(), lr=self.lr)
