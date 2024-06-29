@@ -158,7 +158,7 @@ class KartSim(gym.Env):
     ):
         super().reset()
 
-        directions, _, position = self.map.reset(self._playerShape)
+        directions, _, position = self.map.reset([self._playerShape])
 
         self._current_episode_time = 0
 
@@ -172,6 +172,8 @@ class KartSim(gym.Env):
         return observation, {}
 
     def step(self, action: Union[np.ndarray, int]):
+
+        self._clock.tick()
 
         # if i assign this to FPS, both of them become 0
         # what?
@@ -234,6 +236,7 @@ class KartSim(gym.Env):
             self.render(self.render_mode)
 
         self.info["fps"] = self._clock.get_fps()
+        self.info["position"] = self._playerBody.position
 
         return state, step_reward, terminated, truncated, self.info
 
