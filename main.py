@@ -222,10 +222,13 @@ def main(args):
         'timesteps_per_batch': 256,
         'max_timesteps_per_episode': 2048,
         'gamma': 0.99,
+        'ent_coef': 0.001,
         'n_updates_per_iteration': 10,
         'lr': 0.001,
         'clip': 0.2,
-        'render_every_i': 10
+        'max_grad_norm': 0.5,
+        'render_every_i': 10,
+        'target_kl': None,
     }
 
     # timesteps_per_batch : batch_size

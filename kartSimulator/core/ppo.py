@@ -93,7 +93,7 @@ class PPO:
             self.logger['i_so_far'] = i_so_far
 
             # Calculate advantage at k-th iteration
-            V, _, _ = self.evaluate(batch_obs, batch_acts)
+            V, _, _, _ = self.evaluate(batch_obs, batch_acts)
             A_k = batch_rtgs - V.detach()
 
             # One of the only tricks I use that isn't in the pseudocode. Normalizing advantages
@@ -108,7 +108,7 @@ class PPO:
             # This is the loop where we update our network for some n epochs
             for _ in range(self.n_updates_per_iteration):
                 # Calculate V_phi and pi_theta(a_t | s_t)
-                V, curr_log_probs, dist = self.evaluate(batch_obs, batch_acts)
+                V, curr_log_probs, dist, entropy_loss = self.evaluate(batch_obs, batch_acts)
 
                 # Calculate the ratio pi_theta(a_t | s_t) / pi_theta_k(a_t | s_t)
                 # NOTE: we just subtract the logs, which is the same as
@@ -130,6 +130,7 @@ class PPO:
                 # the performance function, but Adam minimizes the loss. So minimizing the negative
                 # performance function maximizes it.
                 actor_loss = (-torch.min(surr1, surr2)).mean()
+                actor_loss = actor_loss + self.ent_coef * entropy_loss
                 critic_loss = nn.MSELoss()(V, batch_rtgs)
 
                 clipped = (ratios < 1 - self.clip) | (ratios > 1 + self.clip)
@@ -138,11 +139,13 @@ class PPO:
                 # Calculate gradients and perform backward propagation for actor network
                 self.actor_optim.zero_grad()
                 actor_loss.backward(retain_graph=True)
+                nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
                 self.actor_optim.step()
 
                 # Calculate gradients and perform backward propagation for critic network
                 self.critic_optim.zero_grad()
                 critic_loss.backward()
+                nn.utils.clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
                 self.critic_optim.step()
 
                 # calculating metrics
@@ -297,7 +300,7 @@ class PPO:
 
         # Return the value vector V of each observation in the batch
         # and log probabilities log_probs of each action in the batch
-        return V, log_probs, dist
+        return V, log_probs, dist, entropy_loss
 
     def compute_rtgs(self, batch_rews):
         """
@@ -381,9 +384,11 @@ class PPO:
         self.lr = 0.005  # Learning rate of actor optimizer
         self.gamma = 0.95  # Discount factor to be applied when calculating Rewards-To-Go
         self.clip = 0.2  # Recommended 0.2, helps define the threshold to clip the ratio during SGA
+        self.ent_coef = 0
+        self.max_grad_norm = 0.5
+        self.target_kl = None
 
         # Miscellaneous parameters
-        self.render = True  # If we should render during rollout
         self.render_every_i = 10  # Only render every n iterations
         self.save_freq = 10  # How often we save in number of iterations
         self.seed = None  # Sets the seed of our program, used for reproducibility of results
