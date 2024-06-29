@@ -22,6 +22,8 @@ from kartSimulator.sim.maps.random_point import RandomPoint
 
 from kartSimulator.sim.ui_manager import UImanager
 
+from kartSimulator.core.agent import Agent
+
 PPM = 100
 
 BOT_SIZE = 0.192
@@ -49,14 +51,13 @@ window_length = 1000
 WORLD_CENTER = [500, 500]
 
 
+
 class KartSim(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 60, "name": "kart2D"}
 
-    def __init__(self, render_mode=None, train=False, obs_seq=[]):
+    def __init__(self, num_agents=1, obs_seq=[]):
 
         print("loaded env:", self.metadata["name"])
-
-        self.render_mode = render_mode
 
         self.obs_seq = obs_seq
         self.obs_len = 0
@@ -64,25 +65,21 @@ class KartSim(gym.Env):
         for item in obs_seq:
             self.obs_len += item[1]
 
-        print(self.obs_len)
-
         speed = 1.0
-
-        if not train:
-            speed = 1.0
 
         print("game speed:", speed)
 
-        if render_mode == "human":
-            pygame.init()
-            pygame.display.init()
-            self._window_surface = pygame.display.set_mode((window_width, window_length))
+        pygame.init()
+        pygame.display.init()
 
-            self.ui_manager = UImanager(self._window_surface, window_width, window_length)
 
-            self._draw_options = pymunk.pygame_util.DrawOptions(self._window_surface)
+        self.screen = pygame.display.set_mode((window_width, window_length))
+        self.surface = pygame.Surface((window_width, window_length))
 
-            # clock
+        self.ui_manager = UImanager(self.screen, window_width, window_length)
+
+        self._draw_options = pymunk.pygame_util.DrawOptions(self.screen)
+
 
         self._clock = pygame.time.Clock()
 
@@ -96,13 +93,9 @@ class KartSim(gym.Env):
         self._dt = speed / 60.0
         self._current_episode_time = 0
 
-        self._background = pygame.Surface((window_width, window_length))
-        self._background.fill(pygame.Color("black"))
+        self.surface = pygame.Surface((window_width, window_length))
+        self.surface.fill(pygame.Color("black"))
 
-        self._playerShape = None
-        self._playerBody = None
-        self.position = (0, 0)
-        self.velocity = 0
         self.forward_direction = 0
         # FIXME obs returned before calculating the actual distance
         self.distance_to_next_points = -MAX_TARGET_DISTANCE
@@ -130,9 +123,15 @@ class KartSim(gym.Env):
         self.next_target_rew = 0
         self.next_target_rew_act = 0
 
-        self._create_ball()
-        #self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
-        #self.map = MapGenerator(self._space, WORLD_CENTER, 50)
+        self.agent_array = []
+        self.agent_count = num_agents
+
+        for i in range(num_agents):
+            self.agent_array.append(Agent(self._space, "replay"))
+
+
+        # self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
+        # self.map = MapGenerator(self._space, WORLD_CENTER, 50)
         self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
 
         # map walls
@@ -140,12 +139,18 @@ class KartSim(gym.Env):
         # TODO part of the world class
         self._init_world()
         self._init_sectors(self._sector_midpoints)
-        self._init_player(self.initial_pos)
+
+        position_array = []
+        for i in range(len(self.get_agents())):
+            position_array.append(self.initial_pos)
+
+        print(np.shape(position_array))
+        self._init_players(position_array)
 
         self.norm_dist = 1
         self.norm_dist_vec = [1, 1]
 
-        self.goal_pos = [0,0]
+        self.goal_pos = [0, 0]
         self.angle_to_target = 0
 
         self.info = {}
@@ -157,64 +162,77 @@ class KartSim(gym.Env):
             options: Optional[dict] = None,
     ):
         super().reset()
+        player_shapes = []
+        for agent in self.get_agents():
+            player_shapes.append(agent.playerShape)
 
-        directions, _, position = self.map.reset(self._playerShape)
+        directions, _, position = self.map.reset(player_shapes)
+
+        position_array = []
+        for i in range(len(self.get_agents())):
+            position_array.append(position)
 
         self._current_episode_time = 0
 
         self._init_world()
         self._init_sectors(self._sector_midpoints)
-        self._init_player(position)
 
-        observation = self.observation()
+        self._init_players(position_array)
+
+        # FIXME implement observations
+        #observation = self.observation()
+        observation = None
 
         # return self.step(None)[0], {}
         return observation, {}
 
-    def step(self, action: Union[np.ndarray, int]):
+    def step(self, position_array: Union[np.ndarray, int]):
 
-        # if i assign this to FPS, both of them become 0
-        # what?
-        # self.FPS = self._clock.get_fps()
-        # print("what ", self._clock.get_fps())
+        # FIXME restore
+        #pstart = self._playerBody.position
 
-        up_value = 0
-        down_value = 0
-        left_value = 0
-        right_value = 0
+        assert len(position_array) == self.agent_count
 
-        #print("first step :", self._playerBody.position)
-        pstart = self._playerBody.position
+        agents = self.get_agents()
 
-        if action is not None:
-            go_up_value = self._go_up_down(action[0])
-            go_left_value = self._go_left_right(action[1])
+        # need to iterate on all actions for all agents
+        for i in range(len(agents)):
 
-        self.go_up_value = None
-        self.go_down_value = None
-        self.go_left_value = None
-        self.go_right_value = None
+
+            up_value = 0
+            down_value = 0
+            left_value = 0
+            right_value = 0
+
+            agents[i].playerBody.position = (position_array[i][0], position_array[i][1])
+
+
+            agents[i].vars["go_up_value"] = None
+            agents[i].vars["go_down_value"] = None
+            agents[i].vars["go_left_value"] = None
+            agents[i].vars["go_right_value"] = None
+
+        # TODO stopping speed
+        # TODO max speed
+        agents[i].vars["velocity"] = agents[i].playerBody.velocity.__abs__()
+        
+        agents[i].playerBody.velocity /= 1.005
 
         # TODO step based on FPS
         self._space.step(self._dt)
         # TODO lap and time counters
 
-        #print("second step :", self._playerBody.position)
-        pend = self._playerBody.position
-
-        self.velocity = self._playerBody.velocity.__abs__()
-
-        self._playerBody.velocity /= 1.005
-
-        # TODO stopping speed
-        # TODO max speed
+        # FIXME restore
+        # print("second step :", self._playerBody.position)
+        #pend = self._playerBody.position
 
         step_reward = 0
         terminated = False
         truncated = False
 
-        if action is not None:
-            step_reward, terminated, truncated = self.reward_function(pstart, pend)
+        # FIXME restore
+        #if action is not None:
+        #    step_reward, terminated, truncated = self.reward_function(pstart, pend)
 
         self._current_episode_time += 1
 
@@ -223,19 +241,25 @@ class KartSim(gym.Env):
         # (shape[0][0] + shape[1][0]) / 2
 
         # observation
-        state = self.observation()
+        # FIXME implement observations
+        #state = self.observation()
+        state = None
 
         # truncation
         if self._current_episode_time > 300:
             self.out_of_track = True
 
-
-        if self.render_mode == "human":
-            self.render(self.render_mode)
+        self.render(self.render_mode)
 
         self.info["fps"] = self._clock.get_fps()
 
+        if self.next_sector_name is not None:
+            self.goal_pos = self.sector_info[self.next_sector_name][1]
+
         return state, step_reward, terminated, truncated, self.info
+
+    def get_agents(self):
+        return self.agent_array
 
     def potential_curve(self, x):
         # If x=0, then pot is maximal
@@ -255,9 +279,7 @@ class KartSim(gym.Env):
         terminated = False
         truncated = False
 
-
         if self.next_sector_name is not None:
-
             self.goal_pos = self.sector_info[self.next_sector_name][1]
 
             distance_to_next_points_vec = pend - self.goal_pos
@@ -267,19 +289,19 @@ class KartSim(gym.Env):
             self.distance_to_next_points = self.distance(pend, self.goal_pos)
 
             target_number = int(self.next_sector_name[-1])
-            self.next_target_rew = 2000/(self.distance_to_next_points+50) - 10
+            self.next_target_rew = 2000 / (self.distance_to_next_points + 50) - 10
 
             initial_potential = self.potential_curve(self.distance(self.goal_pos, pstart))
             final_potential = self.potential_curve(self.distance(self.goal_pos, pend))
             self.next_target_rew_act = final_potential - initial_potential
 
-            #initial_potential = self.potential_curve(self.distance(goal, pstart))
+            # initial_potential = self.potential_curve(self.distance(goal, pstart))
 
         # penelty for existing
         # self.reward -= 1
 
         # reward for closing distance to sector medians
-        #self.reward += self.next_target_rew
+        # self.reward += self.next_target_rew
         self.reward += self.next_target_rew_act
 
         # TODO assign sector and lap based rewards
@@ -288,7 +310,7 @@ class KartSim(gym.Env):
         if self.finish:
             terminated = True
             self.reward += 500
-            #step_reward = self.reward
+            # step_reward = self.reward
 
         # if collide with track then terminate
         if self.out_of_track:
@@ -296,34 +318,55 @@ class KartSim(gym.Env):
             self.reward += 0
             step_reward = self.reward
 
-        #step_reward = self.reward
+        # step_reward = self.reward
 
         return step_reward, terminated, truncated
 
     def render(self, mode):
 
+
         # TODO time pocket
-        pygame.display.update()
-        # pygame.display.flip()
+        #pygame.display.update()
+
 
         time_delta = self._clock.tick(60)
-        pygame.display.set_caption("fps: " + str(self._clock.get_fps()))
+        pygame.display.set_caption("timestep: " + str(self._current_episode_time))
 
         # resetting screen
-        self._window_surface.blit(self._background, (0, 0))
+        self.screen.blit(self.surface, (0, 0))
         # self._window_surface.fill(pygame.Color("black"))
+        self.surface.fill(pygame.Color("black"))
 
         # drawing debug objects
-        self._space.debug_draw(self._draw_options)
+        #self._space.debug_draw(self._draw_options)
 
         # update ui
-        self.update_ui(time_delta)
+        # TODO figure out which ui stays
+        #self.update_ui(time_delta)
 
         # updating events
         self._process_events()
 
+        self.draw_agents()
+        self.draw_goal()
+
+        pygame.display.flip()
+
+
+
+
+
+    def draw_agents(self):
+        agents = self.get_agents()
+
+        for agent in agents:
+            pygame.draw.circle(self.surface, agent.color, agent.playerBody.position, agent.radius, 1)
+
+    def draw_goal(self):
+        pygame.draw.circle(self.surface, (255, 255, 0, 255), self.goal_pos, 20, 1)
+
     def update_ui(self, time_delta):
-        self.ui_manager.update(time_delta, self._background)
+        self.ui_manager.update(time_delta, self.surface)
 
         self.ui_manager.draw_vision_cone(self._playerBody)
 
@@ -333,28 +376,28 @@ class KartSim(gym.Env):
                                       self.steer_right_value,
                                       self.steer_left_value)
 
-        self.ui_manager.add_ui_text("next target", self.next_sector_name, "")
-        self.ui_manager.add_ui_text("distance to target", self.distance_to_next_points, ".4f")
-        self.ui_manager.add_ui_text("norm dist", self.norm_dist, ".3f")
-        self.ui_manager.add_ui_text("total reward", self.reward, ".3f")
-        self.ui_manager.add_ui_text("act.rew from target", self.next_target_rew_act, ".3f")
-        self.ui_manager.add_ui_text("dist.rew from target", self.next_target_rew, ".4f")
-        self.ui_manager.add_ui_text("angle to target", self.angle_to_target, ".3f")
+        # TODO remove or replace
+        #self.ui_manager.add_ui_text("next target", self.next_sector_name, "")
+        #self.ui_manager.add_ui_text("distance to target", self.distance_to_next_points, ".4f")
+        #self.ui_manager.add_ui_text("norm dist", self.norm_dist, ".3f")
+        #self.ui_manager.add_ui_text("total reward", self.reward, ".3f")
+        #self.ui_manager.add_ui_text("act.rew from target", self.next_target_rew_act, ".3f")
+        #self.ui_manager.add_ui_text("dist.rew from target", self.next_target_rew, ".4f")
+        #self.ui_manager.add_ui_text("angle to target", self.angle_to_target, ".3f")
 
-        self.ui_manager.add_ui_text("time in sec", (pygame.time.get_ticks() / 1000), ".2f")
-        self.ui_manager.add_ui_text("fps", self._clock.get_fps(), ".2f")
-        self.ui_manager.add_ui_text("steps", self._current_episode_time, ".2f")
+        #self.ui_manager.add_ui_text("time in sec", (pygame.time.get_ticks() / 1000), ".2f")
+        #self.ui_manager.add_ui_text("fps", self._clock.get_fps(), ".2f")
+        #self.ui_manager.add_ui_text("steps", self._current_episode_time, ".2f")
 
-        self.ui_manager.add_ui_text("velocity", self.velocity, ".2f")
-        self.ui_manager.add_ui_text("position x", self._playerBody.position[0], ".0f")
-        self.ui_manager.add_ui_text("position y", self._playerBody.position[1], ".0f")
+        #self.ui_manager.add_ui_text("velocity", self.velocity, ".2f")
+        #self.ui_manager.add_ui_text("position x", self._playerBody.position[0], ".0f")
+        #self.ui_manager.add_ui_text("position y", self._playerBody.position[1], ".0f")
 
-        self.ui_manager.add_ui_text("norm dist vec x", self.norm_dist_vec[0], ".3f")
-        self.ui_manager.add_ui_text("norm dist vec y", self.norm_dist_vec[1], ".3f")
+        #self.ui_manager.add_ui_text("norm dist vec x", self.norm_dist_vec[0], ".3f")
+        #self.ui_manager.add_ui_text("norm dist vec y", self.norm_dist_vec[1], ".3f")
 
     def close(self):
-        if self.render_mode is not None:
-            pygame.display.quit()
+        pygame.display.quit()
         pygame.quit()
 
     def _process_events(self) -> None:
@@ -365,7 +408,7 @@ class KartSim(gym.Env):
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.close()
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_p:
-                pygame.image.save(self._window_surface, "screenshots/karts.png")
+                pygame.image.save(self.screen, "screenshots/karts.png")
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
                 pass
 
@@ -412,19 +455,13 @@ class KartSim(gym.Env):
         self._add_sectors()
         self.out_of_track = False
 
-    def _init_player(self, position):
-        self.break_value = 0
-        self.accel_value = 0
-        self.steer_right_value = 0
-        self.steer_left_value = 0
+    def _init_players(self, position_array):
 
-        self.reward = 0
-        self.prev_reward = 0
+        agents = self.get_agents()
 
-        # self._playerBody.position = self.initial_pos
-        self._playerBody.position = position
+        for i in range(len(agents)):
+            agents[i].init_vars(position_array[i])
 
-        self._playerBody.velocity = 0, 0
 
     def _init_sectors(self, sector_midpoints):
         self.finish = False
@@ -437,7 +474,7 @@ class KartSim(gym.Env):
             self.sector_info["sector " + str(i)].append(0)
             self.sector_info["sector " + str(i)].append(sector_midpoints[i - 1])
 
-    def _go_up_down(self, value):
+    def _go_up_down(self, agent, value):
         """acceleration control
 
         :param value: (0..1)
@@ -450,11 +487,11 @@ class KartSim(gym.Env):
         if value == 0:
             return value
         else:
-            if self.velocity < MAX_VELOCITY:
-                self._playerBody.apply_impulse_at_local_point((0, 2 * value), (0, 0))
+            if agent.vars["velocity"] < MAX_VELOCITY:
+                agent.playerBody.apply_impulse_at_local_point((0, 2 * value), (0, 0))
             return value
 
-    def _go_left_right(self, value):
+    def _go_left_right(self, agent, value):
         """acceleration control
 
         :param value: (0..1)
@@ -467,8 +504,8 @@ class KartSim(gym.Env):
         if value == 0:
             return value
         else:
-            if self.velocity < MAX_VELOCITY:
-                self._playerBody.apply_impulse_at_local_point((2 * value, 0), (0, 0))
+            if agent.vars["velocity"] < MAX_VELOCITY:
+                agent.playerBody.apply_impulse_at_local_point((2 * value, 0), (0, 0))
             return value
 
     def _create_ball(self) -> None:
@@ -567,7 +604,7 @@ class KartSim(gym.Env):
 
         y = self.goal_pos[1] - self._playerBody.position[1]
 
-        self.angle_to_target = math.atan2(y,-x)
+        self.angle_to_target = math.atan2(y, -x)
 
         # assign rotations
         rotation = [self.angle_to_target]

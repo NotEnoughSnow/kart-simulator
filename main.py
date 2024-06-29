@@ -15,6 +15,8 @@ from kartSimulator.core.line_policy import L_Policy
 import kartSimulator.evolutionary.core as EO
 import kartSimulator.sim.observation_types as obs_types
 
+from kartSimulator.core.replay_ghosts import ReplayGhosts
+
 from kartSimulator.core.actor_network import ActorNetwork
 from kartSimulator.core.standard_network import FFNetwork
 
@@ -24,6 +26,7 @@ import kartSimulator.sim.sim2D as kart_sim
 import kartSimulator.sim.empty as empty_sim
 import kartSimulator.sim.base_env as base_env
 import kartSimulator.sim.simple_env as simple_env
+
 
 import kartSimulator.sim_turtlebot.sim_turtlebot as turtlebot_sim
 import kartSimulator.sim_turtlebot.calibrate as turtlebot_calibrate
@@ -135,9 +138,9 @@ def write_file(expert_runs, player_name, filename="expert.hdf5"):
                 timestep_group.create_dataset("truncated", data=timestep[5])
 
 
-def train(env, total_timesteps, alg, type, logs_dir, record_tb, iterations, hyperparameters, actor_model, critic_model):
+def train(env, total_timesteps, alg, type, logs_dir, record_tb, iterations, hyperparameters, actor_model, critic_model, record):
     if alg == "default":
-        model = PPO(env=env, location=type, **hyperparameters)
+        model = PPO(env=env, record=record, location=type, **hyperparameters)
 
         # Tries to load in an existing actor/critic model to continue training on
         if actor_model != '' and critic_model != '':
@@ -202,6 +205,8 @@ def test(env, alg, type, deterministic, actor_model):
 
     if alg == "baselines":
         baselines.eval(env, type, deterministic)
+def replay(replay_dir, replay_ep=None):
+    replay = ReplayGhosts(replay_dir, replay_ep)
 
 
 def train_SNN(env, hyperparameters):
@@ -219,11 +224,11 @@ def optimize():
 
 def main(args):
     hyperparameters = {
-        'timesteps_per_batch': 256,
-        'max_timesteps_per_episode': 2048,
+        'timesteps_per_batch': 4800,
+        'max_timesteps_per_episode': 700,
         'gamma': 0.99,
         'n_updates_per_iteration': 10,
-        'lr': 0.001,
+        'lr': 0.004,
         'clip': 0.2,
         'render_every_i': 10
     }
@@ -235,8 +240,11 @@ def main(args):
 
     env_fn = simple_env
 
+    # TODO implement target angle in base env
+
     obs = [obs_types.DISTANCE,
-           obs_types.TARGET_ANGLE, ]
+           obs_types.TARGET_ANGLE,
+           ]
 
     kwargs = {
         "obs_seq": obs,
@@ -246,6 +254,8 @@ def main(args):
     logs_dir = "logs_300"
     deterministic = True
     total_timesteps = 300000
+
+    replay_ep = None
 
     if args.mode == "play":
         env = env_fn.KartSim(render_mode="human", train=False, **kwargs)
@@ -263,6 +273,7 @@ def main(args):
               hyperparameters=hyperparameters,
               actor_model=args.actor_model,
               critic_model=args.critic_model,
+              record=True,
               )
 
     if args.mode == "test":
@@ -271,7 +282,11 @@ def main(args):
              alg=args.alg,
              type=type,
              deterministic=deterministic,
-             actor_model="ppo_actor.pth"),
+             actor_model="ppo_actor.pth")
+
+    if args.mode == "replay":
+        replay(replay_dir="saves/ghost.hdf5",
+               replay_ep=replay_ep,)
 
     if args.mode == "snn":
         env = env_fn.KartSim(render_mode=None, train=True, **kwargs)
@@ -288,7 +303,7 @@ if __name__ == "__main__":
     # you can also directly set the args
     # args.mode = "train"
 
-    args.mode = "train"
+    args.mode = "test"
 
     args.alg = "default"
 
