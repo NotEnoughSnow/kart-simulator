@@ -67,6 +67,7 @@ class PPO:
             'batch_lens': [],  # episodic lengths in batch
             'batch_rews': [],  # episodic returns in batch
             'actor_losses': [],  # losses of actor network in current iteration
+            'lr': [],
         }
 
     def learn(self, total_timesteps):
@@ -107,6 +108,17 @@ class PPO:
 
             # This is the loop where we update our network for some n epochs
             for _ in range(self.n_updates_per_iteration):
+                # Learning Rate Annealing
+                frac = (t_so_far - 1.0) / total_timesteps
+                new_lr = self.lr * (1.0 - frac)
+                
+                # Make sure learning rate doesn't go below 0
+                new_lr = max(new_lr, 0.0)
+                self.actor_optim.param_groups[0]["lr"] = new_lr
+                self.critic_optim.param_groups[0]["lr"] = new_lr
+                # Log learning rate
+                self.logger['lr'] = new_lr
+
                 # Calculate V_phi and pi_theta(a_t | s_t)
                 V, curr_log_probs, dist, entropy_loss = self.evaluate(batch_obs, batch_acts)
 
@@ -429,6 +441,8 @@ class PPO:
         avg_ep_rews = np.mean([np.sum(ep_rews) for ep_rews in self.logger['batch_rews']])
         avg_actor_loss = np.mean([losses.float().mean() for losses in self.logger['actor_losses']])
 
+        lr = self.logger['lr']
+
 
         # Round decimal places for more aesthetic logging messages
         avg_ep_lens = str(round(avg_ep_lens, 2))
@@ -444,6 +458,7 @@ class PPO:
         print(f"Average Loss: {avg_actor_loss}", flush=True)
         print(f"Timesteps So Far: {t_so_far}", flush=True)
         print(f"Iteration took: {delta_t} secs", flush=True)
+        print(f"Learning rate: {lr}", flush=True)
         print(f"------------------------------------------------------", flush=True)
         print(flush=True)
 
