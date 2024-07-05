@@ -103,6 +103,11 @@ class PPO:
             # solving some environments was too unstable without it.
             A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
 
+            # This is the loop where we update our network for some n epochs
+            step = batch_obs.size(0)
+            inds = np.arange(step)
+            minibatch_size = step // self.num_minibatches
+
             explained_variance = 1 - torch.var(batch_rtgs - V) / torch.var(batch_rtgs)
             self.writer.add_scalar('train/explained_variance', explained_variance, self.logger['t_so_far'])
 
@@ -119,51 +124,63 @@ class PPO:
                 # Log learning rate
                 self.logger['lr'] = new_lr
 
-                # Calculate V_phi and pi_theta(a_t | s_t)
-                V, curr_log_probs, dist, entropy_loss = self.evaluate(batch_obs, batch_acts)
+                np.random.shuffle(inds)
+                for start in range(0, step, minibatch_size):
+                    end = start + minibatch_size
+                    idx = inds[start:end]
+                    mini_obs = batch_obs[idx]
+                    mini_acts = batch_acts[idx]
+                    mini_log_prob = batch_log_probs[idx]
+                    mini_advantage = A_k[idx]
+                    mini_rtgs = batch_rtgs[idx]
 
-                # Calculate the ratio pi_theta(a_t | s_t) / pi_theta_k(a_t | s_t)
-                # NOTE: we just subtract the logs, which is the same as
-                # dividing the values and then canceling the log with e^log.
-                # For why we use log probabilities instead of actual probabilities,
-                # here's a great explanation:
-                # https://cs.stackexchange.com/questions/70518/why-do-we-use-the-log-in-gradient-based-reinforcement-algorithms
-                # TL;DR makes gradient ascent easier behind the scenes.
-                ratios = torch.exp(curr_log_probs - batch_log_probs)
+                    # Calculate V_phi and pi_theta(a_t | s_t)
+                    V, curr_log_probs, dist, entropy_loss = self.evaluate(mini_obs, mini_acts)
 
-                approx_kl = (batch_log_probs - curr_log_probs).mean()
 
-                # Calculate surrogate losses.
-                surr1 = ratios * A_k
-                surr2 = torch.clamp(ratios, 1 - self.clip, 1 + self.clip) * A_k
+                    # Calculate the ratio pi_theta(a_t | s_t) / pi_theta_k(a_t | s_t)
+                    # NOTE: we just subtract the logs, which is the same as
+                    # dividing the values and then canceling the log with e^log.
+                    # For why we use log probabilities instead of actual probabilities,
+                    # here's a great explanation:
+                    # https://cs.stackexchange.com/questions/70518/why-do-we-use-the-log-in-gradient-based-reinforcement-algorithms
+                    # TL;DR makes gradient ascent easier behind the scenes.
+                    logratios = curr_log_probs - mini_log_prob
+                    ratios = torch.exp(logratios)
 
-                # Calculate actor and critic losses.
-                # NOTE: we take the negative min of the surrogate losses because we're trying to maximize
-                # the performance function, but Adam minimizes the loss. So minimizing the negative
-                # performance function maximizes it.
-                actor_loss = (-torch.min(surr1, surr2)).mean()
-                actor_loss = actor_loss + self.ent_coef * entropy_loss
-                critic_loss = nn.MSELoss()(V, batch_rtgs)
+                    approx_kl = (mini_log_prob - curr_log_probs).mean()
 
-                clipped = (ratios < 1 - self.clip) | (ratios > 1 + self.clip)
-                clip_fraction = torch.mean(clipped.float())
+                    # Calculate surrogate losses.
+                    surr1 = ratios * mini_advantage
+                    surr2 = torch.clamp(ratios, 1 - self.clip, 1 + self.clip) * mini_advantage
 
-                # Calculate gradients and perform backward propagation for actor network
-                self.actor_optim.zero_grad()
-                actor_loss.backward(retain_graph=True)
-                nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
-                self.actor_optim.step()
+                    # Calculate actor and critic losses.
+                    # NOTE: we take the negative min of the surrogate losses because we're trying to maximize
+                    # the performance function, but Adam minimizes the loss. So minimizing the negative
+                    # performance function maximizes it.
+                    actor_loss = (-torch.min(surr1, surr2)).mean()
+                    actor_loss = actor_loss + self.ent_coef * entropy_loss
+                    critic_loss = nn.MSELoss()(V, mini_rtgs)
 
-                # Calculate gradients and perform backward propagation for critic network
-                self.critic_optim.zero_grad()
-                critic_loss.backward()
-                nn.utils.clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
-                self.critic_optim.step()
+                    clipped = (ratios < 1 - self.clip) | (ratios > 1 + self.clip)
+                    clip_fraction = torch.mean(clipped.float())
 
-                # calculating metrics
-                loss = actor_loss + critic_loss
-                policy_gradient_loss = actor_loss
-                value_loss = critic_loss
+                    # Calculate gradients and perform backward propagation for actor network
+                    self.actor_optim.zero_grad()
+                    actor_loss.backward(retain_graph=True)
+                    nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
+                    self.actor_optim.step()
+
+                    # Calculate gradients and perform backward propagation for critic network
+                    self.critic_optim.zero_grad()
+                    critic_loss.backward()
+                    nn.utils.clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
+                    self.critic_optim.step()
+
+                    # calculating metrics
+                    loss = actor_loss + critic_loss
+                    policy_gradient_loss = actor_loss
+                    value_loss = critic_loss
 
 
                 self.writer.add_scalar('train/clip_range', self.clip, self.logger['t_so_far'])
