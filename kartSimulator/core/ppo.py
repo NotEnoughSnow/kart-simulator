@@ -148,7 +148,7 @@ class PPO:
                     logratios = curr_log_probs - mini_log_prob
                     ratios = torch.exp(logratios)
 
-                    approx_kl = (mini_log_prob - curr_log_probs).mean()
+                    approx_kl = ((ratios - 1) - logratios).mean()
 
                     # Calculate surrogate losses.
                     surr1 = ratios * mini_advantage
