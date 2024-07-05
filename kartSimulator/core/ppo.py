@@ -182,6 +182,10 @@ class PPO:
                     policy_gradient_loss = actor_loss
                     value_loss = critic_loss
 
+                # Approximating KL Divergence
+                if approx_kl > self.target_kl:
+                    break # if kl aboves threshold
+
 
                 self.writer.add_scalar('train/clip_range', self.clip, self.logger['t_so_far'])
                 self.writer.add_scalar('train/clip_fraction', clip_fraction, self.logger['t_so_far'])
