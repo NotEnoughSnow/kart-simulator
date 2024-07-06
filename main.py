@@ -230,6 +230,7 @@ def main(args):
         'render_every_i': 10,
         'target_kl': None,
         'num_minibatches': 8,
+        'gae_lambda': 0.95,
     }
 
     # timesteps_per_batch : batch_size
