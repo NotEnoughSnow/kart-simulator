@@ -78,10 +78,14 @@ class PPO:
         t_so_far = 0  # Timesteps simulated so far
         i_so_far = 0  # Iterations ran so far
 
-        while t_so_far < total_timesteps:  # ALG STEP 2
+        while t_so_far < total_timesteps:
 
+            batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones = self.rollout()
 
-            batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens = self.rollout()
+            # Calculate advantage at k-th iteration
+            A_k = self.calculate_gae(batch_rews, batch_vals, batch_dones)
+            V = self.critic(batch_obs).squeeze()
+            batch_rtgs = A_k + V.detach()
 
             # Calculate how many timesteps we collected this batch
             t_so_far += np.sum(batch_lens)
@@ -93,9 +97,6 @@ class PPO:
             self.logger['t_so_far'] = t_so_far
             self.logger['i_so_far'] = i_so_far
 
-            # Calculate advantage at k-th iteration
-            V, _, _, _ = self.evaluate(batch_obs, batch_acts)
-            A_k = batch_rtgs - V.detach()
 
             # One of the only tricks I use that isn't in the pseudocode. Normalizing advantages
             # isn't theoretically necessary, but in practice it decreases the variance of
@@ -183,7 +184,7 @@ class PPO:
                     value_loss = critic_loss
 
                 # Approximating KL Divergence
-                if approx_kl > self.target_kl:
+                if self.target_kl is not None and approx_kl > self.target_kl:
                     break # if kl aboves threshold
 
 
@@ -223,6 +224,8 @@ class PPO:
         batch_rews = []
         batch_rtgs = []
         batch_lens = []
+        batch_dones = []
+        batch_vals = []
 
         # Episodic data. Keeps track of rewards per episode, will get cleared
         # upon each new episode
@@ -233,13 +236,18 @@ class PPO:
 
         while t < self.timesteps_per_batch:
             ep_rews = []  # rewards collected per episode
+            ep_dones = []
+            ep_vals = []
 
             obs = self.env.reset()[0]
             truncated = False
             terminated = False
+            done = False
 
             # TODO understand vars timesteps per ep, batch, ep, timesteps, ect..
             for ep_t in range(self.max_timesteps_per_episode):
+
+                ep_dones.append(done)
 
                 t += 1  # Increment timesteps ran this batch so far
 
@@ -249,14 +257,18 @@ class PPO:
                 # Note that rew is short for reward.
                 # FIXME actions are not in range(-1,1)
                 action, log_prob = self.get_action(obs)
+                val = self.critic(obs)
 
                 obs, rew, terminated, truncated, info = self.env.step(action)
+
+                done = terminated or truncated
 
 
                 # Track recent reward, action, and action log probability
                 ep_rews.append(rew)
                 batch_acts.append(action)
                 batch_log_probs.append(log_prob)
+                ep_vals.append(val.flatten())
 
                 #print(rew)
 
@@ -270,6 +282,8 @@ class PPO:
             # Track episodic lengths and rewards
             batch_lens.append(ep_t + 1)
             batch_rews.append(ep_rews)
+            batch_vals.append(ep_vals)
+            batch_dones.append(ep_dones)
 
             ep_rew_mean = np.sum(ep_rews)
             #print(ep_rew_mean)
@@ -282,14 +296,14 @@ class PPO:
         batch_obs = torch.tensor(np.array(batch_obs), dtype=torch.float)
         batch_acts = torch.tensor(np.array(batch_acts), dtype=torch.float)
         batch_log_probs = torch.tensor(np.array(batch_log_probs), dtype=torch.float)
-        batch_rtgs = self.compute_rtgs(batch_rews)  # ALG STEP 4
+        #batch_rtgs = self.compute_rtgs(batch_rews)  # ALG STEP 4
 
 
         # Log the episodic returns and episodic lengths in this batch.
         self.logger['batch_rews'] = batch_rews
         self.logger['batch_lens'] = batch_lens
 
-        return batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens
+        return batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones
 
     def evaluate(self, batch_obs, batch_acts):
         """
@@ -364,6 +378,26 @@ class PPO:
         batch_rtgs = torch.tensor(batch_rtgs, dtype=torch.float)
 
         return batch_rtgs
+
+    def calculate_gae(self, rewards, values, dones):
+        batch_advantages = []
+        for ep_rews, ep_vals, ep_dones in zip(rewards, values, dones):
+            advantages = []
+            last_advantage = 0
+
+            for t in reversed(range(len(ep_rews))):
+                if t + 1 < len(ep_rews):
+                    delta = ep_rews[t] + self.gamma * ep_vals[t + 1] * (1 - ep_dones[t + 1]) - ep_vals[t]
+                else:
+                    delta = ep_rews[t] - ep_vals[t]
+
+                advantage = delta + self.gamma * self.gae_lambda * (1 - ep_dones[t]) * last_advantage
+                last_advantage = advantage
+                advantages.insert(0, advantage)
+
+            batch_advantages.extend(advantages)
+
+        return torch.tensor(batch_advantages, dtype=torch.float)
 
     def get_action(self, obs):
         """
