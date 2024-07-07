@@ -55,10 +55,11 @@ WORLD_CENTER = [500, 500]
 class KartSim(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 60, "name": "kart2D"}
 
-    def __init__(self, num_agents=1, obs_seq=[]):
+    def __init__(self, num_agents=1, obs_seq=[], reset_time=300):
 
         print("loaded env:", self.metadata["name"])
 
+        self.reset_time = reset_time
         self.obs_seq = obs_seq
         self.obs_len = 0
 
@@ -130,9 +131,9 @@ class KartSim(gym.Env):
             self.agent_array.append(Agent(self._space, "replay"))
 
 
-        # self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
+        self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
         # self.map = MapGenerator(self._space, WORLD_CENTER, 50)
-        self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
+        #self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
 
         # map walls
         # sector initiation
@@ -246,7 +247,7 @@ class KartSim(gym.Env):
         state = None
 
         # truncation
-        if self._current_episode_time > 300:
+        if self._current_episode_time > self.reset_time:
             self.out_of_track = True
 
         self.render(self.render_mode)

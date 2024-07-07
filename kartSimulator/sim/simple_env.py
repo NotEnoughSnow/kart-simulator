@@ -52,12 +52,13 @@ WORLD_CENTER = [500, 500]
 class KartSim(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 60, "name": "kart2D"}
 
-    def __init__(self, render_mode=None, train=False, obs_seq=[]):
+    def __init__(self, render_mode=None, train=False, obs_seq=[], reset_time=300):
 
         print("loaded env:", self.metadata["name"])
 
         self.render_mode = render_mode
 
+        self.reset_time = reset_time
         self.obs_seq = obs_seq
         self.obs_len = 0
 
@@ -228,7 +229,7 @@ class KartSim(gym.Env):
         state = self.observation()
 
         # truncation
-        if self._current_episode_time > 300:
+        if self._current_episode_time > self.reset_time:
             self.out_of_track = True
 
 

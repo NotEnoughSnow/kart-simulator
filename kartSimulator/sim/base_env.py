@@ -57,12 +57,13 @@ WORLD_CENTER = [500, 500]
 class KartSim(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 60, "name": "kart2D"}
 
-    def __init__(self, render_mode=None, train=False, obs_seq=[]):
+    def __init__(self, render_mode=None, train=False, obs_seq=[], reset_time=300):
 
         print("loaded env:", self.metadata["name"])
 
         self.render_mode = render_mode
 
+        self.reset_time = reset_time
         self.obs_seq = obs_seq
         self.obs_len = 0
 
@@ -87,8 +88,9 @@ class KartSim(gym.Env):
 
             self._draw_options = pymunk.pygame_util.DrawOptions(self._window_surface)
 
-            # clock
-            self._clock = pygame.time.Clock()
+
+        # clock
+        self._clock = pygame.time.Clock()
 
         self.FPS = 100
 
@@ -150,6 +152,8 @@ class KartSim(gym.Env):
 
         self.goal_pos = [0,0]
         self.angle_to_target = 0
+
+        self.info = {}
 
     def reset(
             self,
@@ -254,13 +258,16 @@ class KartSim(gym.Env):
         state = self.observation()
 
         # truncation
-        if self._current_episode_time > 500:
+        if self._current_episode_time > self.reset_time:
             self.out_of_track = True
 
         if self.render_mode == "human":
             self.render(self.render_mode)
 
-        return state, step_reward, terminated, truncated, {}
+        self.info["fps"] = self._clock.get_fps()
+        self.info["position"] = self._playerBody.position
+
+        return state, step_reward, terminated, truncated, self.info
 
     def potential_curve(self, x):
         # If x=0, then pot is maximal
