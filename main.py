@@ -238,7 +238,7 @@ def main(args):
     # n_updates_per_iteration : n_epochs
     # render_every_i : stats_window_size
 
-    env_fn = simple_env
+    env_fn = base_env
 
     # TODO implement target angle in base env
 
@@ -253,7 +253,7 @@ def main(args):
     type = "T3"
     logs_dir = "logs_300"
     deterministic = True
-    total_timesteps = 300000
+    total_timesteps = 100000
 
     replay_ep = None
 
@@ -303,7 +303,7 @@ if __name__ == "__main__":
     # you can also directly set the args
     # args.mode = "train"
 
-    args.mode = "test"
+    args.mode = "replay"
 
     args.alg = "default"
 

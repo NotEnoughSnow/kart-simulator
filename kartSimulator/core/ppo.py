@@ -86,11 +86,9 @@ class PPO:
 
             batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens, batch_ghosts = self.rollout()
 
-            for item in batch_ghosts:
-                total_ghost_ep.append(item)
+            total_ghost_ep.append(batch_ghosts)
 
-            for item in batch_lens:
-                total_ghost_ts.append(item)
+            total_ghost_ts.append(batch_lens)
 
 
             # Calculate how many timesteps we collected this batch
@@ -183,8 +181,8 @@ class PPO:
         if self.record:
             self.save_ghost(env_name="TEST",
                             track_name="fixed_goal",
-                            total_ghost_ep=total_ghost_ep,
-                            total_ghost_ts=total_ghost_ts,)
+                            batches=total_ghost_ep,
+                            batch_lengths=total_ghost_ts,)
 
 
 
@@ -212,12 +210,12 @@ class PPO:
 
         while t < self.timesteps_per_batch:
             ep_rews = []  # rewards collected per episode
+            ghost_ep = []
 
             obs = self.env.reset()[0]
             truncated = False
             terminated = False
 
-            ghost_ep = []
 
             # TODO understand vars timesteps per ep, batch, ep, timesteps, ect..
             for ep_t in range(self.max_timesteps_per_episode):
@@ -470,18 +468,29 @@ class PPO:
         self.logger['actor_losses'] = []
 
 
-    def save_ghost(self, env_name, track_name, total_ghost_ep, total_ghost_ts):
+    def save_ghost(self, env_name, track_name, batches, batch_lengths):
         # Saving data to HDF5
         with h5py.File('saves/ghost.hdf5', 'w') as f:
             # Add metadata
             f.attrs['env_name'] = env_name
             f.attrs['track_name'] = track_name
-            f.attrs['total_num_ep'] = len(total_ghost_ts)
+            f.attrs['total_num_batches'] = len(batches)
 
-            # Add episodes data
-            for i, (ep, ep_length) in enumerate(zip(total_ghost_ep, total_ghost_ts)):
-                grp = f.create_group(f'episode_{i + 1}')
-                grp.attrs['episode_length'] = ep_length
-                grp.create_dataset('actions', data=ep)
+            # Create group for batches
+            batches_group = f.create_group('batches')
+
+            for i, (batch, batch_length) in enumerate(zip(batches, batch_lengths)):
+                batch_group = batches_group.create_group(f'batch_{i + 1}')
+                batch_group.attrs['batch_length'] = batch_length
+
+                # Create group for episodes within the batch
+                episodes_group = batch_group.create_group('episodes')
+
+                for j, (ep_data, ep_length) in enumerate(zip(batch, batch_length)):
+                    ep_group = episodes_group.create_group(f'episode_{j + 1}')
+                    ep_group.attrs['episode_length'] = ep_length
+
+                    # Create dataset for actions within the episode
+                    ep_group.create_dataset('actions', data=ep_data)
 
         print("Data saved successfully!")
