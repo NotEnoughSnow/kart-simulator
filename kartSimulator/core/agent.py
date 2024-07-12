@@ -25,7 +25,7 @@ WORLD_CENTER = [500, 500]
 
 
 class Agent:
-    def __init__(self, space, mode):
+    def __init__(self, space, color, mode):
         self.vars = {}
 
         mass = BOT_WEIGHT
@@ -44,7 +44,7 @@ class Agent:
         self.playerShape = shape
         self.playerBody = body
 
-        self.color = (255, 0, 0, 255)
+        self.color = color
 
     def init_vars(self, position):
         self.playerBody.position = position

@@ -28,9 +28,9 @@ class PPO:
         self.record = record
 
         base_dir = 'ppo_logs_100'
-        experiment_type = location
+        self.experiment_type = location
 
-        run_directory = utils.get_next_run_directory(base_dir, experiment_type)
+        run_directory = utils.get_next_run_directory(base_dir, self.experiment_type)
 
         self.writer = SummaryWriter(run_directory)
 
@@ -470,7 +470,7 @@ class PPO:
 
     def save_ghost(self, env_name, track_name, batches, batch_lengths):
         # Saving data to HDF5
-        with h5py.File('saves/ghost.hdf5', 'w') as f:
+        with h5py.File(f'saves/ghost_{self.experiment_type}.hdf5', 'w') as f:
             # Add metadata
             f.attrs['env_name'] = env_name
             f.attrs['track_name'] = track_name

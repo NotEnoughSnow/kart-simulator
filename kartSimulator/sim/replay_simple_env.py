@@ -55,7 +55,7 @@ WORLD_CENTER = [500, 500]
 class KartSim(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 60, "name": "kart2D"}
 
-    def __init__(self, num_agents=1, obs_seq=[], reset_time=300):
+    def __init__(self, num_agents=[1], colors=[], obs_seq=[], reset_time=300):
 
         print("loaded env:", self.metadata["name"])
 
@@ -128,7 +128,7 @@ class KartSim(gym.Env):
         self.agent_count = num_agents
 
         for i in range(num_agents):
-            self.agent_array.append(Agent(self._space, "replay"))
+            self.agent_array.append(Agent(self._space,"replay"))
 
 
         self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
@@ -247,8 +247,8 @@ class KartSim(gym.Env):
         state = None
 
         # truncation
-        if self._current_episode_time > self.reset_time:
-            self.out_of_track = True
+        #if self._current_episode_time > self.reset_time:
+        #    self.out_of_track = True
 
         self.render(self.render_mode)
 
@@ -258,6 +258,14 @@ class KartSim(gym.Env):
             self.goal_pos = self.sector_info[self.next_sector_name][1]
 
         return state, step_reward, terminated, truncated, self.info
+
+    def step_mul(self, positions_array):
+        # Update the environment with the given actions
+        obs, rewards, terminated, truncated, info = [], [], [], [], []
+
+        for i, position in enumerate(positions_array):
+            self.agents[i].playerBody.position = position[:2]  # Assuming position has (x, y)
+
 
     def get_agents(self):
         return self.agent_array
@@ -339,7 +347,7 @@ class KartSim(gym.Env):
         self.surface.fill(pygame.Color("black"))
 
         # drawing debug objects
-        #self._space.debug_draw(self._draw_options)
+        self._space.debug_draw(self._draw_options)
 
         # update ui
         # TODO figure out which ui stays
@@ -361,10 +369,10 @@ class KartSim(gym.Env):
         agents = self.get_agents()
 
         for agent in agents:
-            pygame.draw.circle(self.surface, agent.color, agent.playerBody.position, agent.radius, 1)
+            pygame.draw.circle(self.screen, agent.color, agent.playerBody.position, agent.radius, 1)
 
     def draw_goal(self):
-        pygame.draw.circle(self.surface, (255, 255, 0, 255), self.goal_pos, 20, 1)
+        pygame.draw.circle(self.screen, (255, 255, 0, 255), self.goal_pos, 20, 1)
 
     def update_ui(self, time_delta):
         self.ui_manager.update(time_delta, self.surface)
