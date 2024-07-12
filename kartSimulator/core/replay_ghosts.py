@@ -7,17 +7,20 @@ class ReplayGhosts:
 
     def __init__(self, location, episode=None):
 
-        total_ghost_ep, total_ghost_ts, info = self.read_ghost_file(location)
+        batches, batch_lengths, info = self.read_ghost_file(location)
 
         num_episodes = info["num_batches"]
 
         # all : replay all trained agents at the same time
         # con : replay agents 1 by 1
         # batch : replay trained agents batch by batch
-        mode = "batch"
+        mode = "all"
 
 
-        self.launch(total_ghost_ep, total_ghost_ts, info, mode=mode)
+        self.launch(batches, batch_lengths, info, mode=mode)
+
+    def __init__(self, locations):
+        self.replay_all_mul(locations)
 
     def launch(self, batches, batch_lengths, info, mode="all"):
         if mode == "all":
@@ -80,9 +83,6 @@ class ReplayGhosts:
 
     def launch_all(self, batches, batch_lengths, info):
 
-
-        running = True
-
         # Combine all episodes and lengths from all batches
         all_episodes = []
         all_episode_lengths = []
@@ -107,6 +107,8 @@ class ReplayGhosts:
 
         kwargs = {}
         env = replay_simple_env.KartSim(num_agents=num_episodes, **kwargs)
+
+        running = True
 
         while running:
             env.reset()
@@ -239,3 +241,68 @@ class ReplayGhosts:
                 # running = False  # For example, if you want to exit after one full batch
 
         # env.close()
+
+
+    def load_and_process_hdf5_files(self, file_paths):
+        all_batches = []
+        all_batch_lengths = []
+        total_info = {"num_ep": 0}
+        colors = []
+
+        for i, file_path in enumerate(file_paths):
+            print("Loading file: ", file_path)
+
+            batches, batch_lengths, info = self.read_ghost_file(file_path)
+            all_batches.append(batches)
+            all_batch_lengths.append(batch_lengths)
+            total_info["num_ep"] += info["num_ep"]
+            colors.extend([(255, 0, 0,255), (0, 0, 255, 255), (0, 255, 0, 255), (255, 255, 0, 255)][i % 4] for _ in range(info["num_ep"]))
+
+        print("processed all files")
+        print("number of batches: ", len(all_batches))
+        print("colors: ", len(colors))
+
+        return all_batches, all_batch_lengths, total_info, colors
+
+
+    def process_batches(self, batches, batch_lengths):
+        all_episodes = []
+        all_episode_lengths = []
+
+        for batch, batch_length in zip(batches, batch_lengths):
+            all_episodes.extend(batch)
+            all_episode_lengths.extend(batch_length)
+
+        max_ep_len = max(all_episode_lengths)
+        num_episodes = len(all_episodes)
+        num_actions = all_episodes[0].shape[1]
+
+        padded_episodes = np.zeros((num_episodes, max_ep_len, num_actions))
+
+        for i, episode in enumerate(all_episodes):
+            padded_episodes[i, :len(episode), :] = episode
+
+        new_episodes = padded_episodes.transpose(1, 0, 2)
+
+        return new_episodes, max_ep_len, num_episodes
+
+    def replay_batches(self, env, new_episodes, max_ep_len):
+        running = True
+        while running:
+            env.reset()
+
+            for i in range(max_ep_len):
+                array_of_positions = new_episodes[i]
+                env.step_mul(array_of_positions)
+
+
+    def replay_all_mul(self, file_paths):
+        batches, batch_lengths, info, colors = self.load_and_process_hdf5_files(file_paths)
+
+        new_episodes, max_ep_len, num_episodes = self.process_batches(batches, batch_lengths)
+
+        kwargs = {}
+        env = replay_simple_env.KartSim(num_agents=num_episodes, colors=colors, **kwargs)
+
+        self.replay_batches(env, new_episodes, max_ep_len)
+
