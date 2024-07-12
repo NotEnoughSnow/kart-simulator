@@ -206,7 +206,8 @@ def test(env, alg, type, deterministic, actor_model):
     if alg == "baselines":
         baselines.eval(env, type, deterministic)
 def replay(replay_dir, replay_ep=None):
-    replay = ReplayGhosts(replay_dir, replay_ep)
+    #replay = ReplayGhosts(replay_dir, replay_ep)
+    replay = ReplayGhosts(["saves/ghost_T3.hdf5", "saves/ghost_T4.hdf5"])
 
 
 def train_SNN(env, hyperparameters):
@@ -226,9 +227,9 @@ def main(args):
     hyperparameters = {
         'timesteps_per_batch': 4800,
         'max_timesteps_per_episode': 700,
-        'gamma': 0.99,
+        'gamma': 0.95,
         'n_updates_per_iteration': 10,
-        'lr': 0.004,
+        'lr': 0.0004,
         'clip': 0.2,
         'render_every_i': 10
     }
@@ -238,7 +239,7 @@ def main(args):
     # n_updates_per_iteration : n_epochs
     # render_every_i : stats_window_size
 
-    env_fn = base_env
+    env_fn = simple_env
 
     # TODO implement target angle in base env
 
@@ -248,12 +249,13 @@ def main(args):
 
     kwargs = {
         "obs_seq": obs,
+        "reset_time": 300,
     }
 
-    type = "T3"
+    type = "T5"
     logs_dir = "logs_300"
     deterministic = True
-    total_timesteps = 100000
+    total_timesteps = 300000
 
     replay_ep = None
 
@@ -285,8 +287,8 @@ def main(args):
              actor_model="ppo_actor.pth")
 
     if args.mode == "replay":
-        replay(replay_dir="saves/ghost.hdf5",
-               replay_ep=replay_ep,)
+        replay(replay_dir="saves/ghost_T4.hdf5",
+               replay_ep=replay_ep, )
 
     if args.mode == "snn":
         env = env_fn.KartSim(render_mode=None, train=True, **kwargs)
@@ -303,7 +305,7 @@ if __name__ == "__main__":
     # you can also directly set the args
     # args.mode = "train"
 
-    args.mode = "replay"
+    args.mode = "train"
 
     args.alg = "default"
 
