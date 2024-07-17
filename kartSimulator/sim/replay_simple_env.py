@@ -55,7 +55,7 @@ WORLD_CENTER = [500, 500]
 class KartSim(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 60, "name": "kart2D"}
 
-    def __init__(self, num_agents=[1], colors=[], obs_seq=[], reset_time=300):
+    def __init__(self, num_agents=[1], colors=[(255,0,0,255)], obs_seq=[], reset_time=300):
 
         print("loaded env:", self.metadata["name"])
 
@@ -125,10 +125,16 @@ class KartSim(gym.Env):
         self.next_target_rew_act = 0
 
         self.agent_array = []
-        self.agent_count = num_agents
 
-        for i in range(num_agents):
-            self.agent_array.append(Agent(self._space,"replay"))
+        print(num_agents)
+        print(colors)
+        #assert len(num_agents) == len(colors), "num_agents and colors must be of the same length"
+
+        self.agent_count = sum(num_agents)
+
+        for agent_count, color in zip(num_agents, colors):
+            for _ in range(agent_count):
+                self.agent_array.append(Agent(self._space, color, "replay"))
 
 
         self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
@@ -192,6 +198,9 @@ class KartSim(gym.Env):
         # FIXME restore
         #pstart = self._playerBody.position
 
+        #print(len(position_array))
+        #print(self.agent_count)
+
         assert len(position_array) == self.agent_count
 
         agents = self.get_agents()
@@ -213,11 +222,11 @@ class KartSim(gym.Env):
             agents[i].vars["go_left_value"] = None
             agents[i].vars["go_right_value"] = None
 
-        # TODO stopping speed
-        # TODO max speed
-        agents[i].vars["velocity"] = agents[i].playerBody.velocity.__abs__()
-        
-        agents[i].playerBody.velocity /= 1.005
+            # TODO stopping speed
+            # TODO max speed
+            agents[i].vars["velocity"] = agents[i].playerBody.velocity.__abs__()
+
+            agents[i].playerBody.velocity /= 1.005
 
         # TODO step based on FPS
         self._space.step(self._dt)
@@ -258,13 +267,6 @@ class KartSim(gym.Env):
             self.goal_pos = self.sector_info[self.next_sector_name][1]
 
         return state, step_reward, terminated, truncated, self.info
-
-    def step_mul(self, positions_array):
-        # Update the environment with the given actions
-        obs, rewards, terminated, truncated, info = [], [], [], [], []
-
-        for i, position in enumerate(positions_array):
-            self.agents[i].playerBody.position = position[:2]  # Assuming position has (x, y)
 
 
     def get_agents(self):
@@ -347,7 +349,7 @@ class KartSim(gym.Env):
         self.surface.fill(pygame.Color("black"))
 
         # drawing debug objects
-        self._space.debug_draw(self._draw_options)
+        #self._space.debug_draw(self._draw_options)
 
         # update ui
         # TODO figure out which ui stays
