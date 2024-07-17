@@ -287,7 +287,7 @@ def main(args):
              actor_model="ppo_actor.pth")
 
     if args.mode == "replay":
-        replay(replay_dir="saves/ghost_T4.hdf5",
+        replay(replay_dir="saves/ghost_T3.hdf5",
                replay_ep=replay_ep, )
 
     if args.mode == "snn":
@@ -305,7 +305,7 @@ if __name__ == "__main__":
     # you can also directly set the args
     # args.mode = "train"
 
-    args.mode = "train"
+    args.mode = "replay"
 
     args.alg = "default"
 
