@@ -207,7 +207,7 @@ def test(env, alg, type, deterministic, actor_model):
         baselines.eval(env, type, deterministic)
 def replay(replay_dir, replay_ep=None):
     #replay = ReplayGhosts(replay_dir, replay_ep)
-    replay = ReplayGhosts(["saves/ghost_T3.hdf5", "saves/ghost_T4.hdf5"])
+    replay = ReplayGhosts(["saves/ghost_T4.hdf5"])
 
 
 def train_SNN(env, hyperparameters):

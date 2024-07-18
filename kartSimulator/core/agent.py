@@ -59,3 +59,11 @@ class Agent:
                      "position": self.playerBody.position,
                      "velocity": 0,
                      }
+
+class Simple_agent:
+    def __init__(self, color):
+
+        self.radius = BOT_SIZE * PPM
+
+        self.color = color
+        self.position = (0,0)
