@@ -7,30 +7,36 @@ import kartSimulator.sim.replay_simple_env as replay_simple_env
 
 class ReplayGhosts:
 
-    def __init__(self, location, episode=None):
+    #def __init__(self, location, episode=None):
 
-        batches, batch_lengths, _, info = self.read_ghost_file(location)
+        #batches, batch_lengths, _, info = self.read_ghost_file(location)
 
-        num_episodes = info["num_batches"]
+        #num_episodes = info["num_batches"]
 
         # all : replay all trained agents at the same time
         # con : replay agents 1 by 1
         # batch : replay trained agents batch by batch
-        mode = "batch"
+        #mode = "batch"
 
-
-        self.launch(batches, batch_lengths, info, mode=mode)
+        #self.launch(batches, batch_lengths, info, mode=mode)
 
     def __init__(self, locations):
-        self.replay_batch_mul(locations)
 
-    def launch(self, batches, batch_lengths, info, mode="all"):
+
+        mode = "batch"
+
         if mode == "all":
-            self.launch_all(batches, batch_lengths, info)
-        if mode == "con":
-            self.launch_con(batches, batch_lengths, info)
+            self.replay_all_mul(locations)
         if mode == "batch":
-            self.launch_batch(batches, batch_lengths, info)
+            self.replay_batch_mul(locations)
+
+    #def launch(self, batches, batch_lengths, info, mode="all"):
+    #    if mode == "all":
+    #        self.launch_all(batches, batch_lengths, info)
+    #    if mode == "con":
+    #        self.launch_con(batches, batch_lengths, info)
+    #    if mode == "batch":
+    #        self.launch_batch(batches, batch_lengths, info)
 
     def read_ghost_file(self, location):
         # Loading data from HDF5
@@ -96,184 +102,6 @@ class ReplayGhosts:
 
 
         return batches, batch_episode_lens, batch_lens, info
-
-    def launch_all(self, batches, batch_lengths, batch_lens, info):
-
-        # Combine all episodes and lengths from all batches
-        all_episodes = []
-        all_episode_lengths = []
-
-        for batch, batch_length in zip(batches, batch_lengths):
-            all_episodes.extend(batch)
-            all_episode_lengths.extend(batch_length)
-
-        max_ep_len = max(all_episode_lengths)
-
-        num_episodes = len(all_episodes)
-        num_actions = all_episodes[0].shape[1]
-
-        # Create a padded array for all episodes
-        padded_episodes = np.zeros((num_episodes, max_ep_len, num_actions))
-
-        for i, episode in enumerate(all_episodes):
-            padded_episodes[i, :len(episode), :] = episode
-
-        # Reshape the array for timestep-wise iteration
-        new_episodes = padded_episodes.transpose(1, 0, 2)
-
-        kwargs = {}
-        env = replay_simple_env.KartSim(num_agents=num_episodes, **kwargs)
-
-        running = True
-
-        while running:
-            env.reset()
-            total_reward = 0.0
-            steps = 0
-            terminated = False
-            truncated = False
-
-            for i in range(max_ep_len):
-                array_of_positions = new_episodes[i]
-
-                # Process pygame events (if using pygame)
-                # for event in pygame.event.get():
-                #     if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                #         env.reset()
-
-                obs, reward, terminated, truncated, _ = env.step(array_of_positions)
-
-                total_reward += reward
-                steps += 1
-
-                if terminated or truncated:
-                    break
-
-            # You might want to break the outer while loop based on some condition
-            # running = False  # For example, if you want to exit after one full playback
-
-        # env.close()
-
-    def launch_con(self, batches, batch_lengths, info):
-        running = True
-
-        kwargs = {}
-        env = replay_simple_env.KartSim(num_agents=1, **kwargs)
-
-        total_reward = 0.0
-        steps = 0
-
-        # Process batches
-        all_padded_episodes = []
-        all_max_ep_len = []
-
-        for batch, batch_length in zip(batches, batch_lengths):
-            max_ep_len = max(batch_length)
-            num_episodes = len(batch)
-            num_actions = batch[0].shape[1]
-
-            for i in range(num_episodes):
-                episode = batch[i]
-                padded_episode = np.zeros((max_ep_len, num_actions))
-                padded_episode[:len(episode), :] = episode
-                all_padded_episodes.append(padded_episode)
-                all_max_ep_len.append(len(episode))
-
-        # Play episodes
-        while running:
-            for padded_episode, ep_len in zip(all_padded_episodes, all_max_ep_len):
-                env.reset()
-                print(f"Playing episode for {ep_len} timesteps")
-
-                for j in range(ep_len):
-                    action = padded_episode[j]
-
-                    obs, reward, terminated, truncated, _ = env.step([action])
-
-                    total_reward += reward
-                    steps += 1
-
-                    if terminated or truncated:
-                        break
-
-            # Exit the loop after playing all episodes
-            running = False
-
-        print(steps)
-        # env.close()
-
-    def launch_batch(self, batches, batch_lengths, info):
-        all_padded_episodes = []
-        all_max_ep_len = []
-
-        print("say what :", np.shape(batches))
-
-        for batch, batch_length in zip(batches, batch_lengths):
-            max_ep_len = max(batch_length)
-            num_episodes = len(batch)
-            num_actions = batch[0].shape[1]
-
-            # Create a padded array for the current batch
-            padded_episodes = np.zeros((num_episodes, max_ep_len, num_actions))
-
-            for i, episode in enumerate(batch):
-                padded_episodes[i, :len(episode), :] = episode
-
-            # Reshape the array for timestep-wise iteration
-            new_episodes = padded_episodes.transpose(1, 0, 2)
-
-            all_padded_episodes.append(new_episodes)
-            all_max_ep_len.append(max_ep_len)
-
-        print("say what :", np.shape(all_padded_episodes))
-        print("huh :", all_max_ep_len)
-
-
-        print(info)
-
-        # Initialize your environment
-        kwargs = {}
-        env = replay_simple_env.KartSim(num_agents=[10], colors=[(255,0,0,255)], **kwargs)
-
-        running = True
-
-
-        while running:
-            k = 0
-
-            for new_episodes, max_ep_len in zip(all_padded_episodes, all_max_ep_len):
-
-                print("for batch :", k)
-
-                env.reset()
-                total_reward = 0.0
-                steps = 0
-                terminated = False
-                truncated = False
-
-                for i in range(max_ep_len):
-                    array_of_positions = new_episodes[i]
-
-                    # Process pygame events (if using pygame)
-                    # for event in pygame.event.get():
-                    #     if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                    #         env.reset()
-
-                    obs, reward, terminated, truncated, _ = env.step(array_of_positions)
-
-                    total_reward += reward
-                    steps += 1
-
-                    if terminated or truncated:
-                        break
-
-
-                # You might want to break the outer loop based on some condition
-                # running = False  # For example, if you want to exit after one full batch
-
-                k = k + 1
-
-        # env.close()
 
 
     def load_and_process_hdf5_files(self, file_paths):
@@ -454,3 +282,185 @@ class ReplayGhosts:
                 for timestep in range(max_ep_len):
                     array_of_positions = current_batch[timestep]
                     env.step(array_of_positions)
+
+
+
+    # not currently used
+
+    def launch_all(self, batches, batch_lengths, batch_lens, info):
+
+        # Combine all episodes and lengths from all batches
+        all_episodes = []
+        all_episode_lengths = []
+
+        for batch, batch_length in zip(batches, batch_lengths):
+            all_episodes.extend(batch)
+            all_episode_lengths.extend(batch_length)
+
+        max_ep_len = max(all_episode_lengths)
+
+        num_episodes = len(all_episodes)
+        num_actions = all_episodes[0].shape[1]
+
+        # Create a padded array for all episodes
+        padded_episodes = np.zeros((num_episodes, max_ep_len, num_actions))
+
+        for i, episode in enumerate(all_episodes):
+            padded_episodes[i, :len(episode), :] = episode
+
+        # Reshape the array for timestep-wise iteration
+        new_episodes = padded_episodes.transpose(1, 0, 2)
+
+        kwargs = {}
+        env = replay_simple_env.KartSim(num_agents=num_episodes, **kwargs)
+
+        running = True
+
+        while running:
+            env.reset()
+            total_reward = 0.0
+            steps = 0
+            terminated = False
+            truncated = False
+
+            for i in range(max_ep_len):
+                array_of_positions = new_episodes[i]
+
+                # Process pygame events (if using pygame)
+                # for event in pygame.event.get():
+                #     if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                #         env.reset()
+
+                obs, reward, terminated, truncated, _ = env.step(array_of_positions)
+
+                total_reward += reward
+                steps += 1
+
+                if terminated or truncated:
+                    break
+
+            # You might want to break the outer while loop based on some condition
+            # running = False  # For example, if you want to exit after one full playback
+
+        # env.close()
+
+    def launch_con(self, batches, batch_lengths, info):
+        running = True
+
+        kwargs = {}
+        env = replay_simple_env.KartSim(num_agents=1, **kwargs)
+
+        total_reward = 0.0
+        steps = 0
+
+        # Process batches
+        all_padded_episodes = []
+        all_max_ep_len = []
+
+        for batch, batch_length in zip(batches, batch_lengths):
+            max_ep_len = max(batch_length)
+            num_episodes = len(batch)
+            num_actions = batch[0].shape[1]
+
+            for i in range(num_episodes):
+                episode = batch[i]
+                padded_episode = np.zeros((max_ep_len, num_actions))
+                padded_episode[:len(episode), :] = episode
+                all_padded_episodes.append(padded_episode)
+                all_max_ep_len.append(len(episode))
+
+        # Play episodes
+        while running:
+            for padded_episode, ep_len in zip(all_padded_episodes, all_max_ep_len):
+                env.reset()
+                print(f"Playing episode for {ep_len} timesteps")
+
+                for j in range(ep_len):
+                    action = padded_episode[j]
+
+                    obs, reward, terminated, truncated, _ = env.step([action])
+
+                    total_reward += reward
+                    steps += 1
+
+                    if terminated or truncated:
+                        break
+
+            # Exit the loop after playing all episodes
+            running = False
+
+        print(steps)
+        # env.close()
+
+    def launch_batch(self, batches, batch_lengths, info):
+        all_padded_episodes = []
+        all_max_ep_len = []
+
+        print("say what :", np.shape(batches))
+
+        for batch, batch_length in zip(batches, batch_lengths):
+            max_ep_len = max(batch_length)
+            num_episodes = len(batch)
+            num_actions = batch[0].shape[1]
+
+            # Create a padded array for the current batch
+            padded_episodes = np.zeros((num_episodes, max_ep_len, num_actions))
+
+            for i, episode in enumerate(batch):
+                padded_episodes[i, :len(episode), :] = episode
+
+            # Reshape the array for timestep-wise iteration
+            new_episodes = padded_episodes.transpose(1, 0, 2)
+
+            all_padded_episodes.append(new_episodes)
+            all_max_ep_len.append(max_ep_len)
+
+        print("say what :", np.shape(all_padded_episodes))
+        print("huh :", all_max_ep_len)
+
+
+        print(info)
+
+        # Initialize your environment
+        kwargs = {}
+        env = replay_simple_env.KartSim(num_agents=[10], colors=[(255,0,0,255)], **kwargs)
+
+        running = True
+
+
+        while running:
+            k = 0
+
+            for new_episodes, max_ep_len in zip(all_padded_episodes, all_max_ep_len):
+
+                print("for batch :", k)
+
+                env.reset()
+                total_reward = 0.0
+                steps = 0
+                terminated = False
+                truncated = False
+
+                for i in range(max_ep_len):
+                    array_of_positions = new_episodes[i]
+
+                    # Process pygame events (if using pygame)
+                    # for event in pygame.event.get():
+                    #     if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                    #         env.reset()
+
+                    obs, reward, terminated, truncated, _ = env.step(array_of_positions)
+
+                    total_reward += reward
+                    steps += 1
+
+                    if terminated or truncated:
+                        break
+
+
+                # You might want to break the outer loop based on some condition
+                # running = False  # For example, if you want to exit after one full batch
+
+                k = k + 1
+
+        # env.close()
