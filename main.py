@@ -228,7 +228,7 @@ def main(args):
         'clip': 0.2,
         'max_grad_norm': 0.5,
         'render_every_i': 10,
-        'target_kl': None,
+        'target_kl': 0.02,
         'num_minibatches': 8,
         'gae_lambda': 0.95,
     }
@@ -247,7 +247,7 @@ def main(args):
         "obs_seq": obs,
     }
 
-    type = "T3"
+    type = "T10"
     logs_dir = "logs_300"
     deterministic = True
     total_timesteps = 300000
