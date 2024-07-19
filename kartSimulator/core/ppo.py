@@ -104,10 +104,12 @@ class PPO:
             # solving some environments was too unstable without it.
             A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
 
-            # This is the loop where we update our network for some n epochs
             step = batch_obs.size(0)
             inds = np.arange(step)
             minibatch_size = step // self.num_minibatches
+
+            print("batchy ", step)
+            print("mini batchy ", minibatch_size)
 
             explained_variance = 1 - torch.var(batch_rtgs - V) / torch.var(batch_rtgs)
             self.writer.add_scalar('train/explained_variance', explained_variance, self.logger['t_so_far'])
@@ -135,6 +137,8 @@ class PPO:
                     mini_advantage = A_k[idx]
                     mini_rtgs = batch_rtgs[idx]
 
+                    print("happens ", start)
+
                     # Calculate V_phi and pi_theta(a_t | s_t)
                     V, curr_log_probs, dist, entropy_loss = self.evaluate(mini_obs, mini_acts)
 
@@ -159,11 +163,14 @@ class PPO:
                     # NOTE: we take the negative min of the surrogate losses because we're trying to maximize
                     # the performance function, but Adam minimizes the loss. So minimizing the negative
                     # performance function maximizes it.
+
+
                     actor_loss = (-torch.min(surr1, surr2)).mean()
                     actor_loss = actor_loss + self.ent_coef * entropy_loss
                     critic_loss = nn.MSELoss()(V, mini_rtgs)
 
                     clipped = (ratios < 1 - self.clip) | (ratios > 1 + self.clip)
+
                     clip_fraction = torch.mean(clipped.float())
 
                     # Calculate gradients and perform backward propagation for actor network
@@ -454,6 +461,8 @@ class PPO:
         self.ent_coef = 0
         self.max_grad_norm = 0.5
         self.target_kl = None
+        self.num_minibatches = 8
+        self.gae_lambda = 0.95
 
         # Miscellaneous parameters
         self.render_every_i = 10  # Only render every n iterations
