@@ -19,6 +19,8 @@ class PPO:
 
     def __init__(self, env, location, **hyperparameters):
 
+        self.location = location
+
         # Make sure the environment is compatible with our code
         assert (type(env.observation_space) == gym.spaces.Box)
         assert (type(env.action_space) == gym.spaces.Box)
@@ -108,8 +110,8 @@ class PPO:
             inds = np.arange(step)
             minibatch_size = step // self.num_minibatches
 
-            print("batchy ", step)
-            print("mini batchy ", minibatch_size)
+            #print("batch ", step)
+            #print("mini batch ", minibatch_size)
 
             explained_variance = 1 - torch.var(batch_rtgs - V) / torch.var(batch_rtgs)
             self.writer.add_scalar('train/explained_variance', explained_variance, self.logger['t_so_far'])
@@ -136,8 +138,6 @@ class PPO:
                     mini_log_prob = batch_log_probs[idx]
                     mini_advantage = A_k[idx]
                     mini_rtgs = batch_rtgs[idx]
-
-                    print("happens ", start)
 
                     # Calculate V_phi and pi_theta(a_t | s_t)
                     V, curr_log_probs, dist, entropy_loss = self.evaluate(mini_obs, mini_acts)
@@ -215,8 +215,8 @@ class PPO:
                 torch.save(self.actor.state_dict(), './ppo_actor.pth')
                 torch.save(self.critic.state_dict(), './ppo_critic.pth')
 
-        torch.save(self.actor.state_dict(), './ppo_actor.pth')
-        torch.save(self.critic.state_dict(), './ppo_critic.pth')
+        torch.save(self.actor.state_dict(), f'./saved_models_base/{self.location}/ppo_actor.pth')
+        torch.save(self.critic.state_dict(), f'./saved_models_base/{self.location}/ppo_critic.pth')
 
         print("saved models")
 

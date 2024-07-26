@@ -131,9 +131,9 @@ class KartSim(gym.Env):
         self.next_target_rew_act = 0
 
         self._create_ball()
-        #self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
+        self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
         #self.map = MapGenerator(self._space, WORLD_CENTER, 50)
-        self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
+        #self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
 
         # map walls
         # sector initiation
@@ -226,7 +226,7 @@ class KartSim(gym.Env):
         state = self.observation()
 
         # truncation
-        if self._current_episode_time > 300:
+        if self._current_episode_time > 2000:
             self.out_of_track = True
 
 
