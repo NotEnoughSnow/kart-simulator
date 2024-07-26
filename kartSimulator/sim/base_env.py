@@ -87,8 +87,8 @@ class KartSim(gym.Env):
 
             self._draw_options = pymunk.pygame_util.DrawOptions(self._window_surface)
 
-            # clock
-            self._clock = pygame.time.Clock()
+        # clock
+        self._clock = pygame.time.Clock()
 
         self.FPS = 100
 
@@ -147,6 +147,8 @@ class KartSim(gym.Env):
         self._init_world()
         self._init_sectors(self._sector_midpoints)
         self._init_player(self.initial_pos, 0)
+
+        self.info = {}
 
     def reset(
             self,
@@ -255,7 +257,9 @@ class KartSim(gym.Env):
         if self.render_mode == "human":
             self.render(self.render_mode)
 
-        return state, step_reward, terminated, truncated, {}
+        self.info["fps"] = self._clock.get_fps()
+
+        return state, step_reward, terminated, truncated, self.info
 
     def potential_curve(self, x):
         # If x=0, then pot is maximal
@@ -403,7 +407,7 @@ class KartSim(gym.Env):
 
     def _add_sectors(self) -> None:
 
-        static_sector_lines, sector_midpoints = self.map.create_goals()
+        static_sector_lines, sector_midpoints = self.map.create_goals(None)
 
         self._space.add(*static_sector_lines)
         self._sector_midpoints = sector_midpoints
