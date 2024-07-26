@@ -241,13 +241,14 @@ def main(args):
     env_fn = simple_env
 
     obs = [obs_types.DISTANCE,
-           obs_types.TARGET_ANGLE, ]
+           obs_types.TARGET_ANGLE,
+           obs_types.POSITION,]
 
     kwargs = {
         "obs_seq": obs,
     }
 
-    type = "T10"
+    type = "P3"
     logs_dir = "logs_300"
     deterministic = True
     total_timesteps = 300000
@@ -276,7 +277,7 @@ def main(args):
              alg=args.alg,
              type=type,
              deterministic=deterministic,
-             actor_model="ppo_actor.pth"),
+             actor_model=f'./saved_models_base/{type}/ppo_actor.pth'),
 
     if args.mode == "snn":
         env = env_fn.KartSim(render_mode=None, train=True, **kwargs)
