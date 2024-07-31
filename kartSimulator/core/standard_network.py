@@ -27,6 +27,8 @@ class FFNetwork(nn.Module):
         """
         super(FFNetwork, self).__init__()
 
+        print("in dim", in_dim)
+
         self.layer1 = nn.Linear(in_dim, 128)
         self.layer2 = nn.Linear(128, 128)
         self.layer3 = nn.Linear(128, out_dim)
@@ -45,6 +47,7 @@ class FFNetwork(nn.Module):
         # Convert observation to tensor if it's a numpy array
         if isinstance(obs, np.ndarray):
             obs = torch.tensor(obs, dtype=torch.float)
+
 
         activation1 = torch.relu(self.layer1(obs))
         activation2 = torch.relu(self.layer2(activation1))
