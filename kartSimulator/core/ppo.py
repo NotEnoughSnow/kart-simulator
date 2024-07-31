@@ -9,15 +9,17 @@ from torch.optim.adam import Adam
 from torch.utils.tensorboard import SummaryWriter
 import kartSimulator.sim.utils as utils
 
+import h5py
+
+
 from kartSimulator.core.actor_network import ActorNetwork
 from kartSimulator.core.critic_network import CriticNetwork
 from kartSimulator.core.standard_network import FFNetwork
 
+
 class PPO:
 
-
-
-    def __init__(self, env, location, **hyperparameters):
+    def __init__(self, env, record, location, **hyperparameters):
 
         self.location = location
 
@@ -25,10 +27,12 @@ class PPO:
         assert (type(env.observation_space) == gym.spaces.Box)
         assert (type(env.action_space) == gym.spaces.Box)
 
-        base_dir = 'ppo_logs_100'
-        experiment_type = location
+        self.record = record
 
-        run_directory = utils.get_next_run_directory(base_dir, experiment_type)
+        base_dir = 'ppo_logs_100'
+        self.experiment_type = location
+
+        run_directory = utils.get_next_run_directory(base_dir, self.experiment_type)
 
         self.writer = SummaryWriter(run_directory)
 
@@ -39,12 +43,13 @@ class PPO:
         self.obs_dim = env.observation_space.shape[0]
         self.act_dim = env.action_space.shape[0]
 
+
         print(f"obs shape :{env.observation_space.shape} \n"
-              f"action shape :{env.observation_space.shape}")
+              f"action shape :{env.action_space.shape}")
 
         # Initialize actor and critic networks
-        #self.actor = ActorNetwork(self.obs_dim, self.act_dim)  # ALG STEP 1
-        #self.critic = CriticNetwork(self.obs_dim, 1)
+        # self.actor = ActorNetwork(self.obs_dim, self.act_dim)  # ALG STEP 1
+        # self.critic = CriticNetwork(self.obs_dim, 1)
 
         self.actor = FFNetwork(self.obs_dim, self.act_dim)  # ALG STEP 1
         self.critic = FFNetwork(self.obs_dim, 1)
@@ -53,13 +58,10 @@ class PPO:
         self.actor_optim = Adam(self.actor.parameters(), lr=self.lr)
         self.critic_optim = Adam(self.critic.parameters(), lr=self.lr)
 
-
         # TODO values
         # Initialize the covariance matrix used to query the actor for actions
         self.cov_var = torch.full(size=(self.act_dim,), fill_value=0.5)
         self.cov_mat = torch.diag(self.cov_var)
-
-
 
         # This logger will help us with printing out summaries of each iteration
         self.logger = {
@@ -80,14 +82,23 @@ class PPO:
         t_so_far = 0  # Timesteps simulated so far
         i_so_far = 0  # Iterations ran so far
 
+
+        total_ghost_ep = []
+        total_ghost_ts = []
+
         while t_so_far < total_timesteps:
 
-            batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones = self.rollout()
+            batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout()
+            #batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens, batch_ghosts = self.rollout()
+
+            total_ghost_ep.append(batch_ghosts)
+            total_ghost_ts.append(batch_lens)
 
             # Calculate advantage at k-th iteration
             A_k = self.calculate_gae(batch_rews, batch_vals, batch_dones)
             V = self.critic(batch_obs).squeeze()
             batch_rtgs = A_k + V.detach()
+
 
             # Calculate how many timesteps we collected this batch
             t_so_far += np.sum(batch_lens)
@@ -194,7 +205,6 @@ class PPO:
                 if self.target_kl is not None and approx_kl > self.target_kl:
                     break # if kl aboves threshold
 
-
                 self.writer.add_scalar('train/clip_range', self.clip, self.logger['t_so_far'])
                 self.writer.add_scalar('train/clip_fraction', clip_fraction, self.logger['t_so_far'])
                 self.writer.add_scalar('train/approx_kl', approx_kl, self.logger['t_so_far'])
@@ -202,10 +212,8 @@ class PPO:
                 self.writer.add_scalar('train/value_loss', value_loss, self.logger['t_so_far'])
                 self.writer.add_scalar('train/loss', loss, self.logger['t_so_far'])
 
-
                 # Log actor loss
                 self.logger['actor_losses'].append(actor_loss.detach())
-
 
             # Print a summary of our training so far
             self._log_summary()
@@ -215,13 +223,19 @@ class PPO:
                 torch.save(self.actor.state_dict(), './ppo_actor.pth')
                 torch.save(self.critic.state_dict(), './ppo_critic.pth')
 
+
         torch.save(self.actor.state_dict(), f'./saved_models_base/{self.location}/ppo_actor.pth')
         torch.save(self.critic.state_dict(), f'./saved_models_base/{self.location}/ppo_critic.pth')
 
+        # TODO inherit from game
+        if self.record:
+            self.save_ghost(env_name="TEST",
+                            track_name="fixed_goal",
+                            batches=total_ghost_ep,
+                            batch_lengths=total_ghost_ts,)
+
+
         print("saved models")
-
-
-
 
     def rollout(self):
 
@@ -234,22 +248,27 @@ class PPO:
         batch_dones = []
         batch_vals = []
 
+        batch_ghosts = []
+
         # Episodic data. Keeps track of rewards per episode, will get cleared
         # upon each new episode
         ep_rews = []
 
-        t = 0 # Keeps track of how many timesteps we've run so far this batch
-
+        t = 0  # Keeps track of how many timesteps we've run so far this batch
 
         while t < self.timesteps_per_batch:
             ep_rews = []  # rewards collected per episode
+
             ep_dones = []
             ep_vals = []
+            ghost_ep = []
+
 
             obs = self.env.reset()[0]
             truncated = False
             terminated = False
             done = False
+
 
             # TODO understand vars timesteps per ep, batch, ep, timesteps, ect..
             for ep_t in range(self.max_timesteps_per_episode):
@@ -268,23 +287,32 @@ class PPO:
 
                 obs, rew, terminated, truncated, info = self.env.step(action)
 
+
                 done = terminated or truncated
 
+                #print("fps", info["fps"])
+                #print("position", info["position"])
 
+
+                ghost_ep.append(info["position"])
+
+                # TODO simplify batch actions and ghost data
                 # Track recent reward, action, and action log probability
                 ep_rews.append(rew)
                 batch_acts.append(action)
                 batch_log_probs.append(log_prob)
                 ep_vals.append(val.flatten())
 
-                #print(rew)
+                # print(rew)
 
+                # TODO add fps
                 self.writer.add_scalar('time/fps', info["fps"], self.logger['t_so_far'])
-
 
                 # If the environment tells us the episode is terminated, break
                 if terminated or truncated:
                     break
+
+            batch_ghosts.append(ghost_ep)
 
             # Track episodic lengths and rewards
             batch_lens.append(ep_t + 1)
@@ -293,11 +321,11 @@ class PPO:
             batch_dones.append(ep_dones)
 
             ep_rew_mean = np.sum(ep_rews)
-            #print(ep_rew_mean)
-
+            # print(ep_rew_mean)
 
             self.writer.add_scalar('rollout/ep_rew_mean', ep_rew_mean, self.logger['t_so_far'])
             self.writer.add_scalar('rollout/ep_len_mean', (ep_t + 1), self.logger['t_so_far'])
+
 
         # Reshape data as tensors in the shape specified in function description, before returning
         batch_obs = torch.tensor(np.array(batch_obs), dtype=torch.float)
@@ -305,12 +333,12 @@ class PPO:
         batch_log_probs = torch.tensor(np.array(batch_log_probs), dtype=torch.float)
         #batch_rtgs = self.compute_rtgs(batch_rews)  # ALG STEP 4
 
-
         # Log the episodic returns and episodic lengths in this batch.
         self.logger['batch_rews'] = batch_rews
         self.logger['batch_lens'] = batch_lens
 
-        return batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones
+        return batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts
+
 
     def evaluate(self, batch_obs, batch_acts):
         """
@@ -334,12 +362,13 @@ class PPO:
 
         # Calculate the log probabilities of batch actions using most recent actor network.
         # This segment of code is similar to that in get_action()
-        #mean, log_std = self.actor(batch_obs)
-        #std = log_std.exp()
+        # mean, log_std = self.actor(batch_obs)
+        # std = log_std.exp()
 
-        #cov_mat = torch.diag_embed(std ** 2)
+        # cov_mat = torch.diag_embed(std ** 2)
 
         mean = self.actor(batch_obs)
+
         cov_mat = self.cov_mat
 
         dist = MultivariateNormal(mean, cov_mat)
@@ -347,8 +376,7 @@ class PPO:
         entropy_loss = -dist.entropy().mean()
 
         self.writer.add_scalar('train/entropy_loss', entropy_loss, self.logger['t_so_far'])
-        #self.writer.add_scalar('train/std', std.mean(), self.logger['t_so_far'])
-
+        # self.writer.add_scalar('train/std', std.mean(), self.logger['t_so_far'])
 
         log_probs = dist.log_prob(batch_acts)
 
@@ -418,10 +446,10 @@ class PPO:
                 log_prob - the log probability of the selected action in the distribution
         """
         # Query the actor network for a mean action
-        #mean, log_std = self.actor(obs)
-        #std = log_std.exp()
+        # mean, log_std = self.actor(obs)
+        # std = log_std.exp()
 
-        #cov_mat = torch.diag_embed(std ** 2)
+        # cov_mat = torch.diag_embed(std ** 2)
 
         mean = self.actor(obs)
         cov_mat = self.cov_mat
@@ -481,6 +509,7 @@ class PPO:
             # Set the seed
             torch.manual_seed(self.seed)
             print(f"Successfully set seed to {self.seed}")
+
     def _log_summary(self):
         """
             Print to stdout what we've logged so far in the most recent batch.
@@ -507,12 +536,10 @@ class PPO:
 
         lr = self.logger['lr']
 
-
         # Round decimal places for more aesthetic logging messages
         avg_ep_lens = str(round(avg_ep_lens, 2))
         avg_ep_rews = str(round(avg_ep_rews, 2))
         avg_actor_loss = str(round(avg_actor_loss, 5))
-
 
         # Print logging statements
         print(flush=True)
@@ -530,3 +557,31 @@ class PPO:
         self.logger['batch_lens'] = []
         self.logger['batch_rews'] = []
         self.logger['actor_losses'] = []
+
+
+    def save_ghost(self, env_name, track_name, batches, batch_lengths):
+        # Saving data to HDF5
+        with h5py.File(f'saves/ghost_{self.experiment_type}.hdf5', 'w') as f:
+            # Add metadata
+            f.attrs['env_name'] = env_name
+            f.attrs['track_name'] = track_name
+            f.attrs['total_num_batches'] = len(batches)
+
+            # Create group for batches
+            batches_group = f.create_group('batches')
+
+            for i, (batch, batch_length) in enumerate(zip(batches, batch_lengths)):
+                batch_group = batches_group.create_group(f'batch_{i + 1}')
+                batch_group.attrs['batch_length'] = batch_length
+
+                # Create group for episodes within the batch
+                episodes_group = batch_group.create_group('episodes')
+
+                for j, (ep_data, ep_length) in enumerate(zip(batch, batch_length)):
+                    ep_group = episodes_group.create_group(f'episode_{j + 1}')
+                    ep_group.attrs['episode_length'] = ep_length
+
+                    # Create dataset for actions within the episode
+                    ep_group.create_dataset('actions', data=ep_data)
+
+        print("Data saved successfully!")
