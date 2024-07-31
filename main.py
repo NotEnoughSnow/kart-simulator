@@ -33,7 +33,13 @@ import pygame
 def play(env, record, player_name="Amin", expert_ep_count=3):
     running = True
     expert_run = []
+    expert_ep_lens = []
     i = 0
+
+    info = {
+        "player_name": player_name,
+        "num_episodes": expert_ep_count,
+    }
 
     while running and i < expert_ep_count:
         env.reset()
@@ -42,7 +48,8 @@ def play(env, record, player_name="Amin", expert_ep_count=3):
         terminated = False
         truncated = False
 
-        expert_data = []
+        player_moved = False  # Reset flag at the start of each episode
+
         expert_episode = []
 
         while not terminated and not truncated:
@@ -50,37 +57,41 @@ def play(env, record, player_name="Amin", expert_ep_count=3):
 
             keys = pygame.key.get_pressed()
             # key controls
-            # if keys[pygame.K_w]:
-            #    action[3] = 1
-            # if keys[pygame.K_SPACE]:
-            #    action[4] = 1
-            # if keys[pygame.K_d]:
-            #    action[1] = 1
-            # if keys[pygame.K_a]:
-            #    action[2] = 1
-
             if keys[pygame.K_w]:
-                action[0] = -1
-            if keys[pygame.K_s]:
-                action[0] = +1
+                action[3] = 1
+            if keys[pygame.K_SPACE]:
+                action[4] = 1
             if keys[pygame.K_d]:
-                action[1] = +1
+                action[1] = 1
             if keys[pygame.K_a]:
-                action[1] = -1
+                action[2] = 1
+
+            #if keys[pygame.K_w]:
+            #    action[0] = -1
+            #if keys[pygame.K_s]:
+            #    action[0] = +1
+            #if keys[pygame.K_d]:
+            #    action[1] = +1
+            #if keys[pygame.K_a]:
+            #    action[1] = -1
 
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                     env.reset()
 
             obs, reward, terminated, truncated, _ = env.step(action)
+            total_reward += reward
+
+            # Check if the player has moved
+            if not player_moved and not np.all(action.numpy() == 0):
+                player_moved = True
 
             # print(obs)
 
-            # build expert episode
-            expert_data.append([steps, obs, action.numpy(), reward, terminated, truncated])
-
-            total_reward += reward
-            steps += 1
+            # Append timestep data only if player has moved
+            if player_moved:
+                expert_episode.append([steps, obs, action.numpy(), reward, terminated, truncated])
+                steps += 1
 
         if truncated:
             print("hit a wall")
@@ -94,7 +105,7 @@ def play(env, record, player_name="Amin", expert_ep_count=3):
         print(steps)
 
         # wrap expert data and steps in expert episode
-        expert_episode = [expert_data, steps]
+        expert_ep_lens.append(steps)
 
         # build expert run
         expert_run.append(expert_episode)
@@ -103,30 +114,38 @@ def play(env, record, player_name="Amin", expert_ep_count=3):
 
     if record:
         # write expert runs to file then exit application
-        write_file(expert_run, player_name)
+        write_file(expert_run, expert_ep_lens, info, "./notebooks/expert_test.hdf5")
+
+        print(" num episodes :", len(expert_run))
+        print(" num timesteps for the first episode :", len(expert_run[0]))
+        print(" data of the first timestep :", expert_run[0][0])
+
+        print(" ep lens :", expert_ep_lens)
+
         env.close()
         exit()
 
     env.close()
 
 
-def write_file(expert_runs, player_name, filename="expert.hdf5"):
+def write_file(expert_run, expert_ep_lens, info, filename):
     with h5py.File(filename, "w") as f:
-        for run_index, expert_episode in enumerate(expert_runs):
-            run_group = f.create_group(f"run_{run_index}")
-            # Store the player's name as an attribute of the run
-            run_group.attrs['player_name'] = player_name
+        # Save metadata as general attributes
+        for key, value in info.items():
+            f.attrs[key] = value
 
-            # Access the elements directly by index
-            episode_data = expert_episode[0]
-            episode_steps = expert_episode[1]
+        # Create a group for the single expert run
+        run_group = f.create_group("expert_run")
 
-            episode_group = run_group.create_group(f"episode_{run_index}")
-            episode_group.attrs['total_steps'] = episode_steps
+        # Iterate through episodes and their corresponding lengths
+        for episode_index, (episode_data, episode_length) in enumerate(zip(expert_run, expert_ep_lens)):
+            episode_group = run_group.create_group(f"episode_{episode_index}")
+            episode_group.attrs['total_steps'] = episode_length
 
-            # Create datasets for timestep data
+            # Iterate through timesteps and save their data with zero-padded keys
             for timestep_index, timestep in enumerate(episode_data):
-                timestep_group = episode_group.create_group(f"timestep_{timestep_index}")
+                timestep_key = f"timestep_{timestep_index:04d}"  # Zero-padded index
+                timestep_group = episode_group.create_group(timestep_key)
                 timestep_group.create_dataset("time", data=timestep[0])
                 timestep_group.create_dataset("observations", data=np.array(timestep[1], dtype=float))
                 timestep_group.create_dataset("actions", data=np.array(timestep[2], dtype=float))
@@ -238,11 +257,11 @@ def main(args):
     # n_updates_per_iteration : n_epochs
     # render_every_i : stats_window_size
 
-    env_fn = simple_env
+    env_fn = base_env
 
     obs = [obs_types.DISTANCE,
            obs_types.TARGET_ANGLE,
-           obs_types.POSITION,]
+           obs_types.POSITION]
 
     kwargs = {
         "obs_seq": obs,
@@ -255,7 +274,7 @@ def main(args):
 
     if args.mode == "play":
         env = env_fn.KartSim(render_mode="human", train=False, **kwargs)
-        play(env=env, record=False)
+        play(env=env, record=True)
 
     if args.mode == "train":
         env = env_fn.KartSim(render_mode=None, train=True, **kwargs)
@@ -294,7 +313,7 @@ if __name__ == "__main__":
     # you can also directly set the args
     # args.mode = "train"
 
-    args.mode = "train"
+    args.mode = "play"
 
     args.alg = "default"
 
