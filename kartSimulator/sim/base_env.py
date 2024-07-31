@@ -57,12 +57,13 @@ WORLD_CENTER = [500, 500]
 class KartSim(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 60, "name": "kart2D"}
 
-    def __init__(self, render_mode=None, train=False, obs_seq=[]):
+    def __init__(self, render_mode=None, train=False, obs_seq=[], reset_time=300):
 
         print("loaded env:", self.metadata["name"])
 
         self.render_mode = render_mode
 
+        self.reset_time = reset_time
         self.obs_seq = obs_seq
         self.obs_len = 0
 
@@ -139,7 +140,7 @@ class KartSim(gym.Env):
         self._create_ball()
         self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
         #self.map = MapGenerator(self._space, WORLD_CENTER, 50)
-        #self.map = EmptyMap(self._space, spawn_range=300, wc=WORLD_CENTER)
+        #self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
 
         # map walls
         # sector initiation
@@ -147,6 +148,10 @@ class KartSim(gym.Env):
         self._init_world()
         self._init_sectors(self._sector_midpoints)
         self._init_player(self.initial_pos, 0)
+
+
+        self.goal_pos = [0,0]
+        self.angle_to_target = 0
 
         self.info = {}
 
@@ -158,9 +163,7 @@ class KartSim(gym.Env):
     ):
         super().reset()
 
-        directions, angle, position = self.map.reset(self._playerShape)
-
-
+        directions, angle, position = self.map.reset([self._playerShape])
 
         self._current_episode_time = 0
 
@@ -254,10 +257,16 @@ class KartSim(gym.Env):
         # observation
         state = self.observation()
 
+        # truncation
+        if self._current_episode_time > self.reset_time:
+            self.out_of_track = True
+
         if self.render_mode == "human":
             self.render(self.render_mode)
 
         self.info["fps"] = self._clock.get_fps()
+
+        self.info["position"] = self._playerBody.position
 
         return state, step_reward, terminated, truncated, self.info
 
@@ -282,19 +291,19 @@ class KartSim(gym.Env):
 
         if self.next_sector_name is not None:
 
-            goal = self.sector_info[self.next_sector_name][1]
+            self.goal_pos = self.sector_info[self.next_sector_name][1]
 
-            distance_to_next_points_vec = pend - goal
+            distance_to_next_points_vec = pend - self.goal_pos
             self.distance_to_next_points_vec = [-abs(distance_to_next_points_vec[0]),
                                                 -abs(distance_to_next_points_vec[1])]
 
-            self.distance_to_next_points = self.distance(pend, goal)
+            self.distance_to_next_points = self.distance(pend, self.goal_pos)
 
             target_number = int(self.next_sector_name[-1])
             self.next_target_rew = 2000/(self.distance_to_next_points+50) - 10
 
-            initial_potential = self.potential_curve(self.distance(goal, pstart))
-            final_potential = self.potential_curve(self.distance(goal, pend))
+            initial_potential = self.potential_curve(self.distance(self.goal_pos, pstart))
+            final_potential = self.potential_curve(self.distance(self.goal_pos, pend))
             self.next_target_rew_act = final_potential - initial_potential
 
             #initial_potential = self.potential_curve(self.distance(goal, pstart))
@@ -317,7 +326,7 @@ class KartSim(gym.Env):
         # if collide with track then terminate
         if self.out_of_track:
             truncated = True
-            self.reward -= 1500
+            self.reward -= 500
 
             step_reward = self.reward
 
@@ -360,6 +369,8 @@ class KartSim(gym.Env):
         self.ui_manager.add_ui_text("next target", self.next_sector_name, "")
         self.ui_manager.add_ui_text("dist.rew from target", self.next_target_rew, ".4f")
         self.ui_manager.add_ui_text("distance to target", self.distance_to_next_points, ".4f")
+        self.ui_manager.add_ui_text("angle to target", self.angle_to_target, ".3f")
+
         self.ui_manager.add_ui_text("time in sec", (pygame.time.get_ticks() / 1000), ".2f")
         self.ui_manager.add_ui_text("fps", self._clock.get_fps(), ".2f")
         self.ui_manager.add_ui_text("steps", self._current_episode_time, ".2f")
@@ -407,7 +418,7 @@ class KartSim(gym.Env):
 
     def _add_sectors(self) -> None:
 
-        static_sector_lines, sector_midpoints = self.map.create_goals(None)
+        static_sector_lines, sector_midpoints = self.map.create_goals("static")
 
         self._space.add(*static_sector_lines)
         self._sector_midpoints = sector_midpoints
@@ -580,6 +591,7 @@ class KartSim(gym.Env):
             "position": self.observation_position,
             "velocity": self.observation_velocity,
             "rotation": self.observation_rotation,
+            "target_angle": self.observation_target_angle,
             "distance": self.observation_distance,
             "distance_vec": self.observation_distance_vec
         }
@@ -611,6 +623,19 @@ class KartSim(gym.Env):
 
         # assign rotations
         rotation = [(self._playerBody.angle - ANGLE_DIFF) * 300, steer_angle[0] * 300]
+
+        return rotation
+
+    def observation_target_angle(self):
+
+        x = self.goal_pos[0] - self._playerBody.position[0]
+
+        y = self.goal_pos[1] - self._playerBody.position[1]
+
+        self.angle_to_target = math.atan2(y,-x)
+
+        # assign rotations
+        rotation = [self.angle_to_target]
 
         return rotation
 

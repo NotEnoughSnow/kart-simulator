@@ -52,12 +52,13 @@ WORLD_CENTER = [500, 500]
 class KartSim(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 60, "name": "kart2D"}
 
-    def __init__(self, render_mode=None, train=False, obs_seq=[]):
+    def __init__(self, render_mode=None, train=False, obs_seq=[], reset_time=300):
 
         print("loaded env:", self.metadata["name"])
 
         self.render_mode = render_mode
 
+        self.reset_time = reset_time
         self.obs_seq = obs_seq
         self.obs_len = 0
 
@@ -158,7 +159,7 @@ class KartSim(gym.Env):
     ):
         super().reset()
 
-        directions, _, position = self.map.reset(self._playerShape)
+        directions, _, position = self.map.reset([self._playerShape])
 
         self._current_episode_time = 0
 
@@ -172,6 +173,8 @@ class KartSim(gym.Env):
         return observation, {}
 
     def step(self, action: Union[np.ndarray, int]):
+
+        self._clock.tick()
 
         # if i assign this to FPS, both of them become 0
         # what?
@@ -226,7 +229,7 @@ class KartSim(gym.Env):
         state = self.observation()
 
         # truncation
-        if self._current_episode_time > 2000:
+        if self._current_episode_time > self.reset_time:
             self.out_of_track = True
 
 
@@ -234,6 +237,7 @@ class KartSim(gym.Env):
             self.render(self.render_mode)
 
         self.info["fps"] = self._clock.get_fps()
+        self.info["position"] = self._playerBody.position
 
         return state, step_reward, terminated, truncated, self.info
 

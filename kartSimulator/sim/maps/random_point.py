@@ -12,10 +12,10 @@ class RandomPoint(abs_map):
         self.spawn_range = spawn_range
         self.wc = wc.copy()
 
-    def reset(self, playerShape):
+    def reset(self, playerShapes):
 
         for item in self.space.shapes:
-            if item != playerShape:
+            if item not in playerShapes:
                 self.space.remove(item)
 
         position = self.wc
