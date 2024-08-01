@@ -67,17 +67,15 @@ class UImanager:
         vision.draw_cone(self.window_surface, player_body)
 
 
-    def draw_UI_icons(self, acc_value, break_value, steer_right_value, steer_left_value):
+    def draw_UI_icons(self, acc_break_value, steer_value):
 
-        if not break_value:
+        if acc_break_value > 0:
             self.break_ui.set_image(not_break_image)
+            self.accelerate_ui.set_image(accelerate_image)
         else:
             self.break_ui.set_image(break_image)
-
-        if not acc_value:
             self.accelerate_ui.set_image(not_accelerate_image)
-        else:
-            self.accelerate_ui.set_image(accelerate_image)
+
 
     def update(self, time_delta, background):
         self._guiManager.update(time_delta)
