@@ -50,7 +50,12 @@ WORLD_CENTER = [500, 500]
 
 
 class KartSim(gym.Env):
-    metadata = {"render_modes": ["human"], "render_fps": 60, "name": "kart2D"}
+    metadata = {"render_modes": [None, "human"],
+                "render_fps": 60,
+                "name": "kart2D simple_env",
+                "track": "***",
+                "reset_time": 300,
+                }
 
     def __init__(self, render_mode=None, train=False, obs_seq=[], reset_time=300):
 
@@ -58,14 +63,14 @@ class KartSim(gym.Env):
 
         self.render_mode = render_mode
 
+        self.metadata["reset_time"] = reset_time
+
         self.reset_time = reset_time
         self.obs_seq = obs_seq
         self.obs_len = 0
 
         for item in obs_seq:
             self.obs_len += item[1]
-
-        print(self.obs_len)
 
         speed = 1.0
 
@@ -444,7 +449,7 @@ class KartSim(gym.Env):
     def _go_up_down(self, value):
         """acceleration control
 
-        :param value: (0..1)
+        :param value: (-1..1)
         :return:
         """
         # FIXME temp fix for ensuing that value is within (0,1)
@@ -461,7 +466,7 @@ class KartSim(gym.Env):
     def _go_left_right(self, value):
         """acceleration control
 
-        :param value: (0..1)
+        :param value: (-1..1)
         :return:
         """
         # FIXME temp fix for ensuing that value is within (0,1)

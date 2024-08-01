@@ -7,18 +7,20 @@ import kartSimulator.sim.replay_simple_env as replay_simple_env
 
 class ReplayGhosts:
 
-    #def __init__(self, location, episode=None):
+    """
+    def __init__(self, location, episode=None):
 
-        #batches, batch_lengths, _, info = self.read_ghost_file(location)
+        batches, batch_lengths, _, info = self.read_ghost_file(location)
 
-        #num_episodes = info["num_batches"]
+        num_episodes = info["num_batches"]
 
         # all : replay all trained agents at the same time
         # con : replay agents 1 by 1
         # batch : replay trained agents batch by batch
-        #mode = "batch"
+        mode = "batch"
 
-        #self.launch(batches, batch_lengths, info, mode=mode)
+        self.launch(batches, batch_lengths, info, mode=mode)
+    """
 
     def __init__(self, locations):
 
@@ -30,13 +32,15 @@ class ReplayGhosts:
         if mode == "batch":
             self.replay_batch_mul(locations)
 
-    #def launch(self, batches, batch_lengths, info, mode="all"):
-    #    if mode == "all":
-    #        self.launch_all(batches, batch_lengths, info)
-    #    if mode == "con":
-    #        self.launch_con(batches, batch_lengths, info)
-    #    if mode == "batch":
-    #        self.launch_batch(batches, batch_lengths, info)
+    """
+    def launch(self, batches, batch_lengths, info, mode="all"):
+        if mode == "all":
+            self.launch_all(batches, batch_lengths, info)
+        if mode == "con":
+            self.launch_con(batches, batch_lengths, info)
+        if mode == "batch":
+            self.launch_batch(batches, batch_lengths, info)
+    """
 
     def read_ghost_file(self, location):
         # Loading data from HDF5
@@ -45,6 +49,7 @@ class ReplayGhosts:
             env_name = f.attrs['env_name']
             track_name = f.attrs['track_name']
             total_num_batches = f.attrs['total_num_batches']
+            max_ep_len = f.attrs['max_ep_len']
 
             # Prepare lists to hold the loaded data
             batches = []
@@ -81,7 +86,7 @@ class ReplayGhosts:
             "num_batches": total_num_batches,
             "num_episodes": sum(batch_lens),
             # FIXME this shouldnt be static, it needs to be taken from the max_ep_len parameter
-            "max_num_ep_len": 502,
+            "max_num_ep_len": max_ep_len,
 
             "action_len": len(batches[0][0][0]),
         }
