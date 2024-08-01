@@ -1,3 +1,4 @@
+import os
 import sys
 
 import torch
@@ -27,13 +28,12 @@ import kartSimulator.sim.empty as empty_sim
 import kartSimulator.sim.base_env as base_env
 import kartSimulator.sim.simple_env as simple_env
 
-
 import kartSimulator.sim_turtlebot.sim_turtlebot as turtlebot_sim
 import kartSimulator.sim_turtlebot.calibrate as turtlebot_calibrate
 import pygame
 
 
-def play(env, record, player_name="Amin", expert_ep_count=3):
+def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
     running = True
     expert_run = []
     expert_ep_lens = []
@@ -56,26 +56,26 @@ def play(env, record, player_name="Amin", expert_ep_count=3):
         expert_episode = []
 
         while not terminated and not truncated:
-            action = torch.zeros(5)
+            action = torch.zeros(2)
 
             keys = pygame.key.get_pressed()
             # key controls
             if keys[pygame.K_w]:
-                action[3] = 1
-            if keys[pygame.K_SPACE]:
-                action[4] = 1
-            if keys[pygame.K_d]:
                 action[1] = 1
+            if keys[pygame.K_SPACE]:
+                action[1] = -1
+            if keys[pygame.K_d]:
+                action[0] = 1
             if keys[pygame.K_a]:
-                action[2] = 1
+                action[0] = -1
 
-            #if keys[pygame.K_w]:
+            # if keys[pygame.K_w]:
             #    action[0] = -1
-            #if keys[pygame.K_s]:
+            # if keys[pygame.K_s]:
             #    action[0] = +1
-            #if keys[pygame.K_d]:
+            # if keys[pygame.K_d]:
             #    action[1] = +1
-            #if keys[pygame.K_a]:
+            # if keys[pygame.K_a]:
             #    action[1] = -1
 
             for event in pygame.event.get():
@@ -116,8 +116,21 @@ def play(env, record, player_name="Amin", expert_ep_count=3):
             i += 1
 
     if record:
+
+        base_dir = save_dir + "expert_data/"
+
+        run_number = 1
+        while True:
+            run_path = os.path.join(base_dir, f'ExpertData_{player_name}_{run_number}.hdf5')
+            if not os.path.exists(run_path):
+                break
+            # os.makedirs(run_path)
+            run_number += 1
+
+        print("saving expert data to ", run_path)
+
         # write expert runs to file then exit application
-        write_file(expert_run, expert_ep_lens, info, "./notebooks/expert_test.hdf5")
+        write_file(expert_run, expert_ep_lens, info, run_path)
 
         print(" num episodes :", len(expert_run))
         print(" num timesteps for the first episode :", len(expert_run[0]))
@@ -157,9 +170,26 @@ def write_file(expert_run, expert_ep_lens, info, filename):
                 timestep_group.create_dataset("truncated", data=timestep[5])
 
 
-def train(env, total_timesteps, alg, type, logs_dir, record_tb, iterations, hyperparameters, actor_model, critic_model, record):
+def train(env,
+          total_timesteps,
+          alg,
+          experiment_name,
+          save_dir,
+          record_tb,
+          record_ghost,
+          save_model,
+          iterations,
+          hyperparameters,
+          ):
+    actor_model = ''
+    critic_model = ''
+
     if alg == "default":
-        model = PPO(env=env, record=record, location=type, **hyperparameters)
+
+        save_dir += "default/"
+
+        model = PPO(env=env, save_model=save_model, record_ghost=record_ghost, record_tb=record_tb, save_dir=save_dir,
+                    experiment_name=experiment_name, **hyperparameters)
 
         # Tries to load in an existing actor/critic model to continue training on
         if actor_model != '' and critic_model != '':
@@ -180,7 +210,9 @@ def train(env, total_timesteps, alg, type, logs_dir, record_tb, iterations, hype
         else:
             model.learn(total_timesteps=total_timesteps)
     if alg == "baselines":
-        baselines.train(env, logs_dir, record_tb, type, steps=total_timesteps)
+        save_dir += "baselines/"
+
+        baselines.train(env, save_dir, record_tb, experiment_name, steps=total_timesteps)
 
 
 def test(env, alg, type, deterministic, actor_model):
@@ -207,7 +239,7 @@ def test(env, alg, type, deterministic, actor_model):
         act_dim = env.action_space.shape[0]
 
         # Build our policy the same way we build our actor model in PPO
-        #policy = ActorNetwork(obs_dim, act_dim)
+        # policy = ActorNetwork(obs_dim, act_dim)
         policy = FFNetwork(obs_dim, act_dim)
 
         # Load in the actor model saved by the PPO algorithm
@@ -224,9 +256,11 @@ def test(env, alg, type, deterministic, actor_model):
 
     if alg == "baselines":
         baselines.eval(env, type, deterministic)
+
+
 def replay(replay_dir, replay_ep=None):
-    #replay = ReplayGhosts(replay_dir, replay_ep)
-    replay = ReplayGhosts(["saves/ghost_T4.hdf5"])
+    # replay = ReplayGhosts(replay_dir, replay_ep)
+    replay = ReplayGhosts(replay_dir)
 
 
 def train_SNN(env, hyperparameters):
@@ -243,77 +277,112 @@ def optimize():
 
 
 def main(args):
-    hyperparameters = {
-        'timesteps_per_batch': 256,
-        'max_timesteps_per_episode': 2048,
-        'gamma': 0.99,
-        'ent_coef': 0.001,
-        'n_updates_per_iteration': 10,
-        'lr': 0.0004,
-        'clip': 0.2,
-        'max_grad_norm': 0.5,
-        'render_every_i': 10,
-        'target_kl': 0.02,
-        'num_minibatches': 8,
-        'gae_lambda': 0.95,
-    }
 
     # timesteps_per_batch : batch_size
     # max_timesteps_per_episode : n_steps
     # n_updates_per_iteration : n_epochs
     # render_every_i : stats_window_size
 
-    env_fn = base_env
-
-    # TODO implement target angle in base env
-
-    obs = [obs_types.DISTANCE,
-           obs_types.TARGET_ANGLE,
-           obs_types.POSITION]
-
-    kwargs = {
-        "obs_seq": obs,
-        "reset_time": 300,
+    hyperparameters = {
+        'timesteps_per_batch': 2000,
+        'gamma': 0.99,
+        'ent_coef': 0.01,
+        'n_updates_per_iteration': 15,
+        'lr': 0.0004,
+        'clip': 0.2,
+        'max_grad_norm': 0.5,
+        'render_every_i': 10,
+        'target_kl': None,
+        'num_minibatches': 8,
+        'gae_lambda': 0.95,
     }
 
+    # environment selection
+    # simple_env has free movement
+    # base_env has car like movement
+    env_fn = simple_env
 
-    type = "L1"
-    logs_dir = "logs_300"
-    deterministic = True
-    total_timesteps = 300000
+    # list of observations:
+    # DISTANCE : distance to goal
+    # TARGET_ANGLE : angle to target
+    # POSITION : general position
+    # ROTATION : general angles (not available for simple_env)
+    # VELOCITY : single value speed of the agent
+    # LIDAR : vision rays
+    # LIDAR_CONV : vision rays with conv1d
+    obs = [obs_types.DISTANCE,
+           obs_types.TARGET_ANGLE,
+           ]
 
-    replay_ep = None
+    # keyword arguments for the environment
+    # reset_time : num timesteps after which the episode will terminate
+    kwargs = {
+        "obs_seq": obs,
+        "reset_time": 400,
+    }
+
+    # Parameters for training and testing
+    # experiment_name : change to test out different conditions
+    # deterministic : deterministic evaluation value (for stable baselines)
+    # total_timesteps : total number of training timesteps
+    # record_tensorboard : to record tensorboard data
+    # record_ghost : to save ghost data (files for replays)
+    # save_model : to save actor and critic models
+    # iteration_type : mul for default mode, one to run a single iteration
+    # alg : default or baselines
+    experiment_name = "L2"
+    save_dir = "./saves/"
+    deterministic = False
+    total_timesteps = 50000
+    record_tensorboard = True
+    record_ghost = True
+    save_model = True
+    iteration_type = "mul"
+    alg = "default"
+    # TODO track
+
+    # Parameters for imitation learning
+    # record_expert_data : to record data for imitation learning
+    # expert_ep_count : number of episodes to record
+    record_expert_data = True
+    expert_ep_count = 1
+    player_name = "Amin"
+
+    # Parameters for replays
+    replay_files = ["saves/default/L2/ver_2/ghost.hdf5"]
+
+
 
     if args.mode == "play":
         env = env_fn.KartSim(render_mode="human", train=False, **kwargs)
-        play(env=env, record=True)
+        play(env=env, save_dir=save_dir, player_name=player_name, record=record_expert_data,
+             expert_ep_count=expert_ep_count)
 
     if args.mode == "train":
         env = env_fn.KartSim(render_mode=None, train=True, **kwargs)
         train(env=env,
               total_timesteps=total_timesteps,
-              alg=args.alg,
-              type=type,
-              logs_dir=logs_dir,
-              record_tb=False,
-              iterations="mul",
+              alg=alg,
+              experiment_name=experiment_name,
+              save_dir=save_dir,
+              record_tb=record_tensorboard,
+              record_ghost=record_ghost,
+              save_model=save_model,
+              iterations=iteration_type,
               hyperparameters=hyperparameters,
-              actor_model=args.actor_model,
-              critic_model=args.critic_model,
-              record=True,
               )
 
     if args.mode == "test":
         env = env_fn.KartSim(render_mode="human", train=False, **kwargs)
         test(env,
-             alg=args.alg,
-             type=type,
+             alg=alg,
+             type=experiment_name,
              deterministic=deterministic,
-             actor_model=f'./saved_models_base/{type}/ppo_actor.pth'),
+             actor_model=f'./saved_models_base/{experiment_name}/ppo_actor.pth'),
 
     if args.mode == "replay":
-        replay(replay_dir="saves/ghost_T3.hdf5",
-               replay_ep=replay_ep, )
+        replay(replay_dir=replay_files,
+               )
 
     if args.mode == "snn":
         env = env_fn.KartSim(render_mode=None, train=True, **kwargs)
@@ -330,9 +399,6 @@ if __name__ == "__main__":
     # you can also directly set the args
     # args.mode = "train"
 
-    args.mode = "play"
-    #args.mode = "replay"
-
-    args.alg = "default"
+    args.mode = "train"
 
     main(args)

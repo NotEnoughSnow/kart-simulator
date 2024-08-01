@@ -55,13 +55,18 @@ WORLD_CENTER = [500, 500]
 
 
 class KartSim(gym.Env):
-    metadata = {"render_modes": ["human"], "render_fps": 60, "name": "kart2D"}
+    metadata = {"render_modes": [None, "human"],
+                "render_fps": 60,
+                "name": "kart2D base_env",
+                "track": "***",
+                "reset_time": 2000,}
 
-    def __init__(self, render_mode=None, train=False, obs_seq=[], reset_time=300):
+    def __init__(self, render_mode=None, train=False, obs_seq=[], reset_time=2000):
 
-        print("loaded env:", self.metadata["name"])
+        print("loaded env: ", self.metadata["name"])
 
         self.render_mode = render_mode
+        self.metadata["reset_time"] = reset_time
 
         self.reset_time = reset_time
         self.obs_seq = obs_seq
@@ -114,11 +119,11 @@ class KartSim(gym.Env):
         self.distance_to_next_points = -MAX_TARGET_DISTANCE
         self.distance_to_next_points_vec = [-MAX_TARGET_DISTANCE, -MAX_TARGET_DISTANCE]
 
-        # FIXME restore shapes to (-1,1), (0,1), (0,1)
+        # FIXME restore shapes to (-1,1), (-1,1)
         self.action_space = spaces.Box(
-            low=-1, high=1, shape=(5,), dtype=np.float32
+            low=-1, high=1, shape=(2,), dtype=np.float32
         )
-        # do nothing, left, right, gas, brake
+        # left, right, gas, brake
 
         # TODO use variables
         self.observation_space = spaces.Box(
@@ -187,23 +192,20 @@ class KartSim(gym.Env):
             # self.FPS = self._clock.get_fps()
             # print("what ", self._clock.get_fps())
 
-        break_value = 0
-        accel_value = 0
-        steer_right_value = 0
-        steer_left_value = 0
+
+        steer_value = 0
+        accel_break_value = 0
+
+        print(action)
 
         if action is not None:
             # [0] does nothing
 
-            steer_right_value = self._steer_right(action[1])
-            steer_left_value = self._steer_left(action[2])
-            accel_value = self._accelerate(action[3])
-            break_value = self._break(action[4])
+            steer_value = self._steer(action[0])
+            accel_break_value = self._accelerate_break(action[1])
 
-        self.break_value = break_value
-        self.accel_value = accel_value
-        self.steer_right_value = steer_right_value
-        self.steer_left_value = steer_left_value
+        self.accel_break_value = accel_break_value
+        self.steer_value = steer_value
 
         # TODO step based on FPS
         self._space.step(self._dt)
@@ -361,10 +363,8 @@ class KartSim(gym.Env):
         self.ui_manager.draw_vision_cone(self._playerBody)
 
         self.ui_manager.draw_vision_points(self.vision_points)
-        self.ui_manager.draw_UI_icons(self.accel_value,
-                                      self.break_value,
-                                      self.steer_right_value,
-                                      self.steer_left_value)
+        self.ui_manager.draw_UI_icons(self.accel_break_value,
+                                      self.steer_value,)
 
         self.ui_manager.add_ui_text("next target", self.next_sector_name, "")
         self.ui_manager.add_ui_text("dist.rew from target", self.next_target_rew, ".4f")
@@ -441,10 +441,8 @@ class KartSim(gym.Env):
         self.out_of_track = False
 
     def _init_player(self, position, angle):
-        self.break_value = 0
-        self.accel_value = 0
-        self.steer_right_value = 0
-        self.steer_left_value = 0
+        self.accel_break_value = 0
+        self.steer_value = 0
 
         self.reward = 0
         self.prev_reward = 0
@@ -467,14 +465,14 @@ class KartSim(gym.Env):
             self.sector_info["sector " + str(i)].append(sector_midpoints[i - 1])
 
 
-    def _steer_right(self, value):
+    def _steer(self, value):
         """steering control
 
-        :param value: (0..1)
+        :param value: (-1..1)
         :return:
         """
         value = min(1, value)
-        value = max(0, value)
+        value = max(-1, value)
 
         if value == 0:
             return value
@@ -482,12 +480,9 @@ class KartSim(gym.Env):
             self._steerAngle += (RAD_VELOCITY / self.FPS) * value
             return value
 
+    """
     def _steer_left(self, value):
-        """steering control
 
-        :param value: (-1..1)
-        :return:
-        """
         value = min(1, value)
         value = max(0, value)
 
@@ -496,30 +491,37 @@ class KartSim(gym.Env):
         else:
             self._steerAngle -= (RAD_VELOCITY / self.FPS) * value
             return value
+    """
 
-    def _accelerate(self, value):
+    def _accelerate_break(self, value):
         """acceleration control
 
-        :param value: (0..1)
+        :param value: (-1..1)
         :return:
         """
         # FIXME temp fix for ensuing that value is within (0,1)
         value = min(1, value)
-        value = max(0, value)
+        value = max(-1, value)
+
+        print(value)
 
         if value == 0:
             return value
-        else:
+        elif value > 0:
             if self.velocity < MAX_VELOCITY:
                 self._playerBody.apply_impulse_at_local_point((0, 2 * value), (0, 0))
             return value
+        elif value < 0:
+            if self.forward_direction > 0:
+                self._playerBody.apply_impulse_at_local_point((0, 2 * value), (0, 0))
+            return value
+        else:
+            raise Exception("how ?")
 
+
+    """"
     def _break(self, value):
-        """breaking control
 
-        :param value: (0..1)
-        :return:
-        """
         # FIXME temp fix for ensuing that value is within (0,1)
         value = min(1, value)
         value = max(0, value)
@@ -530,6 +532,7 @@ class KartSim(gym.Env):
             if self.forward_direction > 0:
                 self._playerBody.apply_impulse_at_local_point((0, -2 * value), (0, 0))
             return value
+    """
 
     def _create_ball(self) -> None:
         mass = BOT_WEIGHT

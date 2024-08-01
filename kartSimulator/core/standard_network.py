@@ -27,8 +27,6 @@ class FFNetwork(nn.Module):
         """
         super(FFNetwork, self).__init__()
 
-        print("in dim", in_dim)
-
         self.layer1 = nn.Linear(in_dim, 128)
         self.layer2 = nn.Linear(128, 128)
         self.layer3 = nn.Linear(128, out_dim)

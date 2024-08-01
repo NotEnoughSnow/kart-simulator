@@ -19,22 +19,26 @@ from kartSimulator.core.standard_network import FFNetwork
 
 class PPO:
 
-    def __init__(self, env, record, location, **hyperparameters):
-
-        self.location = location
+    def __init__(self, env, record_ghost, save_model, record_tb, experiment_name, save_dir, **hyperparameters):
 
         # Make sure the environment is compatible with our code
         assert (type(env.observation_space) == gym.spaces.Box)
         assert (type(env.action_space) == gym.spaces.Box)
 
-        self.record = record
+        self.record_tb = record_tb
+        self.record_ghost = record_ghost
+        self.save_model = save_model
 
-        base_dir = 'ppo_logs_100'
-        self.experiment_type = location
+        base_dir = save_dir
+        self.experiment_name = experiment_name
 
-        run_directory = utils.get_next_run_directory(base_dir, self.experiment_type)
+        self.run_directory = utils.get_next_run_directory(base_dir, self.experiment_name)
 
-        self.writer = SummaryWriter(run_directory)
+        print(f"Saving to '{self.run_directory}' after training")
+
+        if self.record_tb:
+            print("Recording tensorboard data")
+            self.writer = SummaryWriter(self.run_directory)
 
         # Initialize hyperparameters for training with PPO
         self._init_hyperparameters(hyperparameters)
@@ -76,8 +80,7 @@ class PPO:
 
     def learn(self, total_timesteps):
 
-        print(f"Learning... Running {self.max_timesteps_per_episode} timesteps per episode, ", end='')
-        print(f"{self.timesteps_per_batch} timesteps per batch for a total of {total_timesteps} timesteps")
+        print(f"Learning... Running {self.timesteps_per_batch} timesteps per batch for a total of {total_timesteps} timesteps", end='')
 
         t_so_far = 0  # Timesteps simulated so far
         i_so_far = 0  # Iterations ran so far
@@ -120,12 +123,14 @@ class PPO:
             step = batch_obs.size(0)
             inds = np.arange(step)
             minibatch_size = step // self.num_minibatches
+            loss_arr = []
 
             #print("batch ", step)
             #print("mini batch ", minibatch_size)
 
             explained_variance = 1 - torch.var(batch_rtgs - V) / torch.var(batch_rtgs)
-            self.writer.add_scalar('train/explained_variance', explained_variance, self.logger['t_so_far'])
+            if self.record_tb:
+                self.writer.add_scalar('train/explained_variance', explained_variance, self.logger['t_so_far'])
 
             # This is the loop where we update our network for some n epochs
             for _ in range(self.n_updates_per_iteration):
@@ -197,45 +202,59 @@ class PPO:
                     self.critic_optim.step()
 
                     # calculating metrics
-                    loss = actor_loss + critic_loss
+                    total_loss = actor_loss + critic_loss
                     policy_gradient_loss = actor_loss
                     value_loss = critic_loss
 
-                # Approximating KL Divergence
-                if self.target_kl is not None and approx_kl > self.target_kl:
-                    break # if kl aboves threshold
+                    loss_arr.append(actor_loss.detach())
 
-                self.writer.add_scalar('train/clip_range', self.clip, self.logger['t_so_far'])
-                self.writer.add_scalar('train/clip_fraction', clip_fraction, self.logger['t_so_far'])
-                self.writer.add_scalar('train/approx_kl', approx_kl, self.logger['t_so_far'])
-                self.writer.add_scalar('train/policy_gradient_loss', policy_gradient_loss, self.logger['t_so_far'])
-                self.writer.add_scalar('train/value_loss', value_loss, self.logger['t_so_far'])
-                self.writer.add_scalar('train/loss', loss, self.logger['t_so_far'])
+                    # Approximating KL Divergence
+                    if self.target_kl is not None and approx_kl > self.target_kl:
+                        break # if kl aboves threshold
+                    if self.record_tb:
+                        self.writer.add_scalar('train/clip_range', self.clip, self.logger['t_so_far'])
+                        self.writer.add_scalar('train/clip_fraction', clip_fraction, self.logger['t_so_far'])
+                        self.writer.add_scalar('train/approx_kl', approx_kl, self.logger['t_so_far'])
+                        self.writer.add_scalar('train/policy_gradient_loss', policy_gradient_loss, self.logger['t_so_far'])
+                        self.writer.add_scalar('train/value_loss', value_loss, self.logger['t_so_far'])
+                        self.writer.add_scalar('train/loss', total_loss, self.logger['t_so_far'])
+
+
 
                 # Log actor loss
-                self.logger['actor_losses'].append(actor_loss.detach())
+                avg_loss = sum(loss_arr) / len(loss_arr)
+                self.logger['actor_losses'].append(avg_loss)
 
             # Print a summary of our training so far
             self._log_summary()
 
             # Save our model if it's time
-            if i_so_far % self.save_freq == 0:
-                torch.save(self.actor.state_dict(), './ppo_actor.pth')
-                torch.save(self.critic.state_dict(), './ppo_critic.pth')
+            if self.save_model:
+                if i_so_far % self.save_freq == 0:
+                    print("Quick-saving models")
+                    torch.save(self.actor.state_dict(), f'{self.run_directory}/ppo_actor.pth')
+                    torch.save(self.critic.state_dict(), f'{self.run_directory}/ppo_critic.pth')
 
 
-        torch.save(self.actor.state_dict(), f'./saved_models_base/{self.location}/ppo_actor.pth')
-        torch.save(self.critic.state_dict(), f'./saved_models_base/{self.location}/ppo_critic.pth')
+        #model_save_directory = utils.get_next_run_directory(f'./saved_models_base/',self.experiment_type)
+
+        if self.save_model:
+            print("Saving actor & critic models")
+            torch.save(self.actor.state_dict(), f'{self.run_directory }/ppo_actor.pth')
+            torch.save(self.critic.state_dict(), f'{self.run_directory }/ppo_critic.pth')
+
+
 
         # TODO inherit from game
-        if self.record:
-            self.save_ghost(env_name="TEST",
-                            track_name="fixed_goal",
+        if self.record_ghost:
+            print("Saving ghost data")
+            self.save_ghost(self.env,
                             batches=total_ghost_ep,
                             batch_lengths=total_ghost_ts,)
 
 
-        print("saved models")
+        print("Finished successfully!")
+
 
     def rollout(self):
 
@@ -269,9 +288,9 @@ class PPO:
             terminated = False
             done = False
 
+            ep_t = 0
 
-            # TODO understand vars timesteps per ep, batch, ep, timesteps, ect..
-            for ep_t in range(self.max_timesteps_per_episode):
+            while not done:
 
                 ep_dones.append(done)
 
@@ -306,11 +325,11 @@ class PPO:
                 # print(rew)
 
                 # TODO add fps
-                self.writer.add_scalar('time/fps', info["fps"], self.logger['t_so_far'])
+                if self.record_tb:
+                    self.writer.add_scalar('time/fps', info["fps"], self.logger['t_so_far'])
 
-                # If the environment tells us the episode is terminated, break
-                if terminated or truncated:
-                    break
+                ep_t += 1
+
 
             batch_ghosts.append(ghost_ep)
 
@@ -323,8 +342,9 @@ class PPO:
             ep_rew_mean = np.sum(ep_rews)
             # print(ep_rew_mean)
 
-            self.writer.add_scalar('rollout/ep_rew_mean', ep_rew_mean, self.logger['t_so_far'])
-            self.writer.add_scalar('rollout/ep_len_mean', (ep_t + 1), self.logger['t_so_far'])
+            if self.record_tb:
+                self.writer.add_scalar('rollout/ep_rew_mean', ep_rew_mean, self.logger['t_so_far'])
+                self.writer.add_scalar('rollout/ep_len_mean', (ep_t + 1), self.logger['t_so_far'])
 
 
         # Reshape data as tensors in the shape specified in function description, before returning
@@ -375,8 +395,9 @@ class PPO:
 
         entropy_loss = -dist.entropy().mean()
 
-        self.writer.add_scalar('train/entropy_loss', entropy_loss, self.logger['t_so_far'])
-        # self.writer.add_scalar('train/std', std.mean(), self.logger['t_so_far'])
+        if self.record_tb:
+            self.writer.add_scalar('train/entropy_loss', entropy_loss, self.logger['t_so_far'])
+            # self.writer.add_scalar('train/std', std.mean(), self.logger['t_so_far'])
 
         log_probs = dist.log_prob(batch_acts)
 
@@ -481,7 +502,6 @@ class PPO:
         # Initialize default values for hyperparameters
         # Algorithm hyperparameters
         self.timesteps_per_batch = 4800  # Number of timesteps to run per batch
-        self.max_timesteps_per_episode = 1600  # Max number of timesteps per episode
         self.n_updates_per_iteration = 5  # Number of times to update actor/critic per iteration
         self.lr = 0.005  # Learning rate of actor optimizer
         self.gamma = 0.95  # Discount factor to be applied when calculating Rewards-To-Go
@@ -532,6 +552,7 @@ class PPO:
         i_so_far = self.logger['i_so_far']
         avg_ep_lens = np.mean(self.logger['batch_lens'])
         avg_ep_rews = np.mean([np.sum(ep_rews) for ep_rews in self.logger['batch_rews']])
+
         avg_actor_loss = np.mean([losses.float().mean() for losses in self.logger['actor_losses']])
 
         lr = self.logger['lr']
@@ -559,13 +580,14 @@ class PPO:
         self.logger['actor_losses'] = []
 
 
-    def save_ghost(self, env_name, track_name, batches, batch_lengths):
+    def save_ghost(self, env, batches, batch_lengths):
         # Saving data to HDF5
-        with h5py.File(f'saves/ghost_{self.experiment_type}.hdf5', 'w') as f:
+        with h5py.File(f'{self.run_directory}/ghost.hdf5', 'w') as f:
             # Add metadata
-            f.attrs['env_name'] = env_name
-            f.attrs['track_name'] = track_name
+            f.attrs['env_name'] = env.metadata["name"]
+            f.attrs['track_name'] = env.metadata["track"]
             f.attrs['total_num_batches'] = len(batches)
+            f.attrs['max_ep_len'] = env.metadata["reset_time"]+2
 
             # Create group for batches
             batches_group = f.create_group('batches')
@@ -584,4 +606,4 @@ class PPO:
                     # Create dataset for actions within the episode
                     ep_group.create_dataset('actions', data=ep_data)
 
-        print("Data saved successfully!")
+
