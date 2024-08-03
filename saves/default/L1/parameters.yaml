@@ -1,0 +1,24 @@
+algorithm: default
+env name: kart2D simple_env
+evn track: '***'
+hyperparameters:
+  clip: 0.2
+  ent_coef: 0.01
+  gae_lambda: 0.95
+  gamma: 0.95
+  lr: 0.0004
+  max_grad_norm: 0.5
+  max_timesteps_per_episode: 700
+  n_updates_per_iteration: 10
+  num_minibatches: 8
+  render_every_i: 10
+  target_kl: null
+  timesteps_per_batch: 4800
+obs types:
+- - distance
+  - 1
+- - target_angle
+  - 1
+total timesteps: 20000
+type: L1
+version: 8
