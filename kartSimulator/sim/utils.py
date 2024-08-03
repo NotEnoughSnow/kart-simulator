@@ -12,7 +12,7 @@ def get_next_run_directory(base_dir, experiment_type):
         run_path = os.path.join(base_dir, experiment_type, f'ver_{run_number}')
         if not os.path.exists(run_path):
             os.makedirs(run_path)
-            return run_path
+            return run_path, run_number
         run_number += 1
 
 

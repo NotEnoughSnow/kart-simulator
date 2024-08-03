@@ -1,3 +1,4 @@
+import yaml
 import os
 import sys
 
@@ -27,6 +28,8 @@ import kartSimulator.sim.sim2D as kart_sim
 import kartSimulator.sim.empty as empty_sim
 import kartSimulator.sim.base_env as base_env
 import kartSimulator.sim.simple_env as simple_env
+
+import kartSimulator.sim.utils as utils
 
 import kartSimulator.sim_turtlebot.sim_turtlebot as turtlebot_sim
 import kartSimulator.sim_turtlebot.calibrate as turtlebot_calibrate
@@ -170,6 +173,34 @@ def write_file(expert_run, expert_ep_lens, info, filename):
                 timestep_group.create_dataset("truncated", data=timestep[5])
 
 
+def save_train_data(env, save_dir, experiment_name, ver_number, alg, total_timesteps, hyperparameters):
+
+    # env name
+    # map
+    # obs
+    # hyperparameters
+
+    parameters = {
+        "type" : experiment_name,
+        "version" : ver_number,
+        "algorithm" : alg,
+        "env name" : env.metadata["name"],
+        "evn track" : env.metadata["track"],
+        "obs types" : env.metadata["obs_seq"],
+        "total timesteps" : total_timesteps,
+        "hyperparameters" : hyperparameters,
+    }
+
+    save_dir = save_dir+f"{experiment_name}/"
+    yaml_file_path = save_dir+"parameters.yaml"
+
+    if not os.path.exists(yaml_file_path):
+        with open(yaml_file_path, 'w') as file:
+            yaml.dump(parameters, file, default_flow_style=False)
+
+        print(f"Parameters saved to {yaml_file_path}")
+
+
 def train(env,
           total_timesteps,
           alg,
@@ -178,18 +209,28 @@ def train(env,
           record_tb,
           record_ghost,
           save_model,
-          iterations,
+          iteration_type,
           hyperparameters,
           ):
     actor_model = ''
     critic_model = ''
 
+    base_dir = save_dir+f"{alg}/"
+
+    save_path, ver_number = utils.get_next_run_directory(base_dir, experiment_name)
+
+
+    save_train_data(env, base_dir, experiment_name, ver_number, alg, total_timesteps, hyperparameters)
+
+
+
     if alg == "default":
 
-        save_dir += "default/"
-
-        model = PPO(env=env, save_model=save_model, record_ghost=record_ghost, record_tb=record_tb, save_dir=save_dir,
-                    experiment_name=experiment_name, **hyperparameters)
+        model = PPO(env=env, save_model=save_model,
+                    record_ghost=record_ghost,
+                    record_tb=record_tb,
+                    save_dir=save_path,
+                    **hyperparameters)
 
         # Tries to load in an existing actor/critic model to continue training on
         if actor_model != '' and critic_model != '':
@@ -204,13 +245,13 @@ def train(env,
         else:
             print(f"Training from scratch.", flush=True)
 
-        if iterations == "one":
+        if iteration_type == "one":
             model = PPO_ONE(env=env, **hyperparameters)
             model.learn(total_timesteps=1)
         else:
             model.learn(total_timesteps=total_timesteps)
     if alg == "baselines":
-        save_dir += "baselines/"
+        # TODO fix save_dir not needing experiment name
 
         baselines.train(env, save_dir, record_tb, experiment_name, steps=total_timesteps)
 
@@ -284,10 +325,11 @@ def main(args):
     # render_every_i : stats_window_size
 
     hyperparameters = {
-        'timesteps_per_batch': 2000,
-        'gamma': 0.99,
+        'timesteps_per_batch': 4800,
+        'max_timesteps_per_episode': 700,
+        'gamma': 0.95,
         'ent_coef': 0.01,
-        'n_updates_per_iteration': 15,
+        'n_updates_per_iteration': 10,
         'lr': 0.0004,
         'clip': 0.2,
         'max_grad_norm': 0.5,
@@ -296,6 +338,7 @@ def main(args):
         'num_minibatches': 8,
         'gae_lambda': 0.95,
     }
+
 
     # environment selection
     # simple_env has free movement
@@ -316,30 +359,38 @@ def main(args):
 
     # keyword arguments for the environment
     # reset_time : num timesteps after which the episode will terminate
-    kwargs = {
+    env_args = {
         "obs_seq": obs,
-        "reset_time": 400,
+        "reset_time": 300,
     }
 
-    # Parameters for training and testing
-    # experiment_name : change to test out different conditions
-    # deterministic : deterministic evaluation value (for stable baselines)
+    # Track selection
+    # TODO track
+
+    # Parameters for training
     # total_timesteps : total number of training timesteps
     # record_tensorboard : to record tensorboard data
     # record_ghost : to save ghost data (files for replays)
     # save_model : to save actor and critic models
     # iteration_type : mul for default mode, one to run a single iteration
     # alg : default or baselines
-    experiment_name = "L2"
+    train_parameters = {
+        "total_timesteps": 20000,
+        "record_tb": True,
+        "record_ghost": True,
+        "save_model": True,
+        "iteration_type": "mul",
+        "alg": "default",
+    }
+
+    # Save parameters
+    # experiment_name : change to test out different conditions
+    experiment_name = "L1"
     save_dir = "./saves/"
+
+    # Parameters for testing
+    # deterministic : deterministic evaluation value (for stable baselines)
     deterministic = False
-    total_timesteps = 50000
-    record_tensorboard = True
-    record_ghost = True
-    save_model = True
-    iteration_type = "mul"
-    alg = "default"
-    # TODO track
 
     # Parameters for imitation learning
     # record_expert_data : to record data for imitation learning
@@ -349,33 +400,34 @@ def main(args):
     player_name = "Amin"
 
     # Parameters for replays
-    replay_files = ["saves/default/L2/ver_2/ghost.hdf5"]
+    replay_files = ["saves/default/L1/ver_3/ghost.hdf5", "saves/default/L1/ver_1/ghost.hdf5"]
+
+    # Load from YAML
+    #with open(yaml_file_path, 'r') as file:
+    #    loaded_parameters_yaml = yaml.load(file, Loader=yaml.FullLoader)
+
+    #print(loaded_parameters_yaml)
 
 
 
     if args.mode == "play":
-        env = env_fn.KartSim(render_mode="human", train=False, **kwargs)
+        env = env_fn.KartSim(render_mode="human", train=False, **env_args)
         play(env=env, save_dir=save_dir, player_name=player_name, record=record_expert_data,
              expert_ep_count=expert_ep_count)
 
     if args.mode == "train":
-        env = env_fn.KartSim(render_mode=None, train=True, **kwargs)
+        env = env_fn.KartSim(render_mode=None, train=True, **env_args)
         train(env=env,
-              total_timesteps=total_timesteps,
-              alg=alg,
+              **train_parameters,
               experiment_name=experiment_name,
               save_dir=save_dir,
-              record_tb=record_tensorboard,
-              record_ghost=record_ghost,
-              save_model=save_model,
-              iterations=iteration_type,
               hyperparameters=hyperparameters,
               )
 
     if args.mode == "test":
-        env = env_fn.KartSim(render_mode="human", train=False, **kwargs)
+        env = env_fn.KartSim(render_mode="human", train=False, **env_args)
         test(env,
-             alg=alg,
+             alg=train_parameters["alg"],
              type=experiment_name,
              deterministic=deterministic,
              actor_model=f'./saved_models_base/{experiment_name}/ppo_actor.pth'),
@@ -385,7 +437,7 @@ def main(args):
                )
 
     if args.mode == "snn":
-        env = env_fn.KartSim(render_mode=None, train=True, **kwargs)
+        env = env_fn.KartSim(render_mode=None, train=True, **env_args)
         train_SNN(env=env, hyperparameters=hyperparameters)
 
     if args.mode == "optimize":
@@ -399,6 +451,6 @@ if __name__ == "__main__":
     # you can also directly set the args
     # args.mode = "train"
 
-    args.mode = "train"
+    args.mode = "replay"
 
     main(args)
