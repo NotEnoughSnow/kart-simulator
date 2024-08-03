@@ -6,8 +6,8 @@ import numpy as np
 import pymunk
 import pymunk.pygame_util
 import torch
-from gym import spaces
-import gym
+from gymnasium import spaces
+import gymnasium as gym
 
 import kartSimulator.sim.utils as utils
 import kartSimulator.sim.LIDAR_vision as vision
@@ -54,6 +54,7 @@ class KartSim(gym.Env):
                 "render_fps": 60,
                 "name": "kart2D simple_env",
                 "track": "***",
+                "obs_seq": [],
                 "reset_time": 300,
                 }
 
@@ -64,6 +65,7 @@ class KartSim(gym.Env):
         self.render_mode = render_mode
 
         self.metadata["reset_time"] = reset_time
+        self.metadata["obs_seq"] = obs_seq
 
         self.reset_time = reset_time
         self.obs_seq = obs_seq

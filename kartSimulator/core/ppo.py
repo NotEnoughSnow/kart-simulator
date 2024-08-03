@@ -1,16 +1,14 @@
 import time
 
-import gym
+import gymnasium as gym
 import numpy as np
 import torch
 from torch import nn
 from torch.distributions import MultivariateNormal
 from torch.optim.adam import Adam
 from torch.utils.tensorboard import SummaryWriter
-import kartSimulator.sim.utils as utils
 
 import h5py
-
 
 from kartSimulator.core.actor_network import ActorNetwork
 from kartSimulator.core.critic_network import CriticNetwork
@@ -19,7 +17,7 @@ from kartSimulator.core.standard_network import FFNetwork
 
 class PPO:
 
-    def __init__(self, env, record_ghost, save_model, record_tb, experiment_name, save_dir, **hyperparameters):
+    def __init__(self, env, record_ghost, save_model, record_tb, save_dir, **hyperparameters):
 
         # Make sure the environment is compatible with our code
         assert (type(env.observation_space) == gym.spaces.Box)
@@ -29,10 +27,7 @@ class PPO:
         self.record_ghost = record_ghost
         self.save_model = save_model
 
-        base_dir = save_dir
-        self.experiment_name = experiment_name
-
-        self.run_directory = utils.get_next_run_directory(base_dir, self.experiment_name)
+        self.run_directory = save_dir
 
         print(f"Saving to '{self.run_directory}' after training")
 
@@ -46,7 +41,6 @@ class PPO:
         self.env = env
         self.obs_dim = env.observation_space.shape[0]
         self.act_dim = env.action_space.shape[0]
-
 
         print(f"obs shape :{env.observation_space.shape} \n"
               f"action shape :{env.action_space.shape}")
@@ -80,11 +74,12 @@ class PPO:
 
     def learn(self, total_timesteps):
 
-        print(f"Learning... Running {self.timesteps_per_batch} timesteps per batch for a total of {total_timesteps} timesteps", end='')
+        print(
+            f"Learning... Running {self.timesteps_per_batch} timesteps per batch for a total of {total_timesteps} timesteps",
+            end='')
 
         t_so_far = 0  # Timesteps simulated so far
         i_so_far = 0  # Iterations ran so far
-
 
         total_ghost_ep = []
         total_ghost_ts = []
@@ -92,7 +87,7 @@ class PPO:
         while t_so_far < total_timesteps:
 
             batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout()
-            #batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens, batch_ghosts = self.rollout()
+            # batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens, batch_ghosts = self.rollout()
 
             total_ghost_ep.append(batch_ghosts)
             total_ghost_ts.append(batch_lens)
@@ -101,7 +96,6 @@ class PPO:
             A_k = self.calculate_gae(batch_rews, batch_vals, batch_dones)
             V = self.critic(batch_obs).squeeze()
             batch_rtgs = A_k + V.detach()
-
 
             # Calculate how many timesteps we collected this batch
             t_so_far += np.sum(batch_lens)
@@ -112,7 +106,6 @@ class PPO:
             # Logging timesteps so far and iterations so far
             self.logger['t_so_far'] = t_so_far
             self.logger['i_so_far'] = i_so_far
-
 
             # One of the only tricks I use that isn't in the pseudocode. Normalizing advantages
             # isn't theoretically necessary, but in practice it decreases the variance of
@@ -125,8 +118,8 @@ class PPO:
             minibatch_size = step // self.num_minibatches
             loss_arr = []
 
-            #print("batch ", step)
-            #print("mini batch ", minibatch_size)
+            # print("batch ", step)
+            # print("mini batch ", minibatch_size)
 
             explained_variance = 1 - torch.var(batch_rtgs - V) / torch.var(batch_rtgs)
             if self.record_tb:
@@ -137,7 +130,7 @@ class PPO:
                 # Learning Rate Annealing
                 frac = (t_so_far - 1.0) / total_timesteps
                 new_lr = self.lr * (1.0 - frac)
-                
+
                 # Make sure learning rate doesn't go below 0
                 new_lr = max(new_lr, 0.0)
                 self.actor_optim.param_groups[0]["lr"] = new_lr
@@ -157,7 +150,6 @@ class PPO:
 
                     # Calculate V_phi and pi_theta(a_t | s_t)
                     V, curr_log_probs, dist, entropy_loss = self.evaluate(mini_obs, mini_acts)
-
 
                     # Calculate the ratio pi_theta(a_t | s_t) / pi_theta_k(a_t | s_t)
                     # NOTE: we just subtract the logs, which is the same as
@@ -179,7 +171,6 @@ class PPO:
                     # NOTE: we take the negative min of the surrogate losses because we're trying to maximize
                     # the performance function, but Adam minimizes the loss. So minimizing the negative
                     # performance function maximizes it.
-
 
                     actor_loss = (-torch.min(surr1, surr2)).mean()
                     actor_loss = actor_loss + self.ent_coef * entropy_loss
@@ -210,16 +201,15 @@ class PPO:
 
                     # Approximating KL Divergence
                     if self.target_kl is not None and approx_kl > self.target_kl:
-                        break # if kl aboves threshold
+                        break  # if kl aboves threshold
                     if self.record_tb:
                         self.writer.add_scalar('train/clip_range', self.clip, self.logger['t_so_far'])
                         self.writer.add_scalar('train/clip_fraction', clip_fraction, self.logger['t_so_far'])
                         self.writer.add_scalar('train/approx_kl', approx_kl, self.logger['t_so_far'])
-                        self.writer.add_scalar('train/policy_gradient_loss', policy_gradient_loss, self.logger['t_so_far'])
+                        self.writer.add_scalar('train/policy_gradient_loss', policy_gradient_loss,
+                                               self.logger['t_so_far'])
                         self.writer.add_scalar('train/value_loss', value_loss, self.logger['t_so_far'])
                         self.writer.add_scalar('train/loss', total_loss, self.logger['t_so_far'])
-
-
 
                 # Log actor loss
                 avg_loss = sum(loss_arr) / len(loss_arr)
@@ -235,26 +225,41 @@ class PPO:
                     torch.save(self.actor.state_dict(), f'{self.run_directory}/ppo_actor.pth')
                     torch.save(self.critic.state_dict(), f'{self.run_directory}/ppo_critic.pth')
 
-
-        #model_save_directory = utils.get_next_run_directory(f'./saved_models_base/',self.experiment_type)
+        # model_save_directory = utils.get_next_run_directory(f'./saved_models_base/',self.experiment_type)
 
         if self.save_model:
             print("Saving actor & critic models")
-            torch.save(self.actor.state_dict(), f'{self.run_directory }/ppo_actor.pth')
-            torch.save(self.critic.state_dict(), f'{self.run_directory }/ppo_critic.pth')
-
-
+            torch.save(self.actor.state_dict(), f'{self.run_directory}/ppo_actor.pth')
+            torch.save(self.critic.state_dict(), f'{self.run_directory}/ppo_critic.pth')
 
         # TODO inherit from game
         if self.record_ghost:
             print("Saving ghost data")
             self.save_ghost(self.env,
                             batches=total_ghost_ep,
-                            batch_lengths=total_ghost_ts,)
-
+                            batch_lengths=total_ghost_ts, )
 
         print("Finished successfully!")
 
+    def calculate_gae(self, rewards, values, dones):
+        batch_advantages = []
+        for ep_rews, ep_vals, ep_dones in zip(rewards, values, dones):
+            advantages = []
+            last_advantage = 0
+
+            for t in reversed(range(len(ep_rews))):
+                if t + 1 < len(ep_rews):
+                    delta = ep_rews[t] + self.gamma * ep_vals[t + 1] * (1 - ep_dones[t + 1]) - ep_vals[t]
+                else:
+                    delta = ep_rews[t] - ep_vals[t]
+
+                advantage = delta + self.gamma * self.gae_lambda * (1 - ep_dones[t]) * last_advantage
+                last_advantage = advantage
+                advantages.insert(0, advantage)
+
+            batch_advantages.extend(advantages)
+
+        return torch.tensor(batch_advantages, dtype=torch.float)
 
     def rollout(self):
 
@@ -282,7 +287,6 @@ class PPO:
             ep_vals = []
             ghost_ep = []
 
-
             obs = self.env.reset()[0]
             truncated = False
             terminated = False
@@ -306,12 +310,10 @@ class PPO:
 
                 obs, rew, terminated, truncated, info = self.env.step(action)
 
-
                 done = terminated or truncated
 
-                #print("fps", info["fps"])
-                #print("position", info["position"])
-
+                # print("fps", info["fps"])
+                # print("position", info["position"])
 
                 ghost_ep.append(info["position"])
 
@@ -330,7 +332,6 @@ class PPO:
 
                 ep_t += 1
 
-
             batch_ghosts.append(ghost_ep)
 
             # Track episodic lengths and rewards
@@ -346,12 +347,11 @@ class PPO:
                 self.writer.add_scalar('rollout/ep_rew_mean', ep_rew_mean, self.logger['t_so_far'])
                 self.writer.add_scalar('rollout/ep_len_mean', (ep_t + 1), self.logger['t_so_far'])
 
-
         # Reshape data as tensors in the shape specified in function description, before returning
         batch_obs = torch.tensor(np.array(batch_obs), dtype=torch.float)
         batch_acts = torch.tensor(np.array(batch_acts), dtype=torch.float)
         batch_log_probs = torch.tensor(np.array(batch_log_probs), dtype=torch.float)
-        #batch_rtgs = self.compute_rtgs(batch_rews)  # ALG STEP 4
+        # batch_rtgs = self.compute_rtgs(batch_rews)  # ALG STEP 4
 
         # Log the episodic returns and episodic lengths in this batch.
         self.logger['batch_rews'] = batch_rews
@@ -359,6 +359,38 @@ class PPO:
 
         return batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts
 
+    def get_action(self, obs):
+        """
+            Queries an action from the actor network, should be called from rollout.
+
+            Parameters:
+                obs - the observation at the current timestep
+
+            Return:
+                action - the action to take, as a numpy array
+                log_prob - the log probability of the selected action in the distribution
+        """
+        # Query the actor network for a mean action
+        # mean, log_std = self.actor(obs)
+        # std = log_std.exp()
+
+        # cov_mat = torch.diag_embed(std ** 2)
+
+        mean = self.actor(obs)
+        cov_mat = self.cov_mat
+
+        # Create a distribution with the mean action and std. We use torch.diag to create
+        # a diagonal covariance matrix from the std.
+        dist = MultivariateNormal(mean, cov_mat)
+
+        # Sample an action from the distribution
+        action = dist.sample()
+
+        # Calculate the log probability for that action
+        log_prob = dist.log_prob(action)
+
+        # Return the sampled action and the log probability of that action in our distribution
+        return action.detach().numpy(), log_prob.detach()
 
     def evaluate(self, batch_obs, batch_acts):
         """
@@ -405,88 +437,6 @@ class PPO:
         # and log probabilities log_probs of each action in the batch
         return V, log_probs, dist, entropy_loss
 
-    def compute_rtgs(self, batch_rews):
-        """
-            Compute the Reward-To-Go of each timestep in a batch given the rewards.
-
-            Parameters:
-                batch_rews - the rewards in a batch, Shape: (number of episodes, number of timesteps per episode)
-
-            Return:
-                batch_rtgs - the rewards to go, Shape: (number of timesteps in batch)
-        """
-        # The rewards-to-go (rtg) per episode per batch to return.
-        # The shape will be (num timesteps per episode)
-        batch_rtgs = []
-
-        # Iterate through each episode
-        for ep_rews in reversed(batch_rews):
-
-            discounted_reward = 0  # The discounted reward so far
-
-            # Iterate through all rewards in the episode. We go backwards for smoother calculation of each
-            # discounted return (think about why it would be harder starting from the beginning)
-            for rew in reversed(ep_rews):
-                discounted_reward = rew + discounted_reward * self.gamma
-                batch_rtgs.insert(0, discounted_reward)
-
-        # Convert the rewards-to-go into a tensor
-        batch_rtgs = torch.tensor(batch_rtgs, dtype=torch.float)
-
-        return batch_rtgs
-
-    def calculate_gae(self, rewards, values, dones):
-        batch_advantages = []
-        for ep_rews, ep_vals, ep_dones in zip(rewards, values, dones):
-            advantages = []
-            last_advantage = 0
-
-            for t in reversed(range(len(ep_rews))):
-                if t + 1 < len(ep_rews):
-                    delta = ep_rews[t] + self.gamma * ep_vals[t + 1] * (1 - ep_dones[t + 1]) - ep_vals[t]
-                else:
-                    delta = ep_rews[t] - ep_vals[t]
-
-                advantage = delta + self.gamma * self.gae_lambda * (1 - ep_dones[t]) * last_advantage
-                last_advantage = advantage
-                advantages.insert(0, advantage)
-
-            batch_advantages.extend(advantages)
-
-        return torch.tensor(batch_advantages, dtype=torch.float)
-
-    def get_action(self, obs):
-        """
-            Queries an action from the actor network, should be called from rollout.
-
-            Parameters:
-                obs - the observation at the current timestep
-
-            Return:
-                action - the action to take, as a numpy array
-                log_prob - the log probability of the selected action in the distribution
-        """
-        # Query the actor network for a mean action
-        # mean, log_std = self.actor(obs)
-        # std = log_std.exp()
-
-        # cov_mat = torch.diag_embed(std ** 2)
-
-        mean = self.actor(obs)
-        cov_mat = self.cov_mat
-
-        # Create a distribution with the mean action and std. We use torch.diag to create
-        # a diagonal covariance matrix from the std.
-        dist = MultivariateNormal(mean, cov_mat)
-
-        # Sample an action from the distribution
-        action = dist.sample()
-
-        # Calculate the log probability for that action
-        log_prob = dist.log_prob(action)
-
-        # Return the sampled action and the log probability of that action in our distribution
-        return action.detach().numpy(), log_prob.detach()
 
     def _init_hyperparameters(self, hyperparameters):
         """
@@ -579,7 +529,6 @@ class PPO:
         self.logger['batch_rews'] = []
         self.logger['actor_losses'] = []
 
-
     def save_ghost(self, env, batches, batch_lengths):
         # Saving data to HDF5
         with h5py.File(f'{self.run_directory}/ghost.hdf5', 'w') as f:
@@ -587,7 +536,7 @@ class PPO:
             f.attrs['env_name'] = env.metadata["name"]
             f.attrs['track_name'] = env.metadata["track"]
             f.attrs['total_num_batches'] = len(batches)
-            f.attrs['max_ep_len'] = env.metadata["reset_time"]+2
+            f.attrs['max_ep_len'] = env.metadata["reset_time"] + 2
 
             # Create group for batches
             batches_group = f.create_group('batches')
@@ -607,3 +556,34 @@ class PPO:
                     ep_group.create_dataset('actions', data=ep_data)
 
 
+    """
+    def compute_rtgs(self, batch_rews):
+    '''
+        Compute the Reward-To-Go of each timestep in a batch given the rewards.
+
+        Parameters:
+            batch_rews - the rewards in a batch, Shape: (number of episodes, number of timesteps per episode)
+
+        Return:
+            batch_rtgs - the rewards to go, Shape: (number of timesteps in batch)
+    '''
+    # The rewards-to-go (rtg) per episode per batch to return.
+    # The shape will be (num timesteps per episode)
+    batch_rtgs = []
+
+    # Iterate through each episode
+    for ep_rews in reversed(batch_rews):
+
+        discounted_reward = 0  # The discounted reward so far
+
+        # Iterate through all rewards in the episode. We go backwards for smoother calculation of each
+        # discounted return (think about why it would be harder starting from the beginning)
+        for rew in reversed(ep_rews):
+            discounted_reward = rew + discounted_reward * self.gamma
+            batch_rtgs.insert(0, discounted_reward)
+
+    # Convert the rewards-to-go into a tensor
+    batch_rtgs = torch.tensor(batch_rtgs, dtype=torch.float)
+
+    return batch_rtgs
+    """
