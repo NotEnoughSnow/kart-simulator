@@ -343,7 +343,7 @@ def main(args):
     # environment selection
     # simple_env has free movement
     # base_env has car like movement
-    env_fn = simple_env
+    env_fn = base_env
 
     # list of observations:
     # DISTANCE : distance to goal
@@ -361,7 +361,7 @@ def main(args):
     # reset_time : num timesteps after which the episode will terminate
     env_args = {
         "obs_seq": obs,
-        "reset_time": 300,
+        "reset_time": 500,
     }
 
     # Track selection
@@ -375,7 +375,7 @@ def main(args):
     # iteration_type : mul for default mode, one to run a single iteration
     # alg : default or baselines
     train_parameters = {
-        "total_timesteps": 20000,
+        "total_timesteps": 10000,
         "record_tb": True,
         "record_ghost": True,
         "save_model": True,
@@ -400,7 +400,7 @@ def main(args):
     player_name = "Amin"
 
     # Parameters for replays
-    replay_files = ["saves/default/L1/ver_3/ghost.hdf5", "saves/default/L1/ver_1/ghost.hdf5"]
+    replay_files = ["saves/default/L1/ver_1/ghost.hdf5","saves/default/L1/ver_2/ghost.hdf5"]
 
     # Load from YAML
     #with open(yaml_file_path, 'r') as file:
@@ -450,7 +450,8 @@ if __name__ == "__main__":
 
     # you can also directly set the args
     # args.mode = "train"
+    # modes : play, train, test, replay
 
-    args.mode = "replay"
+    args.mode = "train"
 
     main(args)

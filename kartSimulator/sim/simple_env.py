@@ -339,10 +339,8 @@ class KartSim(gym.Env):
         self.ui_manager.draw_vision_cone(self._playerBody)
 
         self.ui_manager.draw_vision_points(self.vision_points)
-        self.ui_manager.draw_UI_icons(self.accel_value,
-                                      self.break_value,
-                                      self.steer_right_value,
-                                      self.steer_left_value)
+        # TODO fix this
+        self.ui_manager.draw_UI_icons(0, 0)
 
         self.ui_manager.add_ui_text("next target", self.next_sector_name, "")
         self.ui_manager.add_ui_text("distance to target", self.distance_to_next_points, ".4f")
