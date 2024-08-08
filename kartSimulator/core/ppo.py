@@ -89,6 +89,8 @@ class PPO:
             batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout()
             # batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens, batch_ghosts = self.rollout()
 
+            self.logger['batch_delta_t'] = time.time_ns()
+
             total_ghost_ep.append(batch_ghosts)
             total_ghost_ts.append(batch_lens)
 
@@ -494,7 +496,11 @@ class PPO:
         # without explaining since it's not too important to PPO; feel free to look it over,
         # and if you have any questions you can email me (look at bottom of README)
         delta_t = self.logger['delta_t']
+        rollout_time = (self.logger['batch_delta_t'] - self.logger['delta_t']) / 1e9
+        rollout_time = str(round(rollout_time, 2))
         self.logger['delta_t'] = time.time_ns()
+        process_time = (self.logger['delta_t'] - self.logger['batch_delta_t']) / 1e9
+        process_time = str(round(process_time, 2))
         delta_t = (self.logger['delta_t'] - delta_t) / 1e9
         delta_t = str(round(delta_t, 2))
 
@@ -519,6 +525,8 @@ class PPO:
         print(f"Average Episodic Return: {avg_ep_rews}", flush=True)
         print(f"Average Loss: {avg_actor_loss}", flush=True)
         print(f"Timesteps So Far: {t_so_far}", flush=True)
+        print(f"Rollout took: {rollout_time} secs", flush=True)
+        print(f"Processing took: {process_time} secs", flush=True)
         print(f"Iteration took: {delta_t} secs", flush=True)
         print(f"Learning rate: {lr}", flush=True)
         print(f"------------------------------------------------------", flush=True)

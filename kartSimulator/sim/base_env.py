@@ -199,7 +199,7 @@ class KartSim(gym.Env):
         steer_value = 0
         accel_break_value = 0
 
-        print(action)
+        #print(action)
 
         if action is not None:
             # [0] does nothing
@@ -505,8 +505,6 @@ class KartSim(gym.Env):
         # FIXME temp fix for ensuing that value is within (0,1)
         value = min(1, value)
         value = max(-1, value)
-
-        print(value)
 
         if value == 0:
             return value

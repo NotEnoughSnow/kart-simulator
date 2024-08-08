@@ -32,7 +32,7 @@ points = []
 # Define a boolean variable to indicate if the mouse button is pressed
 drawing = False
 
-mode = "sectors"
+mode = "track"
 print(("working in %s mode" % mode))
 shapes_arr =[]
 
@@ -93,7 +93,7 @@ while running:
                         wr.writerows(shapes)
                     print(shapes[shape_index])
                 if mode == "sectors":
-                    with open("kartSimulator/sim/resources/sectors_box.txt", "w") as f:
+                    with open("sectors_box.txt", "w") as f:
                         wr = csv.writer(f)
                         wr.writerows(shapes)
                     print(shapes[shape_index])
@@ -111,9 +111,9 @@ while running:
         elif len(shapes[i]) > 1:
             pygame.draw.lines(screen, line_color, False, shapes[i], line_width)
 
-    if mode == "sectors":
-        for shape in shapes_arr:
-            pygame.draw.lines(screen, track_line_color, False, shape, line_width)
+    #if mode == "sectors":
+    for shape in shapes_arr:
+        pygame.draw.lines(screen, track_line_color, False, shape, line_width)
 
 
     # Update the display
