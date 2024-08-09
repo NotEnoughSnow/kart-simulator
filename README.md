@@ -2,7 +2,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
-Solving a racing simulation using multi-objective evolutionary optimization.
+Solving a racing simulation using proximal policy optimization and spiking neural networks.
 
 ![demonstration](media/speedy.gif)
 

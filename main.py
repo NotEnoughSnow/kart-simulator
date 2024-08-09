@@ -1,3 +1,4 @@
+import gymnasium as gym
 import yaml
 import os
 import sys
@@ -11,6 +12,7 @@ import h5py
 from kartSimulator.core.arguments import get_args
 from kartSimulator.core import eval_policy
 from kartSimulator.core.ppo import PPO
+from kartSimulator.core.ppo_gym import PPO_gym
 from kartSimulator.core.ppo_snn import SNNPPO
 from kartSimulator.core.ppo_one_iter import PPO as PPO_ONE
 from kartSimulator.core.line_policy import L_Policy
@@ -219,7 +221,6 @@ def train(env,
 
     save_path, ver_number = utils.get_next_run_directory(base_dir, experiment_name)
 
-
     save_train_data(env, base_dir, experiment_name, ver_number, alg, total_timesteps, hyperparameters)
 
 
@@ -228,6 +229,62 @@ def train(env,
 
         model = PPO(env=env, save_model=save_model,
                     record_ghost=record_ghost,
+                    record_tb=record_tb,
+                    save_dir=save_path,
+                    **hyperparameters)
+
+        # Tries to load in an existing actor/critic model to continue training on
+        if actor_model != '' and critic_model != '':
+            print(f"Loading in {actor_model} and {critic_model}...", flush=True)
+            model.actor.load_state_dict(torch.load(actor_model))
+            model.critic.load_state_dict(torch.load(critic_model))
+            print(f"Successfully loaded.", flush=True)
+        elif actor_model != '' or critic_model != '':  # Don't train from scratch if user accidentally forgets actor/critic model
+            print(
+                f"Error: Either specify both actor/critic models or none at all. We don't want to accidentally override anything!")
+            sys.exit(0)
+        else:
+            print(f"Training from scratch.", flush=True)
+
+        if iteration_type == "one":
+            model = PPO_ONE(env=env, **hyperparameters)
+            model.learn(total_timesteps=1)
+        else:
+            model.learn(total_timesteps=total_timesteps)
+    if alg == "baselines":
+        # TODO fix save_dir not needing experiment name
+
+        baselines.train(env, save_dir, record_tb, experiment_name, steps=total_timesteps)
+
+def train_gym(env,
+          total_timesteps,
+          alg,
+          experiment_name,
+          save_dir,
+          record_tb,
+          record_ghost,
+          save_model,
+          iteration_type,
+          hyperparameters,
+          ):
+    actor_model = ''
+    critic_model = ''
+
+    base_dir = save_dir+f"{alg}/"
+
+    save_path, ver_number = utils.get_next_run_directory(base_dir, experiment_name)
+
+    print("wat", save_path)
+
+    # TODO might need this in the future
+    #save_train_data(env, base_dir, experiment_name, ver_number, alg, total_timesteps, hyperparameters)
+
+
+
+    if alg == "default":
+
+        model = PPO_gym(env=env, save_model=save_model,
+                    record_ghost=False,
                     record_tb=record_tb,
                     save_dir=save_path,
                     **hyperparameters)
@@ -343,7 +400,7 @@ def main(args):
     # environment selection
     # simple_env has free movement
     # base_env has car like movement
-    env_fn = base_env
+    env_fn = simple_env
 
     # list of observations:
     # DISTANCE : distance to goal
@@ -361,7 +418,7 @@ def main(args):
     # reset_time : num timesteps after which the episode will terminate
     env_args = {
         "obs_seq": obs,
-        "reset_time": 500,
+        "reset_time": 5000,
     }
 
     # Track selection
@@ -375,7 +432,7 @@ def main(args):
     # iteration_type : mul for default mode, one to run a single iteration
     # alg : default or baselines
     train_parameters = {
-        "total_timesteps": 10000,
+        "total_timesteps": 300000,
         "record_tb": True,
         "record_ghost": True,
         "save_model": True,
@@ -385,12 +442,13 @@ def main(args):
 
     # Save parameters
     # experiment_name : change to test out different conditions
-    experiment_name = "L1"
+    experiment_name = "A1"
     save_dir = "./saves/"
 
     # Parameters for testing
     # deterministic : deterministic evaluation value (for stable baselines)
     deterministic = False
+
 
     # Parameters for imitation learning
     # record_expert_data : to record data for imitation learning
@@ -400,7 +458,7 @@ def main(args):
     player_name = "Amin"
 
     # Parameters for replays
-    replay_files = ["saves/default/L1/ver_1/ghost.hdf5","saves/default/L1/ver_2/ghost.hdf5"]
+    replay_files = ["saves/default/A1/ver_1/ghost.hdf5"]
 
     # Load from YAML
     #with open(yaml_file_path, 'r') as file:
@@ -430,11 +488,20 @@ def main(args):
              alg=train_parameters["alg"],
              type=experiment_name,
              deterministic=deterministic,
-             actor_model=f'./saved_models_base/{experiment_name}/ppo_actor.pth'),
+             actor_model=f'./saves/default/{experiment_name}/ver_1/ppo_actor.pth'),
 
     if args.mode == "replay":
         replay(replay_dir=replay_files,
                )
+
+    if args.mode == "train-gym":
+        env = gym.make('Pendulum-v1')
+        train_gym(env=env,
+              **train_parameters,
+              experiment_name=experiment_name,
+              save_dir=save_dir,
+              hyperparameters=hyperparameters,
+              )
 
     if args.mode == "snn":
         env = env_fn.KartSim(render_mode=None, train=True, **env_args)
@@ -452,6 +519,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, test, replay
 
-    args.mode = "train"
+    args.mode = "replay"
 
     main(args)

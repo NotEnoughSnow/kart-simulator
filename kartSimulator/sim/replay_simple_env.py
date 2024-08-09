@@ -131,6 +131,8 @@ class KartSim(gym.Env):
         #assert len(num_agents) == len(colors), "num_agents and colors must be of the same length"
 
         self.agent_count = sum(num_agents)
+        self.num_dead_agents = 0
+        self.num_alive_agents = 0
 
         for agent_count, color in zip(num_agents, colors):
             for _ in range(agent_count):
@@ -159,6 +161,9 @@ class KartSim(gym.Env):
         self.goal_pos = [0, 0]
         self.angle_to_target = 0
 
+        self.current_batch = 1
+        self.max_num_batches = 1
+
         self.info = {}
 
     def reset(
@@ -171,9 +176,15 @@ class KartSim(gym.Env):
 
         directions, _, position = self.map.reset([])
 
+        self.num_alive_agents = 0
+        self.num_dead_agents = 0
+
+        agents = self.get_agents()
+
         position_array = []
-        for i in range(len(self.get_agents())):
+        for i in range(len(agents)):
             position_array.append(position)
+            agents[i].dead = False
 
         self._current_episode_time = 0
 
@@ -184,10 +195,13 @@ class KartSim(gym.Env):
         # TODO reset should reseet the agent count accordingly
 
 
-    def step(self, position_array: Union[np.ndarray, int]):
+    def step(self, position_array: Union[np.ndarray, int], current_batch, max_num_batches):
 
         #print(len(position_array))
         #print(self.agent_count)
+
+        self.current_batch = current_batch
+        self.max_num_batches = max_num_batches
 
         assert len(position_array) == self.agent_count
 
@@ -195,8 +209,14 @@ class KartSim(gym.Env):
 
         # need to iterate on all actions for all agents
         for i in range(len(agents)):
+            if not agents[i].dead:
+                agents[i].position = (position_array[i][0], position_array[i][1])
 
-            agents[i].position = (position_array[i][0], position_array[i][1])
+                if agents[i].position == (0,0):
+                    agents[i].dead = True
+                    agents[i].position = (-100, -100)
+                    self.num_dead_agents += 1
+
 
         self._space.step(self._dt)
 
@@ -208,6 +228,17 @@ class KartSim(gym.Env):
 
         if self.next_sector_name is not None:
             self.goal_pos = self.sector_info[self.next_sector_name][1]
+
+        self.num_alive_agents = self.agent_count - self.num_dead_agents
+
+        done = False
+
+        if self.num_alive_agents == 0:
+            done = True
+
+        return done
+
+
 
 
     def get_agents(self):
@@ -232,7 +263,7 @@ class KartSim(gym.Env):
 
         # update ui
         # TODO figure out which ui stays
-        #self.update_ui(time_delta)
+        self.update_ui(time_delta)
 
         # updating events
         self._process_events()
@@ -255,16 +286,18 @@ class KartSim(gym.Env):
     def update_ui(self, time_delta):
         self.ui_manager.update(time_delta, self.surface)
 
-        self.ui_manager.draw_vision_cone(self._playerBody)
+        #self.ui_manager.draw_vision_cone(self._playerBody)
 
-        self.ui_manager.draw_vision_points(self.vision_points)
-        self.ui_manager.draw_UI_icons(self.accel_value,
-                                      self.break_value,
-                                      self.steer_right_value,
-                                      self.steer_left_value)
+        #self.ui_manager.draw_vision_points(self.vision_points)
+        #self.ui_manager.draw_UI_icons(self.accel_value,
+        #                              self.break_value,
+        #                              self.steer_right_value,
+        #                              self.steer_left_value)
 
         # TODO remove or replace
-        #self.ui_manager.add_ui_text("next target", self.next_sector_name, "")
+        self.ui_manager.add_ui_text("Current batch", f"{self.current_batch}/{self.max_num_batches}", "")
+        self.ui_manager.add_ui_text("Num agents", f"{self.num_alive_agents}", "")
+        self.ui_manager.add_ui_text("Current episode time", self._current_episode_time, "")
 
 
     def close(self):
