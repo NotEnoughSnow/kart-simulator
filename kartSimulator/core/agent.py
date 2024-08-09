@@ -67,3 +67,5 @@ class Simple_agent:
 
         self.color = color
         self.position = (0,0)
+
+        self.dead = False
