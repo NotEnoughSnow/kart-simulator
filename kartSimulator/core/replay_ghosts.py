@@ -25,7 +25,7 @@ class ReplayGhosts:
     def __init__(self, locations):
 
 
-        mode = "all"
+        mode = "batch"
 
         if mode == "all":
             self.replay_all_mul(locations)
@@ -219,7 +219,8 @@ class ReplayGhosts:
 
             for i in range(all_info[0]["max_ep_len"]):
                 array_of_positions = new_episodes[i]
-                env.step(array_of_positions)
+                done = env.step(array_of_positions, 1, 1)
+
 
     def process_batches_batch(self, all_batches, batch_episode_lens, batch_lens, all_info):
         combined_batches = []
@@ -277,16 +278,21 @@ class ReplayGhosts:
         running = True
 
         while running:
-            env.reset()
+
             # Iterate over the maximum number of batches
             for batch_idx in range(new_batches.shape[0]):
                 # Get the current batch
                 current_batch = new_batches[batch_idx]
 
+                env.reset()
+
                 # Iterate over the timesteps within the current batch
                 for timestep in range(max_ep_len):
                     array_of_positions = current_batch[timestep]
-                    env.step(array_of_positions)
+                    done = env.step(array_of_positions, batch_idx, new_batches.shape[0])
+
+                    if done:
+                        break
 
 
 
