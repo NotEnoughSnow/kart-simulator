@@ -5,7 +5,7 @@ import gymnasium as gym
 import numpy as np
 import torch
 from torch import nn
-from torch.distributions import MultivariateNormal
+from torch.distributions import MultivariateNormal, Categorical
 from torch.optim.adam import Adam
 from torch.utils.tensorboard import SummaryWriter
 
@@ -23,7 +23,17 @@ class PPO:
 
         # Make sure the environment is compatible with our code
         assert (type(env.observation_space) == gym.spaces.Box)
-        assert (type(env.action_space) == gym.spaces.Box)
+
+        # Determine if the action space is continuous or discrete
+        if isinstance(env.action_space, gym.spaces.Box):
+            print("Using a continuous action space")
+            self.continuous = True
+        elif isinstance(env.action_space, gym.spaces.Discrete):
+            print("Using a discrete action space")
+            self.continuous = False
+        else:
+            raise NotImplementedError("The action space type is not supported.")
+
 
         self.record_tb = record_tb
         self.record_ghost = record_ghost
@@ -67,10 +77,11 @@ class PPO:
         self.actor_optim = Adam(self.actor.parameters(), lr=self.lr)
         self.critic_optim = Adam(self.critic.parameters(), lr=self.lr)
 
-        # TODO values
-        # Initialize the covariance matrix used to query the actor for actions
-        self.cov_var = torch.full(size=(self.act_dim,), fill_value=0.5)
-        self.cov_mat = torch.diag(self.cov_var)
+        # Initialize the covariance matrix for continuous action spaces
+        if self.continuous:
+            # Initialize the covariance matrix used to query the actor for actions
+            self.cov_var = torch.full(size=(self.act_dim,), fill_value=0.5)
+            self.cov_mat = torch.diag(self.cov_var)
 
         # This logger will help us with printing out summaries of each iteration
         self.logger = {
@@ -331,7 +342,7 @@ class PPO:
                 # print("fps", info["fps"])
                 # print("position", info["position"])
 
-                ghost_ep.append(info["position"])
+                ghost_ep.append(info.get("position", [0,0]))
 
                 # TODO simplify batch actions and ghost data
                 # Track recent reward, action, and action log probability
@@ -344,7 +355,7 @@ class PPO:
 
                 # TODO add fps
                 if self.record_tb:
-                    self.writer.add_scalar('time/fps', info["fps"], self.logger['t_so_far'])
+                    self.writer.add_scalar('time/fps', info.get("fps", 0), self.logger['t_so_far'])
 
                 ep_t += 1
 
@@ -377,27 +388,23 @@ class PPO:
 
     def get_action(self, obs):
         """
-            Queries an action from the actor network, should be called from rollout.
+        Queries an action from the actor network, should be called from rollout.
 
-            Parameters:
-                obs - the observation at the current timestep
+        Parameters:
+            obs - the observation at the current timestep
 
-            Return:
-                action - the action to take, as a numpy array
-                log_prob - the log probability of the selected action in the distribution
+        Return:
+            action - the action to take, as a numpy array
+            log_prob - the log probability of the selected action in the distribution
         """
-        # Query the actor network for a mean action
-        # mean, log_std = self.actor(obs)
-        # std = log_std.exp()
-
-        # cov_mat = torch.diag_embed(std ** 2)
-
-        mean = self.actor(obs)
-        cov_mat = self.cov_mat
-
-        # Create a distribution with the mean action and std. We use torch.diag to create
-        # a diagonal covariance matrix from the std.
-        dist = MultivariateNormal(mean, cov_mat)
+        if self.continuous:
+            # For continuous action spaces
+            mean = self.actor(obs)
+            dist = MultivariateNormal(mean, self.cov_mat)
+        else:
+            # For discrete action spaces
+            logits = self.actor(obs)
+            dist = Categorical(logits=logits)
 
         # Sample an action from the distribution
         action = dist.sample()
@@ -410,42 +417,37 @@ class PPO:
 
     def evaluate(self, batch_obs, batch_acts):
         """
-            Estimate the values of each observation, and the log probs of
-            each action in the most recent batch with the most recent
-            iteration of the actor network. Should be called from learn.
+        Estimate the values of each observation, and the log probs of
+        each action in the most recent batch with the most recent
+        iteration of the actor network. Should be called from learn.
 
-            Parameters:
-                batch_obs - the observations from the most recently collected batch as a tensor.
-                            Shape: (number of timesteps in batch, dimension of observation)
-                batch_acts - the actions from the most recently collected batch as a tensor.
-                            Shape: (number of timesteps in batch, dimension of action)
+        Parameters:
+            batch_obs - the observations from the most recently collected batch as a tensor.
+                        Shape: (number of timesteps in batch, dimension of observation)
+            batch_acts - the actions from the most recently collected batch as a tensor.
+                        Shape: (number of timesteps in batch, dimension of action)
 
-            Return:
-                V - the predicted values of batch_obs
-                log_probs - the log probabilities of the actions taken in batch_acts given batch_obs
+        Return:
+            V - the predicted values of batch_obs
+            log_probs - the log probabilities of the actions taken in batch_acts given batch_obs
         """
 
-        # Query critic network for a value V for each batch_obs. Shape of V should be same as batch_rtgs
+        # Query critic network for a value V for each batch_obs
         V = self.critic(batch_obs).squeeze()
 
-        # Calculate the log probabilities of batch actions using most recent actor network.
-        # This segment of code is similar to that in get_action()
-        # mean, log_std = self.actor(batch_obs)
-        # std = log_std.exp()
+        # Calculate the log probabilities of batch actions using most recent actor network
+        if self.continuous:
+            mean = self.actor(batch_obs)
+            dist = MultivariateNormal(mean, self.cov_mat)
+        else:
+            logits = self.actor(batch_obs)
+            dist = Categorical(logits=logits)
 
-        # cov_mat = torch.diag_embed(std ** 2)
-
-        mean = self.actor(batch_obs)
-
-        cov_mat = self.cov_mat
-
-        dist = MultivariateNormal(mean, cov_mat)
-
+        # Calculate entropy loss for regularization
         entropy_loss = -dist.entropy().mean()
 
         if self.record_tb:
             self.writer.add_scalar('train/entropy_loss', entropy_loss, self.logger['t_so_far'])
-            # self.writer.add_scalar('train/std', std.mean(), self.logger['t_so_far'])
 
         log_probs = dist.log_prob(batch_acts)
 
@@ -555,10 +557,10 @@ class PPO:
         # Saving data to HDF5
         with h5py.File(f'{self.run_directory}/ghost.hdf5', 'w') as f:
             # Add metadata
-            f.attrs['env_name'] = env.metadata["name"]
-            f.attrs['track_name'] = env.metadata["track"]
+            f.attrs['env_name'] = env.metadata.get("name", "None")
+            f.attrs['track_name'] = env.metadata.get("track", "None")
             f.attrs['total_num_batches'] = len(batches)
-            f.attrs['max_ep_len'] = env.metadata["reset_time"] + 2
+            f.attrs['max_ep_len'] = env.metadata.get("reset_time", 0) + 2
 
             # Create group for batches
             batches_group = f.create_group('batches')
