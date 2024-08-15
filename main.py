@@ -17,6 +17,7 @@ from kartSimulator.core.ppo_snn import SNNPPO
 from kartSimulator.core.ppo_one_iter import PPO as PPO_ONE
 from kartSimulator.core.line_policy import L_Policy
 import kartSimulator.evolutionary.core as EO
+import kartSimulator.core.make_graphs as graph_generator
 import kartSimulator.sim.observation_types as obs_types
 
 from kartSimulator.core.replay_ghosts import ReplayGhosts
@@ -64,24 +65,28 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
             action = torch.zeros(2)
 
             keys = pygame.key.get_pressed()
-            # key controls
-            if keys[pygame.K_w]:
-                action[1] = 1
-            if keys[pygame.K_SPACE]:
-                action[1] = -1
-            if keys[pygame.K_d]:
-                action[0] = 1
-            if keys[pygame.K_a]:
-                action[0] = -1
 
-            # if keys[pygame.K_w]:
-            #    action[0] = -1
-            # if keys[pygame.K_s]:
-            #    action[0] = +1
-            # if keys[pygame.K_d]:
-            #    action[1] = +1
-            # if keys[pygame.K_a]:
-            #    action[1] = -1
+            if env.metadata["name"] == "kart2D simple_env":
+
+                if keys[pygame.K_w]:
+                    action[0] = -1
+                if keys[pygame.K_s]:
+                    action[0] = +1
+                if keys[pygame.K_d]:
+                    action[1] = +1
+                if keys[pygame.K_a]:
+                    action[1] = -1
+            else :
+                if keys[pygame.K_w]:
+                    action[1] = 1
+                if keys[pygame.K_SPACE]:
+                    action[1] = -1
+                if keys[pygame.K_d]:
+                    action[0] = 1
+                if keys[pygame.K_a]:
+                    action[0] = -1
+
+
 
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
@@ -356,9 +361,13 @@ def test(env, alg, type, deterministic, actor_model):
         baselines.eval(env, type, deterministic)
 
 
-def replay(replay_dir, replay_ep=None):
+def replay(replay_dir, mode):
     # replay = ReplayGhosts(replay_dir, replay_ep)
-    replay = ReplayGhosts(replay_dir)
+    replay = ReplayGhosts(replay_dir, mode)
+
+def make_graphs(graph_file):
+    # Extract absolute file paths
+    graph_generator.graph_data(graph_file)
 
 
 def train_SNN(env, hyperparameters):
@@ -418,7 +427,7 @@ def main(args):
     # reset_time : num timesteps after which the episode will terminate
     env_args = {
         "obs_seq": obs,
-        "reset_time": 5000,
+        "reset_time": 2000,
     }
 
     # Track selection
@@ -442,7 +451,7 @@ def main(args):
 
     # Save parameters
     # experiment_name : change to test out different conditions
-    experiment_name = "A1"
+    experiment_name = "L1"
     save_dir = "./saves/"
 
     # Parameters for testing
@@ -458,7 +467,12 @@ def main(args):
     player_name = "Amin"
 
     # Parameters for replays
-    replay_files = ["saves/default/A1/ver_1/ghost.hdf5"]
+    replay_files = ["saves/default/B2/ver_1/ghost.hdf5"]
+    mode = "batch"
+
+    # parameters for making graphs
+    graph_file = "saves/default/L1/ver_7/graph_data.txt"
+
 
     # Load from YAML
     #with open(yaml_file_path, 'r') as file:
@@ -492,7 +506,11 @@ def main(args):
 
     if args.mode == "replay":
         replay(replay_dir=replay_files,
+               mode=mode,
                )
+
+    if args.mode == "graph":
+        make_graphs(graph_file=graph_file)
 
     if args.mode == "train-gym":
         env = gym.make('Pendulum-v1')
@@ -517,8 +535,8 @@ if __name__ == "__main__":
 
     # you can also directly set the args
     # args.mode = "train"
-    # modes : play, train, test, replay
+    # modes : play, train, test, graph, replay
 
-    args.mode = "replay"
+    args.mode = "graph"
 
     main(args)

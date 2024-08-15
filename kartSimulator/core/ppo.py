@@ -1,4 +1,5 @@
 import time
+import sys
 
 import gymnasium as gym
 import numpy as np
@@ -19,6 +20,7 @@ class PPO:
 
     def __init__(self, env, record_ghost, save_model, record_tb, save_dir, **hyperparameters):
 
+
         # Make sure the environment is compatible with our code
         assert (type(env.observation_space) == gym.spaces.Box)
         assert (type(env.action_space) == gym.spaces.Box)
@@ -28,6 +30,15 @@ class PPO:
         self.save_model = save_model
 
         self.run_directory = save_dir
+
+        # Specify the file where you want to save the output
+        output_file = f"{save_dir}/graph_data.txt"
+
+        self.output_file = open(output_file, 'w')
+
+        sys.stdout = Tee(sys.stdout, self.output_file)
+
+
 
         print(f"Saving to '{self.run_directory}' after training")
 
@@ -201,9 +212,6 @@ class PPO:
 
                     loss_arr.append(actor_loss.detach())
 
-                    # Approximating KL Divergence
-                    if self.target_kl is not None and approx_kl > self.target_kl:
-                        break  # if kl aboves threshold
                     if self.record_tb:
                         self.writer.add_scalar('train/clip_range', self.clip, self.logger['t_so_far'])
                         self.writer.add_scalar('train/clip_fraction', clip_fraction, self.logger['t_so_far'])
@@ -213,9 +221,14 @@ class PPO:
                         self.writer.add_scalar('train/value_loss', value_loss, self.logger['t_so_far'])
                         self.writer.add_scalar('train/loss', total_loss, self.logger['t_so_far'])
 
-                # Log actor loss
-                avg_loss = sum(loss_arr) / len(loss_arr)
-                self.logger['actor_losses'].append(avg_loss)
+                # Approximating KL Divergence
+                if self.target_kl is not None and approx_kl > self.target_kl:
+                    print("target kl reached, stopping early")
+                    break
+
+            # Log actor loss
+            avg_loss = sum(loss_arr) / len(loss_arr)
+            self.logger['actor_losses'].append(avg_loss)
 
             # Print a summary of our training so far
             self._log_summary()
@@ -242,6 +255,7 @@ class PPO:
                             batch_lengths=total_ghost_ts, )
 
         print("Finished successfully!")
+        self.output_file.close()
 
     def calculate_gae(self, rewards, values, dones):
         batch_advantages = []
@@ -563,6 +577,22 @@ class PPO:
                     # Create dataset for actions within the episode
                     ep_group.create_dataset('actions', data=ep_data)
 
+class Tee(object):
+    def __init__(self, *files):
+        self.files = files
+
+    def write(self, obj):
+        for f in self.files:
+            f.write(obj)
+            f.flush()  # Ensure the output is written immediately
+
+    def flush(self):
+        for f in self.files:
+            try:
+                f.flush()
+            except ValueError:
+                # Ignore the error if the file is already closed
+                pass
 
     """
     def compute_rtgs(self, batch_rews):

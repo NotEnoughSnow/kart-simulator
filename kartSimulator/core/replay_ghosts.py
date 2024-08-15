@@ -22,10 +22,10 @@ class ReplayGhosts:
         self.launch(batches, batch_lengths, info, mode=mode)
     """
 
-    def __init__(self, locations):
+    def __init__(self, locations, mode):
 
 
-        mode = "batch"
+
 
         if mode == "all":
             self.replay_all_mul(locations)
