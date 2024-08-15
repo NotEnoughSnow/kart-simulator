@@ -1,0 +1,3124 @@
+Saving to './saves/default/L1\ver_7' after training
+Recording tensorboard data
+obs shape :(3,) 
+action shape :(2,)
+Training from scratch.
+Learning... Running 4800 timesteps per batch for a total of 300000 timesteps
+-------------------- Iteration #1 --------------------
+Average Episodic Length: 29.22
+Average Episodic Return: -7.84
+Average Loss: -0.0173
+Timesteps So Far: 4996
+Rollout took: 7.81 secs
+Processing took: 1.87 secs
+Iteration took: 9.67 secs
+Learning rate: 0.00039334
+------------------------------------------------------
+
+
+-------------------- Iteration #2 --------------------
+Average Episodic Length: 43.9
+Average Episodic Return: -1.57
+Average Loss: -0.01048
+Timesteps So Far: 9913
+Rollout took: 7.42 secs
+Processing took: 1.16 secs
+Iteration took: 8.58 secs
+Learning rate: 0.00038678400000000004
+------------------------------------------------------
+
+visited sector 1 for the first time
+
+-------------------- Iteration #3 --------------------
+Average Episodic Length: 49.73
+Average Episodic Return: 23.2
+Average Loss: -0.02431
+Timesteps So Far: 14836
+Rollout took: 6.11 secs
+Processing took: 1.13 secs
+Iteration took: 7.24 secs
+Learning rate: 0.00038022
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #4 --------------------
+Average Episodic Length: 58.06
+Average Episodic Return: 47.54
+Average Loss: -0.01738
+Timesteps So Far: 19771
+Rollout took: 6.32 secs
+Processing took: 1.17 secs
+Iteration took: 7.5 secs
+Learning rate: 0.00037364000000000006
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #5 --------------------
+Average Episodic Length: 54.39
+Average Episodic Return: 47.48
+Average Loss: -0.02916
+Timesteps So Far: 24666
+Rollout took: 6.19 secs
+Processing took: 1.16 secs
+Iteration took: 7.35 secs
+Learning rate: 0.0003671133333333334
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #6 --------------------
+Average Episodic Length: 57.16
+Average Episodic Return: 59.93
+Average Loss: -0.0215
+Timesteps So Far: 29582
+Rollout took: 6.89 secs
+Processing took: 1.19 secs
+Iteration took: 8.08 secs
+Learning rate: 0.00036055866666666667
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 2 for the first time
+
+-------------------- Iteration #7 --------------------
+Average Episodic Length: 59.9
+Average Episodic Return: 72.87
+Average Loss: -0.01393
+Timesteps So Far: 34494
+Rollout took: 6.6 secs
+Processing took: 1.16 secs
+Iteration took: 7.76 secs
+Learning rate: 0.00035400933333333334
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #8 --------------------
+Average Episodic Length: 51.91
+Average Episodic Return: 64.71
+Average Loss: -0.02911
+Timesteps So Far: 39425
+Rollout took: 7.32 secs
+Processing took: 1.28 secs
+Iteration took: 8.6 secs
+Learning rate: 0.0003474346666666667
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #9 --------------------
+Average Episodic Length: 52.96
+Average Episodic Return: 77.81
+Average Loss: -0.02652
+Timesteps So Far: 44350
+Rollout took: 6.59 secs
+Processing took: 1.12 secs
+Iteration took: 7.7 secs
+Learning rate: 0.00034086800000000003
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #10 --------------------
+Average Episodic Length: 45.89
+Average Episodic Return: 75.34
+Average Loss: -0.02864
+Timesteps So Far: 49260
+Rollout took: 6.51 secs
+Processing took: 1.16 secs
+Iteration took: 7.67 secs
+Learning rate: 0.0003343213333333334
+------------------------------------------------------
+
+Quick-saving models
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #11 --------------------
+Average Episodic Length: 42.08
+Average Episodic Return: 66.01
+Average Loss: -0.01295
+Timesteps So Far: 54183
+Rollout took: 6.7 secs
+Processing took: 1.16 secs
+Iteration took: 7.87 secs
+Learning rate: 0.00032775733333333335
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #12 --------------------
+Average Episodic Length: 39.06
+Average Episodic Return: 62.55
+Average Loss: -0.00795
+Timesteps So Far: 59143
+Rollout took: 7.06 secs
+Processing took: 1.17 secs
+Iteration took: 8.23 secs
+Learning rate: 0.00032114400000000004
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #13 --------------------
+Average Episodic Length: 32.39
+Average Episodic Return: 51.31
+Average Loss: -0.02691
+Timesteps So Far: 64098
+Rollout took: 7.07 secs
+Processing took: 1.16 secs
+Iteration took: 8.23 secs
+Learning rate: 0.00031453733333333336
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #14 --------------------
+Average Episodic Length: 30.63
+Average Episodic Return: 50.78
+Average Loss: -0.02664
+Timesteps So Far: 69060
+Rollout took: 7.34 secs
+Processing took: 1.09 secs
+Iteration took: 8.44 secs
+Learning rate: 0.0003079213333333334
+------------------------------------------------------
+
+
+-------------------- Iteration #15 --------------------
+Average Episodic Length: 29.42
+Average Episodic Return: 49.23
+Average Loss: -0.0451
+Timesteps So Far: 74032
+Rollout took: 7.74 secs
+Processing took: 1.15 secs
+Iteration took: 8.89 secs
+Learning rate: 0.00030129200000000004
+------------------------------------------------------
+
+
+-------------------- Iteration #16 --------------------
+Average Episodic Length: 27.71
+Average Episodic Return: 49.66
+Average Loss: -0.04123
+Timesteps So Far: 79019
+Rollout took: 7.89 secs
+Processing took: 1.15 secs
+Iteration took: 9.04 secs
+Learning rate: 0.00029464266666666666
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #17 --------------------
+Average Episodic Length: 29.14
+Average Episodic Return: 59.74
+Average Loss: -0.03755
+Timesteps So Far: 84002
+Rollout took: 7.96 secs
+Processing took: 1.16 secs
+Iteration took: 9.11 secs
+Learning rate: 0.00028799866666666667
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #18 --------------------
+Average Episodic Length: 28.12
+Average Episodic Return: 60.66
+Average Loss: -0.0268
+Timesteps So Far: 88979
+Rollout took: 8.04 secs
+Processing took: 1.09 secs
+Iteration took: 9.13 secs
+Learning rate: 0.0002813626666666667
+------------------------------------------------------
+
+
+-------------------- Iteration #19 --------------------
+Average Episodic Length: 26.73
+Average Episodic Return: 56.48
+Average Loss: -0.03699
+Timesteps So Far: 93978
+Rollout took: 8.64 secs
+Processing took: 1.15 secs
+Iteration took: 9.79 secs
+Learning rate: 0.00027469733333333334
+------------------------------------------------------
+
+
+-------------------- Iteration #20 --------------------
+Average Episodic Length: 26.49
+Average Episodic Return: 56.83
+Average Loss: -0.04453
+Timesteps So Far: 98984
+Rollout took: 8.54 secs
+Processing took: 1.17 secs
+Iteration took: 9.71 secs
+Learning rate: 0.0002680226666666667
+------------------------------------------------------
+
+Quick-saving models
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #21 --------------------
+Average Episodic Length: 27.46
+Average Episodic Return: 67.16
+Average Loss: -0.02415
+Timesteps So Far: 103982
+Rollout took: 9.11 secs
+Processing took: 1.13 secs
+Iteration took: 10.24 secs
+Learning rate: 0.00026135866666666664
+------------------------------------------------------
+
+
+-------------------- Iteration #22 --------------------
+Average Episodic Length: 26.6
+Average Episodic Return: 62.34
+Average Loss: -0.03356
+Timesteps So Far: 108983
+Rollout took: 8.99 secs
+Processing took: 1.25 secs
+Iteration took: 10.24 secs
+Learning rate: 0.00025469066666666666
+------------------------------------------------------
+
+visited sector 1 for the first time
+
+-------------------- Iteration #23 --------------------
+Average Episodic Length: 27.67
+Average Episodic Return: 71.95
+Average Loss: -0.02275
+Timesteps So Far: 113963
+Rollout took: 9.29 secs
+Processing took: 1.15 secs
+Iteration took: 10.43 secs
+Learning rate: 0.0002480506666666667
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #24 --------------------
+Average Episodic Length: 30.73
+Average Episodic Return: 91.43
+Average Loss: -0.02432
+Timesteps So Far: 118941
+Rollout took: 9.02 secs
+Processing took: 1.1 secs
+Iteration took: 10.12 secs
+Learning rate: 0.00024141333333333332
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #25 --------------------
+Average Episodic Length: 29.99
+Average Episodic Return: 94.32
+Average Loss: -0.02922
+Timesteps So Far: 123919
+Rollout took: 9.51 secs
+Processing took: 1.16 secs
+Iteration took: 10.67 secs
+Learning rate: 0.00023477600000000002
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #26 --------------------
+Average Episodic Length: 31.41
+Average Episodic Return: 104.68
+Average Loss: -0.03619
+Timesteps So Far: 128882
+Rollout took: 9.58 secs
+Processing took: 1.15 secs
+Iteration took: 10.73 secs
+Learning rate: 0.00022815866666666667
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #27 --------------------
+Average Episodic Length: 32.01
+Average Episodic Return: 111.39
+Average Loss: -0.01479
+Timesteps So Far: 133875
+Rollout took: 10.0 secs
+Processing took: 1.17 secs
+Iteration took: 11.18 secs
+Learning rate: 0.00022150133333333333
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #28 --------------------
+Average Episodic Length: 35.18
+Average Episodic Return: 147.56
+Average Loss: -0.02914
+Timesteps So Far: 138836
+Rollout took: 10.09 secs
+Processing took: 1.16 secs
+Iteration took: 11.25 secs
+Learning rate: 0.00021488666666666668
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #29 --------------------
+Average Episodic Length: 33.59
+Average Episodic Return: 137.1
+Average Loss: -0.02589
+Timesteps So Far: 143808
+Rollout took: 10.27 secs
+Processing took: 1.13 secs
+Iteration took: 11.4 secs
+Learning rate: 0.00020825733333333334
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #30 --------------------
+Average Episodic Length: 39.45
+Average Episodic Return: 201.04
+Average Loss: -0.02089
+Timesteps So Far: 148739
+Rollout took: 10.49 secs
+Processing took: 1.15 secs
+Iteration took: 11.63 secs
+Learning rate: 0.00020168266666666668
+------------------------------------------------------
+
+Quick-saving models
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #31 --------------------
+Average Episodic Length: 40.11
+Average Episodic Return: 210.27
+Average Loss: -0.03486
+Timesteps So Far: 153713
+Rollout took: 10.72 secs
+Processing took: 1.26 secs
+Iteration took: 11.98 secs
+Learning rate: 0.00019505066666666667
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #32 --------------------
+Average Episodic Length: 44.85
+Average Episodic Return: 275.22
+Average Loss: -0.02372
+Timesteps So Far: 158647
+Rollout took: 11.76 secs
+Processing took: 1.12 secs
+Iteration took: 12.88 secs
+Learning rate: 0.00018847200000000002
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #33 --------------------
+Average Episodic Length: 42.76
+Average Episodic Return: 259.45
+Average Loss: -0.01666
+Timesteps So Far: 163607
+Rollout took: 11.41 secs
+Processing took: 1.25 secs
+Iteration took: 12.65 secs
+Learning rate: 0.00018185866666666666
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #34 --------------------
+Average Episodic Length: 47.4
+Average Episodic Return: 330.27
+Average Loss: -0.02731
+Timesteps So Far: 168537
+Rollout took: 11.69 secs
+Processing took: 1.15 secs
+Iteration took: 12.84 secs
+Learning rate: 0.00017528533333333333
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #35 --------------------
+Average Episodic Length: 47.29
+Average Episodic Return: 339.03
+Average Loss: -0.02191
+Timesteps So Far: 173455
+Rollout took: 12.01 secs
+Processing took: 1.3 secs
+Iteration took: 13.31 secs
+Learning rate: 0.000168728
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #36 --------------------
+Average Episodic Length: 47.82
+Average Episodic Return: 346.02
+Average Loss: -0.02953
+Timesteps So Far: 178380
+Rollout took: 12.79 secs
+Processing took: 1.21 secs
+Iteration took: 13.99 secs
+Learning rate: 0.00016216133333333334
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #37 --------------------
+Average Episodic Length: 45.33
+Average Episodic Return: 319.5
+Average Loss: -0.02426
+Timesteps So Far: 183321
+Rollout took: 12.45 secs
+Processing took: 1.1 secs
+Iteration took: 13.56 secs
+Learning rate: 0.00015557333333333334
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #38 --------------------
+Average Episodic Length: 44.67
+Average Episodic Return: 317.4
+Average Loss: -0.0362
+Timesteps So Far: 188279
+Rollout took: 12.67 secs
+Processing took: 1.59 secs
+Iteration took: 14.26 secs
+Learning rate: 0.00014896266666666668
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #39 --------------------
+Average Episodic Length: 44.36
+Average Episodic Return: 301.17
+Average Loss: -0.03352
+Timesteps So Far: 193203
+Rollout took: 12.53 secs
+Processing took: 1.15 secs
+Iteration took: 13.68 secs
+Learning rate: 0.00014239733333333337
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #40 --------------------
+Average Episodic Length: 47.62
+Average Episodic Return: 345.51
+Average Loss: -0.01792
+Timesteps So Far: 198156
+Rollout took: 12.96 secs
+Processing took: 1.14 secs
+Iteration took: 14.11 secs
+Learning rate: 0.00013579333333333334
+------------------------------------------------------
+
+Quick-saving models
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #41 --------------------
+Average Episodic Length: 44.25
+Average Episodic Return: 320.89
+Average Loss: -0.04755
+Timesteps So Far: 203112
+Rollout took: 12.96 secs
+Processing took: 1.16 secs
+Iteration took: 14.12 secs
+Learning rate: 0.00012918533333333335
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #42 --------------------
+Average Episodic Length: 45.87
+Average Episodic Return: 336.34
+Average Loss: -0.07278
+Timesteps So Far: 208020
+Rollout took: 13.09 secs
+Processing took: 1.15 secs
+Iteration took: 14.23 secs
+Learning rate: 0.00012264133333333334
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #43 --------------------
+Average Episodic Length: 43.65
+Average Episodic Return: 308.75
+Average Loss: -0.01831
+Timesteps So Far: 212952
+Rollout took: 13.15 secs
+Processing took: 1.18 secs
+Iteration took: 14.33 secs
+Learning rate: 0.00011606533333333334
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #44 --------------------
+Average Episodic Length: 46.47
+Average Episodic Return: 338.62
+Average Loss: -0.01603
+Timesteps So Far: 217878
+Rollout took: 13.41 secs
+Processing took: 1.41 secs
+Iteration took: 14.82 secs
+Learning rate: 0.00010949733333333335
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #45 --------------------
+Average Episodic Length: 46.78
+Average Episodic Return: 342.0
+Average Loss: -0.00483
+Timesteps So Far: 222790
+Rollout took: 13.85 secs
+Processing took: 1.16 secs
+Iteration took: 15.0 secs
+Learning rate: 0.000102948
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #46 --------------------
+Average Episodic Length: 44.44
+Average Episodic Return: 311.17
+Average Loss: -0.03804
+Timesteps So Far: 227723
+Rollout took: 13.86 secs
+Processing took: 1.17 secs
+Iteration took: 15.03 secs
+Learning rate: 9.637066666666666e-05
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #47 --------------------
+Average Episodic Length: 41.28
+Average Episodic Return: 274.86
+Average Loss: -0.03997
+Timesteps So Far: 232676
+Rollout took: 13.57 secs
+Processing took: 1.17 secs
+Iteration took: 14.74 secs
+Learning rate: 8.976666666666669e-05
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #48 --------------------
+Average Episodic Length: 41.91
+Average Episodic Return: 287.46
+Average Loss: -0.02991
+Timesteps So Far: 237621
+Rollout took: 13.91 secs
+Processing took: 1.16 secs
+Iteration took: 15.06 secs
+Learning rate: 8.317333333333333e-05
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #49 --------------------
+Average Episodic Length: 43.86
+Average Episodic Return: 312.58
+Average Loss: 0.01081
+Timesteps So Far: 242577
+Rollout took: 14.05 secs
+Processing took: 1.14 secs
+Iteration took: 15.2 secs
+Learning rate: 7.656533333333333e-05
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #50 --------------------
+Average Episodic Length: 46.3
+Average Episodic Return: 345.3
+Average Loss: -0.01915
+Timesteps So Far: 247531
+Rollout took: 14.61 secs
+Processing took: 1.16 secs
+Iteration took: 15.77 secs
+Learning rate: 6.996000000000003e-05
+------------------------------------------------------
+
+Quick-saving models
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #51 --------------------
+Average Episodic Length: 42.12
+Average Episodic Return: 295.11
+Average Loss: -0.05522
+Timesteps So Far: 252459
+Rollout took: 14.8 secs
+Processing took: 1.17 secs
+Iteration took: 15.97 secs
+Learning rate: 6.338933333333335e-05
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #52 --------------------
+Average Episodic Length: 42.09
+Average Episodic Return: 288.77
+Average Loss: -0.01404
+Timesteps So Far: 257383
+Rollout took: 14.32 secs
+Processing took: 1.15 secs
+Iteration took: 15.47 secs
+Learning rate: 5.682399999999999e-05
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #53 --------------------
+Average Episodic Length: 39.15
+Average Episodic Return: 248.76
+Average Loss: 0.00748
+Timesteps So Far: 262355
+Rollout took: 14.48 secs
+Processing took: 1.17 secs
+Iteration took: 15.65 secs
+Learning rate: 5.0194666666666655e-05
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #54 --------------------
+Average Episodic Length: 38.56
+Average Episodic Return: 246.99
+Average Loss: -0.02347
+Timesteps So Far: 267291
+Rollout took: 14.66 secs
+Processing took: 1.11 secs
+Iteration took: 15.77 secs
+Learning rate: 4.361333333333333e-05
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #55 --------------------
+Average Episodic Length: 41.32
+Average Episodic Return: 274.13
+Average Loss: -0.01436
+Timesteps So Far: 272250
+Rollout took: 14.96 secs
+Processing took: 1.21 secs
+Iteration took: 16.17 secs
+Learning rate: 3.7001333333333355e-05
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #56 --------------------
+Average Episodic Length: 43.49
+Average Episodic Return: 307.14
+Average Loss: -0.03684
+Timesteps So Far: 277208
+Rollout took: 18.33 secs
+Processing took: 1.32 secs
+Iteration took: 19.65 secs
+Learning rate: 3.0390666666666677e-05
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #57 --------------------
+Average Episodic Length: 45.08
+Average Episodic Return: 336.59
+Average Loss: -0.03211
+Timesteps So Far: 282167
+Rollout took: 23.03 secs
+Processing took: 1.42 secs
+Iteration took: 24.45 secs
+Learning rate: 2.377866666666666e-05
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #58 --------------------
+Average Episodic Length: 42.42
+Average Episodic Return: 286.56
+Average Loss: -0.01539
+Timesteps So Far: 287088
+Rollout took: 24.01 secs
+Processing took: 1.42 secs
+Iteration took: 25.43 secs
+Learning rate: 1.721733333333333e-05
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #59 --------------------
+Average Episodic Length: 40.02
+Average Episodic Return: 262.77
+Average Loss: -0.02207
+Timesteps So Far: 292011
+Rollout took: 18.5 secs
+Processing took: 1.23 secs
+Iteration took: 19.73 secs
+Learning rate: 1.0653333333333315e-05
+------------------------------------------------------
+
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #60 --------------------
+Average Episodic Length: 39.8
+Average Episodic Return: 254.12
+Average Loss: -0.02688
+Timesteps So Far: 296946
+Rollout took: 18.28 secs
+Processing took: 1.45 secs
+Iteration took: 19.73 secs
+Learning rate: 4.073333333333329e-06
+------------------------------------------------------
+
+Quick-saving models
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+visited sector 1 for the first time
+
+-------------------- Iteration #61 --------------------
+Average Episodic Length: 41.3
+Average Episodic Return: 284.22
+Average Loss: -0.01574
+Timesteps So Far: 301902
+Rollout took: 20.89 secs
+Processing took: 1.37 secs
+Iteration took: 22.25 secs
+Learning rate: 0.0
+------------------------------------------------------
+
+Saving actor & critic models
+Saving ghost data
+Finished successfully!

@@ -22,6 +22,10 @@ from kartSimulator.sim.maps.random_point import RandomPoint
 
 from kartSimulator.sim.ui_manager import UImanager
 
+# TODO changes to kart speed
+# max_velocity, burgerbot = 0.22
+# impulse, old = 2
+
 PPM = 100
 
 BOT_SIZE = 0.192
@@ -29,9 +33,9 @@ BOT_WEIGHT = 1
 
 # 1 meter in 4.546 sec or 0.22 meters in 1 sec
 # at 0.22 m/s, the bot should walk 1 meter in 4.546 seconds
-MAX_VELOCITY = 4 * 0.22 * PPM
+#MAX_VELOCITY = 4 * 0.22 * PPM
 
-# MAX_VELOCITY = 2 * PPM
+MAX_VELOCITY = 4 * PPM
 
 # 0.1 rad/frames, 2pi in 1.281 sec
 
@@ -154,7 +158,8 @@ class KartSim(gym.Env):
         self.norm_dist_vec = [1, 1]
 
         self.goal_pos = [0,0]
-        self.angle_to_target = 0
+        self.angle_to_target_sin = 0
+        self.angle_to_target_cos = 0
 
         self.info = {}
 
@@ -298,8 +303,8 @@ class KartSim(gym.Env):
         # if finish lap then truncated
         if self.finish:
             terminated = True
-            self.reward += 500
-            #step_reward = self.reward
+            self.reward += 1000
+            step_reward = self.reward
 
         # if collide with track then terminate
         if self.out_of_track:
@@ -348,7 +353,8 @@ class KartSim(gym.Env):
         self.ui_manager.add_ui_text("total reward", self.reward, ".3f")
         self.ui_manager.add_ui_text("act.rew from target", self.next_target_rew_act, ".3f")
         self.ui_manager.add_ui_text("dist.rew from target", self.next_target_rew, ".4f")
-        self.ui_manager.add_ui_text("angle to target", self.angle_to_target, ".3f")
+        self.ui_manager.add_ui_text("angle to target", self.angle_to_target_cos, ".3f")
+        self.ui_manager.add_ui_text("angle to target", self.angle_to_target_sin, ".3f")
 
         self.ui_manager.add_ui_text("time in sec", (pygame.time.get_ticks() / 1000), ".2f")
         self.ui_manager.add_ui_text("fps", self._clock.get_fps(), ".2f")
@@ -460,7 +466,7 @@ class KartSim(gym.Env):
             return value
         else:
             if self.velocity < MAX_VELOCITY:
-                self._playerBody.apply_impulse_at_local_point((0, 2 * value), (0, 0))
+                self._playerBody.apply_impulse_at_local_point((0, 15 * value), (0, 0))
             return value
 
     def _go_left_right(self, value):
@@ -477,7 +483,7 @@ class KartSim(gym.Env):
             return value
         else:
             if self.velocity < MAX_VELOCITY:
-                self._playerBody.apply_impulse_at_local_point((2 * value, 0), (0, 0))
+                self._playerBody.apply_impulse_at_local_point((15 * value, 0), (0, 0))
             return value
 
     def _create_ball(self) -> None:
@@ -572,14 +578,16 @@ class KartSim(gym.Env):
 
     def observation_target_angle(self):
 
-        x = self.goal_pos[0] - self._playerBody.position[0]
+        x = self._playerBody.position[0] - self.goal_pos[0]
+        y = self._playerBody.position[1] - self.goal_pos[1]
 
-        y = self.goal_pos[1] - self._playerBody.position[1]
+        magnitude = math.sqrt(x ** 2 + y ** 2)
 
-        self.angle_to_target = math.atan2(y,-x)
+        self.angle_to_target_cos = x / magnitude
+        self.angle_to_target_sin = - y / magnitude
 
         # assign rotations
-        rotation = [self.angle_to_target]
+        rotation = [self.angle_to_target_cos, self.angle_to_target_sin]
 
         return rotation
 

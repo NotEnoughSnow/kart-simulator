@@ -22,6 +22,10 @@ from kartSimulator.sim.maps.random_point import RandomPoint
 
 from kartSimulator.sim.ui_manager import UImanager
 
+# TODO changes to kart speed
+# max_velocity, burgerbot = 0.22
+# impulse, old = 2
+# rad vel = 2.84
 
 PPM = 100
 
@@ -30,15 +34,15 @@ BOT_WEIGHT = 1
 
 # 1 meter in 4.546 sec or 0.22 meters in 1 sec
 # at 0.22 m/s, the bot should walk 1 meter in 4.546 seconds
-MAX_VELOCITY = 0.22 * PPM
+#MAX_VELOCITY = 0.22 * PPM
 
-# MAX_VELOCITY = 2 * PPM
+MAX_VELOCITY = 2 * PPM
 
 # 0.1 rad/frames, 2pi in 1.281 sec
 
 # example : 0.0379 rad/frames, for frames = 48
 # or        1.82 rad/sec
-RAD_VELOCITY = 2.84
+RAD_VELOCITY = 2 * 2.84
 
 # RAD_VELOCITY = 10
 
@@ -146,9 +150,9 @@ class KartSim(gym.Env):
         self.next_target_rew_act = 0
 
         self._create_ball()
-        self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
+        #self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
         #self.map = MapGenerator(self._space, WORLD_CENTER, 50)
-        #self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
+        self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
 
         # map walls
         # sector initiation
@@ -510,7 +514,7 @@ class KartSim(gym.Env):
             return value
         elif value > 0:
             if self.velocity < MAX_VELOCITY:
-                self._playerBody.apply_impulse_at_local_point((0, 2 * value), (0, 0))
+                self._playerBody.apply_impulse_at_local_point((0, 6 * value), (0, 0))
             return value
         elif value < 0:
             if self.forward_direction > 0:
