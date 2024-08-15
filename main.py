@@ -191,9 +191,9 @@ def save_train_data(env, save_dir, experiment_name, ver_number, alg, total_times
         "type" : experiment_name,
         "version" : ver_number,
         "algorithm" : alg,
-        "env name" : env.metadata["name"],
-        "evn track" : env.metadata["track"],
-        "obs types" : env.metadata["obs_seq"],
+        "env name" : env.metadata.get("name", "None"),
+        "evn track" : env.metadata.get("track", "None"),
+        "obs types" : env.metadata.get("obs_seq", "None"),
         "total timesteps" : total_timesteps,
         "hyperparameters" : hyperparameters,
     }
@@ -441,7 +441,7 @@ def main(args):
     # iteration_type : mul for default mode, one to run a single iteration
     # alg : default or baselines
     train_parameters = {
-        "total_timesteps": 300000,
+        "total_timesteps": 10000,
         "record_tb": True,
         "record_ghost": True,
         "save_model": True,
@@ -451,7 +451,7 @@ def main(args):
 
     # Save parameters
     # experiment_name : change to test out different conditions
-    experiment_name = "L1"
+    experiment_name = "LL2"
     save_dir = "./saves/"
 
     # Parameters for testing
@@ -488,7 +488,8 @@ def main(args):
              expert_ep_count=expert_ep_count)
 
     if args.mode == "train":
-        env = env_fn.KartSim(render_mode=None, train=True, **env_args)
+        env = gym.make('Pendulum-v1')
+        #env = env_fn.KartSim(render_mode=None, train=True, **env_args)
         train(env=env,
               **train_parameters,
               experiment_name=experiment_name,
@@ -512,15 +513,6 @@ def main(args):
     if args.mode == "graph":
         make_graphs(graph_file=graph_file)
 
-    if args.mode == "train-gym":
-        env = gym.make('Pendulum-v1')
-        train_gym(env=env,
-              **train_parameters,
-              experiment_name=experiment_name,
-              save_dir=save_dir,
-              hyperparameters=hyperparameters,
-              )
-
     if args.mode == "snn":
         env = env_fn.KartSim(render_mode=None, train=True, **env_args)
         train_SNN(env=env, hyperparameters=hyperparameters)
@@ -537,6 +529,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, test, graph, replay
 
-    args.mode = "graph"
+    args.mode = "train"
 
     main(args)
