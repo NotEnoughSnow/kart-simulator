@@ -61,7 +61,12 @@ class PPO:
 
         self.env = env
         self.obs_dim = env.observation_space.shape[0]
-        self.act_dim = env.action_space.shape[0]
+
+        if self.continuous:
+            self.act_dim = env.action_space.shape[0]
+        else:
+            self.act_dim = env.action_space.n
+
 
         print(f"obs shape :{env.observation_space.shape} \n"
               f"action shape :{env.action_space.shape}")

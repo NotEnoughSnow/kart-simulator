@@ -488,7 +488,7 @@ def main(args):
              expert_ep_count=expert_ep_count)
 
     if args.mode == "train":
-        env = gym.make('Pendulum-v1')
+        env = gym.make('LunarLander-v2')
         #env = env_fn.KartSim(render_mode=None, train=True, **env_args)
         train(env=env,
               **train_parameters,
