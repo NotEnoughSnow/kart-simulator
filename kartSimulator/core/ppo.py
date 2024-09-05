@@ -8,8 +8,11 @@ from torch import nn
 from torch.distributions import MultivariateNormal, Categorical
 from torch.optim.adam import Adam
 from torch.utils.tensorboard import SummaryWriter
+import kartSimulator.core.snn_utils as SNN_utils
 
 import h5py
+
+import wandb
 
 from kartSimulator.core.actor_network import ActorNetwork
 from kartSimulator.core.critic_network import CriticNetwork
@@ -18,7 +21,7 @@ from kartSimulator.core.standard_network import FFNetwork
 
 class PPO:
 
-    def __init__(self, env, record_ghost, save_model, record_tb, save_dir, **hyperparameters):
+    def __init__(self, env, record_ghost, save_model, record_tb, save_dir, train_config, **hyperparameters):
 
 
         # Make sure the environment is compatible with our code
@@ -34,10 +37,22 @@ class PPO:
         else:
             raise NotImplementedError("The action space type is not supported.")
 
+        print(train_config)
+
+        # start a new wandb run to track this script
+        wandb.init(
+            # set the wandb project where this run will be logged
+            project="PPO-SNN-Lunar-Landing",
+
+            # track hyperparameters and run metadata
+            config=train_config
+        )
+
 
         self.record_tb = record_tb
         self.record_ghost = record_ghost
         self.save_model = save_model
+        self.record_wandb = True
 
         self.run_directory = save_dir
 
@@ -66,6 +81,7 @@ class PPO:
             self.act_dim = env.action_space.shape[0]
         else:
             self.act_dim = env.action_space.n
+
 
 
         print(f"obs shape :{env.observation_space.shape} \n"
@@ -154,6 +170,11 @@ class PPO:
             if self.record_tb:
                 self.writer.add_scalar('train/explained_variance', explained_variance, self.logger['t_so_far'])
 
+            if self.record_wandb:
+                wandb.log({
+                    "train/explained_variance": explained_variance,
+                }, step=self.logger['t_so_far'])
+
             # This is the loop where we update our network for some n epochs
             for _ in range(self.n_updates_per_iteration):
                 # Learning Rate Annealing
@@ -179,6 +200,7 @@ class PPO:
 
                     # Calculate V_phi and pi_theta(a_t | s_t)
                     V, curr_log_probs, dist, entropy_loss = self.evaluate(mini_obs, mini_acts)
+                    print("grad check curr_log_probs :", curr_log_probs.requires_grad)  # This should print True
 
                     # Calculate the ratio pi_theta(a_t | s_t) / pi_theta_k(a_t | s_t)
                     # NOTE: we just subtract the logs, which is the same as
@@ -191,10 +213,13 @@ class PPO:
                     ratios = torch.exp(logratios)
 
                     approx_kl = ((ratios - 1) - logratios).mean()
+                    print("grad check ratios :", ratios.requires_grad)  # This should print True
 
                     # Calculate surrogate losses.
                     surr1 = ratios * mini_advantage
                     surr2 = torch.clamp(ratios, 1 - self.clip, 1 + self.clip) * mini_advantage
+                    print("grad check surr1 :", surr1.requires_grad)  # This should print True
+                    print("grad check surr2 :", surr2.requires_grad)  # This should print True
 
                     # Calculate actor and critic losses.
                     # NOTE: we take the negative min of the surrogate losses because we're trying to maximize
@@ -202,6 +227,8 @@ class PPO:
                     # performance function maximizes it.
 
                     actor_loss = (-torch.min(surr1, surr2)).mean()
+                    print("grad check initial loss :", actor_loss.requires_grad)  # This should print True
+
                     actor_loss = actor_loss + self.ent_coef * entropy_loss
                     critic_loss = nn.MSELoss()(V, mini_rtgs)
 
@@ -211,6 +238,10 @@ class PPO:
 
                     # Calculate gradients and perform backward propagation for actor network
                     self.actor_optim.zero_grad()
+
+                    print("grad check final loss :", actor_loss.requires_grad)  # This should print True
+
+
                     actor_loss.backward(retain_graph=True)
                     nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
                     self.actor_optim.step()
@@ -236,6 +267,16 @@ class PPO:
                                                self.logger['t_so_far'])
                         self.writer.add_scalar('train/value_loss', value_loss, self.logger['t_so_far'])
                         self.writer.add_scalar('train/loss', total_loss, self.logger['t_so_far'])
+
+                    if self.record_wandb:
+                        wandb.log({
+                            "train/clip_range": self.clip,
+                            "train/clip_fraction": clip_fraction,
+                            "train/approx_kl": approx_kl,
+                            "train/policy_gradient_loss": policy_gradient_loss,
+                            "train/value_loss": value_loss,
+                            "train/loss": total_loss,
+                        }, step=self.logger['t_so_far'])
 
                 # Approximating KL Divergence
                 if self.target_kl is not None and approx_kl > self.target_kl:
@@ -271,6 +312,9 @@ class PPO:
                             batch_lengths=total_ghost_ts, )
 
         print("Finished successfully!")
+
+        wandb.finish()
+
         self.output_file.close()
 
     def calculate_gae(self, rewards, values, dones):
@@ -379,6 +423,14 @@ class PPO:
                 self.writer.add_scalar('rollout/ep_rew_mean', ep_rew_mean, self.logger['t_so_far'])
                 self.writer.add_scalar('rollout/ep_len_mean', (ep_t + 1), self.logger['t_so_far'])
 
+            if self.record_wandb:
+                wandb.log({
+                    "rollout/ep_rew_mean": ep_rew_mean,
+                    "rollout/ep_len_mean": (ep_t + 1),
+                }, step=self.logger['t_so_far'])
+
+
+
         # Reshape data as tensors in the shape specified in function description, before returning
         batch_obs = torch.tensor(np.array(batch_obs), dtype=torch.float)
         batch_acts = torch.tensor(np.array(batch_acts), dtype=torch.float)
@@ -407,6 +459,7 @@ class PPO:
             mean = self.actor(obs)
             dist = MultivariateNormal(mean, self.cov_mat)
         else:
+
             # For discrete action spaces
             logits = self.actor(obs)
             dist = Categorical(logits=logits)
@@ -437,6 +490,8 @@ class PPO:
             log_probs - the log probabilities of the actions taken in batch_acts given batch_obs
         """
 
+        print("**********************************")  # This should print True
+
         # Query critic network for a value V for each batch_obs
         V = self.critic(batch_obs).squeeze()
 
@@ -445,16 +500,26 @@ class PPO:
             mean = self.actor(batch_obs)
             dist = MultivariateNormal(mean, self.cov_mat)
         else:
+
+            print("grad check batch_obs :", batch_obs.requires_grad)  # This should print True
+
             logits = self.actor(batch_obs)
+
+            print("grad check logits :", logits.requires_grad)  # This should print True
+
             dist = Categorical(logits=logits)
 
         # Calculate entropy loss for regularization
         entropy_loss = -dist.entropy().mean()
 
+
+
         if self.record_tb:
             self.writer.add_scalar('train/entropy_loss', entropy_loss, self.logger['t_so_far'])
 
         log_probs = dist.log_prob(batch_acts)
+
+        print("grad check log_probs :", log_probs.requires_grad)  # This should print True
 
         # Return the value vector V of each observation in the batch
         # and log probabilities log_probs of each action in the batch
@@ -552,6 +617,7 @@ class PPO:
         print(f"Learning rate: {lr}", flush=True)
         print(f"------------------------------------------------------", flush=True)
         print(flush=True)
+
 
         # Reset batch-specific logging data
         self.logger['batch_lens'] = []

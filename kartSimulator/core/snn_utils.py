@@ -1,95 +1,161 @@
-import snntorch as snn
-from snntorch import spikegen
 import torch
+import snntorch as snn
+import snntorch.functional as SF
+import snntorch.spikegen as spikegen
+import numpy as np
+
+
+def generate_spike_trains(observation, num_steps, threshold, shift):
+    """
+    Generate spike trains from a single observation using a fixed global threshold.
+
+    Parameters:
+    - observation: A tensor representing the observation ([observation_dim]).
+    - num_steps: The number of timesteps for the spike train.
+    - threshold: A single global threshold value to be used for normalization.
+
+    Returns:
+    - spike_trains: Tensor of spike trains.
+    """
+
+    shift = shift.numpy()
+
+    # Normalize and clip observation
+    shifted_obs = np.add(observation, shift)
+
+    # torch version
+    # shifted_obs = observation + shift
+
+    normalized_obs = shifted_obs / (threshold + 1e-6)  # Avoid division by zero
+
+    normalized_obs /= 2
+
+    normalized_obs = normalized_obs.clamp(0, 1)  # Clip values to be within [0, 1]
+
+    # Generate spike trains
+    spike_trains = spikegen.rate(normalized_obs, num_steps=num_steps)
+
+    # torch version
+    # return spike_trains
+
+    return spike_trains.numpy()
+
+
+def generate_spike_trains_batched(observations, num_steps, threshold, shift):
+    """
+    Generate spike trains from batched observations using a fixed global threshold.
+
+    Parameters:
+    - observations: A tensor representing the batched observations ([batch_size, observation_dim]).
+    - num_steps: The number of timesteps for the spike train.
+    - threshold: A single global threshold value to be used for normalization.
+    - shift: A value to shift the observation range to handle negative values.
+
+    Returns:
+    - spike_trains: Tensor of spike trains with shape (batch_size, num_steps, observation_dim).
+    """
+
+    shift = shift.numpy()
+
+    # Normalize and shift observations
+    normalized_obs = np.add(observations, shift) / (2 * (threshold + 1e-6))  # Avoid division by zero
+    normalized_obs = normalized_obs.clamp(0, 1)  # Clip values to [0, 1]
+
+    # Generate spike trains for each observation in the batch
+    spike_trains = spikegen.rate(normalized_obs, num_steps=num_steps)
+
+    # Rearrange the output to have shape (batch_size, num_steps, observation_dim)
+    spike_trains = spike_trains.permute(1, 0, 2)
+
+    # torch version
+    # return spike_trains
+
+    return spike_trains.numpy()
+
+
+def get_spike_counts(spike_trains):
+    """
+    Get the total number of spikes for each neuron over all timesteps.
+
+    Parameters:
+    - spike_trains: Tensor of spike trains with shape [num_steps, observation_dim].
+
+    Returns:
+    - Array of spike counts for each neuron.
+    """
+    spike_counts = torch.sum(spike_trains, dim=0)
+    return spike_counts
+
+
+def get_spike_counts_batched(spike_trains):
+    """
+    Get the total number of spikes for each neuron over all timesteps for batched spike trains.
+
+    Parameters:
+    - spike_trains: Tensor of spike trains with shape [batch_size, num_steps, observation_dim].
+
+    Returns:
+    - Array of spike counts for each neuron in each observation (shape: [batch_size, observation_dim]).
+    """
+    # Sum over the time dimension (dim=1) to get spike counts for each neuron in each observation
+    spike_counts = torch.sum(spike_trains, dim=1)
+
+    return spike_counts
 
 
 def decode_first_spike_batched(spike_trains):
     """
-    Decodes the first spike time from spike trains for batched data using 'time to first spike' method.
+    Decodes the first spike time from batched spike trains using the 'time to first spike' method.
 
     Parameters:
         spike_trains - The batched spike trains with shape (batch_size, num_steps, num_neurons).
 
     Returns:
-        decoded_vector - The decoded first spike times with shape (batch_size, num_neurons).
+        decoded_vector - A tensor representing the first spike times for each neuron in each batch with gradients retained.
     """
-    batch_size = spike_trains.size(0)
-    num_neurons = spike_trains.size(2)
-    decoded_vectors = []
+    batch_size, num_steps, num_neurons = spike_trains.shape
 
-    for batch_idx in range(batch_size):
-        decoded_vector = [spike_trains.size(1) + 1] * num_neurons
+    # Create a tensor with time steps and retain gradients
+    time_tensor = torch.arange(1, num_steps + 1, dtype=torch.float32, requires_grad=True).unsqueeze(0).unsqueeze(
+        2).expand(batch_size, num_steps, num_neurons)
 
-        for neuron_idx in range(num_neurons):
-            first_spike = (spike_trains[batch_idx, :, neuron_idx] == 1).nonzero(as_tuple=True)[0]
-            if first_spike.nelement() != 0:
-                decoded_vector[neuron_idx] = first_spike[0].item() + 1
+    # Multiply spike_trains by the time tensor, masking out non-spike entries
+    spike_times = spike_trains * time_tensor
 
-        decoded_vectors.append(decoded_vector)
+    # Set all zero entries (no spike) to a very high value (greater than num_steps)
+    spike_times = spike_times + (1 - spike_trains) * (num_steps + 1)
 
-    return torch.FloatTensor(decoded_vectors)
+    # Find the minimum value in each column (i.e., first spike) for each batch
+    first_spike_times, _ = spike_times.min(dim=1)
 
-
-def decode_from_spikes_count(spikes):
-    spike_counts = torch.sum(spikes, dim=1)
-    action = torch.zeros(spikes.size(0))
-    max_spike_count = torch.max(spike_counts)
-    candidates = torch.where(spike_counts == max_spike_count)[0]
-    if len(candidates) > 1:
-        action[torch.multinomial(candidates.float(), 1)] = 1
-    else:
-        action[candidates] = 1
-    return action
+    # Ensure that this tensor retains gradients
+    return first_spike_times
 
 
-def encode_to_spikes(data, num_steps):
+def decode_first_spike(spike_trains):
     """
-    Encodes analog signals into spike trains using rate encoding.
+    Decodes the first spike time from spike trains using the 'time to first spike' method.
 
     Parameters:
-        data - The continuous-valued data to be encoded.
-        num_steps - The number of time steps for the spike train.
+        spike_trains - The spike trains with shape (num_steps, num_neurons).
 
     Returns:
-        spike_train - The encoded spike train.
+        decoded_vector - A tensor representing the first spike times for each neuron with gradients retained.
     """
+    num_steps, num_neurons = spike_trains.shape
 
-    # Add a small epsilon to avoid division by zero
-    epsilon = 1e-6
+    # Create a tensor with time steps and retain gradients
+    time_tensor = torch.arange(1, num_steps + 1, dtype=torch.float32, requires_grad=True).unsqueeze(1).expand(num_steps,
+                                                                                                              num_neurons)
 
-    # Normalize the data to be between 0 and 1
-    normalized_data = (data - data.min()) / (data.max() - data.min() + epsilon)
+    # Multiply spike_trains by the time tensor, masking out non-spike entries
+    spike_times = spike_trains * time_tensor
 
-    normalized_data = torch.clamp(normalized_data, 0, 1)
+    # Set all zero entries (no spike) to a very high value (greater than num_steps)
+    spike_times = spike_times + (1 - spike_trains) * (num_steps + 1)
 
-    # Convert normalized data to spike trains
-    # TODO rate vs latency vs delta
-    spike_train = spikegen.rate(normalized_data, num_steps=num_steps)
+    # Find the minimum value in each column (i.e., first spike)
+    first_spike_times, _ = spike_times.min(dim=0)
 
-    return spike_train
-
-
-def encode_to_spikes_batched(data, num_steps):
-    """
-    Encodes analog signals into spike trains using rate encoding.
-
-    Parameters:
-        data - The continuous-valued data to be encoded.
-        num_steps - The number of time steps for the spike train.
-
-    Returns:
-        spike_train - The encoded spike train.
-    """
-
-    # Add a small epsilon to avoid division by zero
-    epsilon = 1e-6
-
-    data_min = data.min(dim=1, keepdim=True)[0]
-    data_max = data.max(dim=1, keepdim=True)[0]
-
-    normalized_data = (data - data_min) / (data_max - data_min + epsilon)
-    normalized_data = torch.clamp(normalized_data, 0, 1)
-
-    spike_train = spikegen.rate(normalized_data, num_steps=num_steps)
-
-    return spike_train.transpose(0, 1)
+    # Ensure that this tensor retains gradients
+    return first_spike_times
