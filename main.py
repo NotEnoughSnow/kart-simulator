@@ -13,7 +13,7 @@ from kartSimulator.core.arguments import get_args
 from kartSimulator.core import eval_policy
 from kartSimulator.core.ppo import PPO
 from kartSimulator.core.ppo_gym import PPO_gym
-from kartSimulator.core.ppo_snn import SNNPPO
+from kartSimulator.core.ppo_snn import PPO_SNN
 from kartSimulator.core.ppo_one_iter import PPO as PPO_ONE
 from kartSimulator.core.line_policy import L_Policy
 import kartSimulator.evolutionary.core as EO
@@ -76,7 +76,7 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
                     action[1] = +1
                 if keys[pygame.K_a]:
                     action[1] = -1
-            else :
+            else:
                 if keys[pygame.K_w]:
                     action[1] = 1
                 if keys[pygame.K_SPACE]:
@@ -207,6 +207,8 @@ def save_train_data(env, save_dir, experiment_name, ver_number, alg, total_times
 
         print(f"Parameters saved to {yaml_file_path}")
 
+    return parameters
+
 
 def train(env,
           total_timesteps,
@@ -226,7 +228,7 @@ def train(env,
 
     save_path, ver_number = utils.get_next_run_directory(base_dir, experiment_name)
 
-    save_train_data(env, base_dir, experiment_name, ver_number, alg, total_timesteps, hyperparameters)
+    train_config = save_train_data(env, base_dir, experiment_name, ver_number, alg, total_timesteps, hyperparameters)
 
 
 
@@ -236,6 +238,7 @@ def train(env,
                     record_ghost=record_ghost,
                     record_tb=record_tb,
                     save_dir=save_path,
+                    train_config=train_config,
                     **hyperparameters)
 
         # Tries to load in an existing actor/critic model to continue training on
@@ -256,42 +259,13 @@ def train(env,
             model.learn(total_timesteps=1)
         else:
             model.learn(total_timesteps=total_timesteps)
-    if alg == "baselines":
-        # TODO fix save_dir not needing experiment name
+    if alg == "snn":
 
-        baselines.train(env, save_dir, record_tb, experiment_name, steps=total_timesteps)
-
-def train_gym(env,
-          total_timesteps,
-          alg,
-          experiment_name,
-          save_dir,
-          record_tb,
-          record_ghost,
-          save_model,
-          iteration_type,
-          hyperparameters,
-          ):
-    actor_model = ''
-    critic_model = ''
-
-    base_dir = save_dir+f"{alg}/"
-
-    save_path, ver_number = utils.get_next_run_directory(base_dir, experiment_name)
-
-    print("wat", save_path)
-
-    # TODO might need this in the future
-    #save_train_data(env, base_dir, experiment_name, ver_number, alg, total_timesteps, hyperparameters)
-
-
-
-    if alg == "default":
-
-        model = PPO_gym(env=env, save_model=save_model,
-                    record_ghost=False,
+        model = PPO_SNN(env=env, save_model=save_model,
+                    record_ghost=record_ghost,
                     record_tb=record_tb,
                     save_dir=save_path,
+                    train_config=train_config,
                     **hyperparameters)
 
         # Tries to load in an existing actor/critic model to continue training on
@@ -337,9 +311,22 @@ def test(env, alg, type, deterministic, actor_model):
             print(f"Didn't specify model file. Exiting.", flush=True)
             sys.exit(0)
 
+        # Determine if the action space is continuous or discrete
+        if isinstance(env.action_space, gym.spaces.Box):
+            print("Using a continuous action space")
+            continuous = True
+        elif isinstance(env.action_space, gym.spaces.Discrete):
+            print("Using a discrete action space")
+            continuous = False
+        else:
+            raise NotImplementedError("The action space type is not supported.")
+
         # Extract out dimensions of observation and action spaces
         obs_dim = env.observation_space.shape[0]
-        act_dim = env.action_space.shape[0]
+        if continuous:
+            act_dim = env.action_space.shape[0]
+        else:
+            act_dim  = env.action_space.n
 
         # Build our policy the same way we build our actor model in PPO
         # policy = ActorNetwork(obs_dim, act_dim)
@@ -369,15 +356,6 @@ def make_graphs(graph_file):
     # Extract absolute file paths
     graph_generator.graph_data(graph_file)
 
-
-def train_SNN(env, hyperparameters):
-    model = SNNPPO(env=env, **hyperparameters)
-
-    print(f"Training from scratch.", flush=True)
-
-    model.learn(total_timesteps=100000)
-
-
 def optimize():
     # TODO
     EO.run()
@@ -385,24 +363,27 @@ def optimize():
 
 def main(args):
 
-    # timesteps_per_batch : batch_size
-    # max_timesteps_per_episode : n_steps
+    # timesteps_per_batch : n_steps
+    # num_minibatches : batch_size
     # n_updates_per_iteration : n_epochs
+    # ent_coef : ent_coef
+    # gamma : gamma
+    # gae-lambda : gae_lambda
     # render_every_i : stats_window_size
 
     hyperparameters = {
-        'timesteps_per_batch': 4800,
+        'timesteps_per_batch': 1024,
         'max_timesteps_per_episode': 700,
-        'gamma': 0.95,
+        'gamma': 0.999,
         'ent_coef': 0.01,
-        'n_updates_per_iteration': 10,
+        'n_updates_per_iteration': 4,
         'lr': 0.0004,
         'clip': 0.2,
         'max_grad_norm': 0.5,
         'render_every_i': 10,
         'target_kl': None,
-        'num_minibatches': 8,
-        'gae_lambda': 0.95,
+        'num_minibatches': 64,
+        'gae_lambda': 0.98,
     }
 
 
@@ -439,9 +420,9 @@ def main(args):
     # record_ghost : to save ghost data (files for replays)
     # save_model : to save actor and critic models
     # iteration_type : mul for default mode, one to run a single iteration
-    # alg : default or baselines
+    # alg : default, baselines, snn
     train_parameters = {
-        "total_timesteps": 10000,
+        "total_timesteps": 300000,
         "record_tb": True,
         "record_ghost": True,
         "save_model": True,
@@ -451,7 +432,7 @@ def main(args):
 
     # Save parameters
     # experiment_name : change to test out different conditions
-    experiment_name = "LL2"
+    experiment_name = "LL4"
     save_dir = "./saves/"
 
     # Parameters for testing
@@ -471,7 +452,7 @@ def main(args):
     mode = "batch"
 
     # parameters for making graphs
-    graph_file = "saves/default/L1/ver_7/graph_data.txt"
+    graph_file = "saves/default/LL3/ver_1/graph_data.txt"
 
 
     # Load from YAML
@@ -498,7 +479,9 @@ def main(args):
               )
 
     if args.mode == "test":
-        env = env_fn.KartSim(render_mode="human", train=False, **env_args)
+        #env = env_fn.KartSim(render_mode="human", train=False, **env_args)
+        env = gym.make('LunarLander-v2', render_mode="human")
+
         test(env,
              alg=train_parameters["alg"],
              type=experiment_name,
@@ -512,10 +495,6 @@ def main(args):
 
     if args.mode == "graph":
         make_graphs(graph_file=graph_file)
-
-    if args.mode == "snn":
-        env = env_fn.KartSim(render_mode=None, train=True, **env_args)
-        train_SNN(env=env, hyperparameters=hyperparameters)
 
     if args.mode == "optimize":
         # TODO implement evolutionary optimization

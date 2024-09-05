@@ -5,7 +5,9 @@
     which resides in ppo.py. Thus, we can test our trained policy without
 	relying on ppo.py.
 """
+import gymnasium as gym
 import numpy as np
+import torch
 
 
 def _log_summary(ep_len, ep_ret, ep_num):
@@ -71,7 +73,15 @@ def rollout(policy, env, render):
             # Query deterministic action from policy and run it
             #action, _ = policy(obs)
 
-            action = policy(obs).detach().numpy()
+            env.render()
+
+            # Query deterministic action from policy
+            if isinstance(env.action_space, gym.spaces.Discrete):
+                action_probs = policy(obs)
+                action = torch.argmax(action_probs, dim=-1).item()
+            else:
+
+                action = policy(obs).detach().numpy()
 
             obs, rew, terminated, truncated, _ = env.step(action)
 
