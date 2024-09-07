@@ -16,9 +16,7 @@ import pygame
 
 from kartSimulator.sim.utils import normalize_vec
 
-from kartSimulator.sim.maps.map_generator import MapGenerator
-from kartSimulator.sim.maps.map_loader import MapLoader
-from kartSimulator.sim.maps.random_point import RandomPoint
+from kartSimulator.sim.maps.track_factory import TrackFactory
 
 from kartSimulator.sim.ui_manager import UImanager
 
@@ -28,23 +26,6 @@ from kartSimulator.sim.ui_manager import UImanager
 # rad vel = 2.84
 
 PPM = 100
-
-BOT_SIZE = 0.192
-BOT_WEIGHT = 1
-
-# 1 meter in 4.546 sec or 0.22 meters in 1 sec
-# at 0.22 m/s, the bot should walk 1 meter in 4.546 seconds
-#MAX_VELOCITY = 0.22 * PPM
-
-MAX_VELOCITY = 2 * PPM
-
-# 0.1 rad/frames, 2pi in 1.281 sec
-
-# example : 0.0379 rad/frames, for frames = 48
-# or        1.82 rad/sec
-RAD_VELOCITY = 2 * 2.84
-
-# RAD_VELOCITY = 10
 
 MAX_TARGET_DISTANCE = 250
 
@@ -67,13 +48,29 @@ class KartSim(gym.Env):
                 "reset_time": 2000,
                 }
 
-    def __init__(self, render_mode=None, train=False, obs_seq=[], reset_time=2000):
+    def __init__(self,
+                 render_mode=None,
+                 train=False,
+                 obs_seq=[],
+                 reset_time=2000,
+                 track_type="default",
+                 track_args=None,
+                 player_args=None,
+                 ):
 
         print("loaded env: ", self.metadata["name"])
 
         self.render_mode = render_mode
         self.metadata["reset_time"] = reset_time
         self.metadata["obs_seq"] = obs_seq
+
+        # player stuff
+        self.max_velocity = player_args["max_velocity"] * PPM
+        self.player_acc_rate = player_args["player_acc_rate"]
+        self.player_break_rate = player_args["player_break_rate"]
+        self.player_rad_velocity = player_args["rad_velocity"]
+        self.bot_size = player_args["bot_size"]
+        self.bot_weight = player_args["bot_weight"]
 
         self.reset_time = reset_time
         self.obs_seq = obs_seq
@@ -137,7 +134,6 @@ class KartSim(gym.Env):
             low=-400, high=400, shape=(self.obs_len,), dtype=np.float32
         )
 
-        self.initial_pos = 300, 450
         self.initial_angle = 0 + ANGLE_DIFF
         self.vision_points = []
         self.vision_lengths = []
@@ -149,10 +145,19 @@ class KartSim(gym.Env):
         self.next_target_rew = 0
         self.next_target_rew_act = 0
 
-        self._create_ball()
         #self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
         #self.map = MapGenerator(self._space, WORLD_CENTER, 50)
-        self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
+        #self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
+
+        self.map = TrackFactory.create_track(track_type,
+                                             self._space,
+                                             WORLD_CENTER,
+                                             **track_args)
+
+        self.initial_pos = self.map.initial_pos
+
+        self.create_player()
+
 
         # map walls
         # sector initiation
@@ -484,7 +489,7 @@ class KartSim(gym.Env):
         if value == 0:
             return value
         else:
-            self._steerAngle += (RAD_VELOCITY / self.FPS) * value
+            self._steerAngle += (self.player_rad_velocity / self.FPS) * value
             return value
 
     """
@@ -513,12 +518,12 @@ class KartSim(gym.Env):
         if value == 0:
             return value
         elif value > 0:
-            if self.velocity < MAX_VELOCITY:
-                self._playerBody.apply_impulse_at_local_point((0, 6 * value), (0, 0))
+            if self.velocity < self.max_velocity:
+                self._playerBody.apply_impulse_at_local_point((0, self.player_acc_rate * value), (0, 0))
             return value
         elif value < 0:
             if self.forward_direction > 0:
-                self._playerBody.apply_impulse_at_local_point((0, 2 * value), (0, 0))
+                self._playerBody.apply_impulse_at_local_point((0, self.player_break_rate * value), (0, 0))
             return value
         else:
             raise Exception("how ?")
@@ -539,9 +544,9 @@ class KartSim(gym.Env):
             return value
     """
 
-    def _create_ball(self) -> None:
-        mass = BOT_WEIGHT
-        radius = BOT_SIZE * PPM
+    def create_player(self) -> None:
+        mass = self.bot_weight
+        radius = self.bot_size * PPM
         inertia = pymunk.moment_for_circle(mass, 0, radius, (0, 0))
         body = pymunk.Body(mass, inertia)
         body.position = self.initial_pos
@@ -618,7 +623,7 @@ class KartSim(gym.Env):
 
         velocity = np.clip(
             np.abs(normalize_vec([velocity],
-                                 maximum=MAX_VELOCITY,
+                                 maximum=self.max_velocity,
                                  minimum=0)),
             a_max=1,
             a_min=0)[0] * 300

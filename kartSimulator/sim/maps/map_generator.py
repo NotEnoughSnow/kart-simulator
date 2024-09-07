@@ -215,10 +215,10 @@ class MapGenerator(abs_map):
         # Return player's starting angle
         return directions, player_angle, random_position
 
-    def reset(self, playerShape):
+    def reset(self, playerShapes):
 
         for item in self.space.shapes:
-            if item != playerShape:
+            if item not in playerShapes:
                 self.space.remove(item)
 
         directions, angle, position = self.generate_random_direction()

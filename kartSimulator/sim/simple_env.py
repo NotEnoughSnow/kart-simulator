@@ -26,22 +26,11 @@ from kartSimulator.sim.maps.track_factory import TrackFactory
 
 PPM = 100
 
-BOT_SIZE = 0.192
-BOT_WEIGHT = 1
-
 # 1 meter in 4.546 sec or 0.22 meters in 1 sec
 # at 0.22 m/s, the bot should walk 1 meter in 4.546 seconds
 #MAX_VELOCITY = 4 * 0.22 * PPM
 
 MAX_VELOCITY = 4 * PPM
-
-# 0.1 rad/frames, 2pi in 1.281 sec
-
-# example : 0.0379 rad/frames, for frames = 48
-# or        1.82 rad/sec
-RAD_VELOCITY = 2.84
-
-# RAD_VELOCITY = 10
 
 MAX_TARGET_DISTANCE = 600
 
@@ -65,7 +54,9 @@ class KartSim(gym.Env):
                  obs_seq=[],
                  reset_time=300,
                  track_type="default",
-                 track_args=None):
+                 track_args=None,
+                 player_args=None,
+                 ):
 
         print("loaded env:", self.metadata["name"])
 
@@ -73,6 +64,12 @@ class KartSim(gym.Env):
 
         self.metadata["reset_time"] = reset_time
         self.metadata["obs_seq"] = obs_seq
+
+        # player stuff
+        self.max_velocity = player_args["max_velocity"] * PPM
+        self.player_acc_rate = player_args["player_acc_rate"]
+        self.bot_size = player_args["bot_size"]
+        self.bot_weight = player_args["bot_weight"]
 
         self.reset_time = reset_time
         self.obs_seq = obs_seq
@@ -155,7 +152,7 @@ class KartSim(gym.Env):
 
         self.initial_pos = self.map.initial_pos
 
-        self._create_ball()
+        self.create_player()
 
 
         # map walls
@@ -477,7 +474,7 @@ class KartSim(gym.Env):
             return value
         else:
             if self.velocity < MAX_VELOCITY:
-                self._playerBody.apply_impulse_at_local_point((0, 15 * value), (0, 0))
+                self._playerBody.apply_impulse_at_local_point((0, self.player_acc_rate * value), (0, 0))
             return value
 
     def _go_left_right(self, value):
@@ -494,12 +491,12 @@ class KartSim(gym.Env):
             return value
         else:
             if self.velocity < MAX_VELOCITY:
-                self._playerBody.apply_impulse_at_local_point((15 * value, 0), (0, 0))
+                self._playerBody.apply_impulse_at_local_point((self.player_acc_rate * value, 0), (0, 0))
             return value
 
-    def _create_ball(self) -> None:
-        mass = BOT_WEIGHT
-        radius = BOT_SIZE * PPM
+    def create_player(self) -> None:
+        mass = self.bot_weight
+        radius = self.bot_size * PPM
         inertia = pymunk.moment_for_circle(mass, 0, radius, (0, 0))
         body = pymunk.Body(mass, inertia)
         body.position = self.initial_pos
