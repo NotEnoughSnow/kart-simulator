@@ -16,11 +16,9 @@ import pygame
 
 from kartSimulator.sim.utils import normalize_vec
 
-from kartSimulator.sim.maps.map_generator import MapGenerator
-from kartSimulator.sim.maps.map_loader import MapLoader
-from kartSimulator.sim.maps.random_point import RandomPoint
-
 from kartSimulator.sim.ui_manager import UImanager
+
+from kartSimulator.sim.maps.track_factory import TrackFactory
 
 # TODO changes to kart speed
 # max_velocity, burgerbot = 0.22
@@ -62,7 +60,12 @@ class KartSim(gym.Env):
                 "reset_time": 300,
                 }
 
-    def __init__(self, render_mode=None, train=False, obs_seq=[], reset_time=300):
+    def __init__(self, render_mode=None,
+                 train=False,
+                 obs_seq=[],
+                 reset_time=300,
+                 track_type="default",
+                 track_args=None):
 
         print("loaded env:", self.metadata["name"])
 
@@ -131,7 +134,6 @@ class KartSim(gym.Env):
             low=-1000, high=1000, shape=(self.obs_len,), dtype=np.float32
         )
 
-        self.initial_pos = 300, 450
         self.vision_points = []
         self.vision_lengths = []
 
@@ -142,10 +144,19 @@ class KartSim(gym.Env):
         self.next_target_rew = 0
         self.next_target_rew_act = 0
 
-        self._create_ball()
-        self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
+        #self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
         #self.map = MapGenerator(self._space, WORLD_CENTER, 50)
         #self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
+
+        self.map = TrackFactory.create_track(track_type,
+                                             self._space,
+                                             WORLD_CENTER,
+                                             **track_args)
+
+        self.initial_pos = self.map.initial_pos
+
+        self._create_ball()
+
 
         # map walls
         # sector initiation

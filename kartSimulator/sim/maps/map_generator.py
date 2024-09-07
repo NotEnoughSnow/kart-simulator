@@ -98,6 +98,7 @@ class MapGenerator(abs_map):
         self.space = space
 
         self.wc = world_center.copy()
+        self.initial_pos = self.wc
 
         self.create_cubes()
 

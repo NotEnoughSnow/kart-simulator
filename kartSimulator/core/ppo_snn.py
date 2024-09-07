@@ -22,7 +22,15 @@ from kartSimulator.core.snn_network_small import SNN_small
 
 class PPO_SNN:
 
-    def __init__(self, env, record_ghost, save_model, record_tb, save_dir, train_config, **hyperparameters):
+    def __init__(self,
+                 env,
+                 record_ghost,
+                 save_model,
+                 record_tb,
+                 save_dir,
+                 record_wandb,
+                 train_config,
+                 **hyperparameters):
 
         # Make sure the environment is compatible with our code
         assert (type(env.observation_space) == gym.spaces.Box)
@@ -39,21 +47,21 @@ class PPO_SNN:
 
         print(train_config)
 
-        # start a new wandb run to track this script
-        wandb.init(
-            # set the wandb project where this run will be logged
-            project="PPO-SNN-Lunar-Landing",
-
-            # track hyperparameters and run metadata
-            config=train_config
-        )
-
         self.record_tb = record_tb
         self.record_ghost = record_ghost
         self.save_model = save_model
-        self.record_wandb = True
+        self.record_wandb = record_wandb
 
         self.run_directory = save_dir
+
+        if self.record_wandb:
+            wandb.init(
+                # set the wandb project where this run will be logged
+                project="PPO-SNN-Lunar-Landing",
+
+                # track hyperparameters and run metadata
+                config=train_config
+            )
 
         # Specify the file where you want to save the output
         output_file = f"{save_dir}/graph_data.txt"
@@ -314,7 +322,8 @@ class PPO_SNN:
 
         print("Finished successfully!")
 
-        wandb.finish()
+        if self.record_wandb:
+            wandb.finish()
 
         self.output_file.close()
 
