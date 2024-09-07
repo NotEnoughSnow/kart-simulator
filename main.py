@@ -86,8 +86,6 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
                 if keys[pygame.K_a]:
                     action[0] = -1
 
-
-
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                     env.reset()
@@ -181,25 +179,24 @@ def write_file(expert_run, expert_ep_lens, info, filename):
 
 
 def save_train_data(env, save_dir, experiment_name, ver_number, alg, total_timesteps, hyperparameters):
-
     # env name
     # map
     # obs
     # hyperparameters
 
     parameters = {
-        "type" : experiment_name,
-        "version" : ver_number,
-        "algorithm" : alg,
-        "env name" : env.metadata.get("name", "None"),
-        "evn track" : env.metadata.get("track", "None"),
-        "obs types" : env.metadata.get("obs_seq", "None"),
-        "total timesteps" : total_timesteps,
-        "hyperparameters" : hyperparameters,
+        "type": experiment_name,
+        "version": ver_number,
+        "algorithm": alg,
+        "env name": env.metadata.get("name", "None"),
+        "evn track": env.metadata.get("track", "None"),
+        "obs types": env.metadata.get("obs_seq", "None"),
+        "total timesteps": total_timesteps,
+        "hyperparameters": hyperparameters,
     }
 
-    save_dir = save_dir+f"{experiment_name}/"
-    yaml_file_path = save_dir+"parameters.yaml"
+    save_dir = save_dir + f"{experiment_name}/"
+    yaml_file_path = save_dir + "parameters.yaml"
 
     if not os.path.exists(yaml_file_path):
         with open(yaml_file_path, 'w') as file:
@@ -218,26 +215,27 @@ def train(env,
           record_tb,
           record_ghost,
           save_model,
+          record_wandb,
           iteration_type,
           hyperparameters,
           ):
     actor_model = ''
     critic_model = ''
 
-    base_dir = save_dir+f"{alg}/"
+    base_dir = save_dir + f"{alg}/"
 
     save_path, ver_number = utils.get_next_run_directory(base_dir, experiment_name)
 
     train_config = save_train_data(env, base_dir, experiment_name, ver_number, alg, total_timesteps, hyperparameters)
 
-
-
     if alg == "default":
 
-        model = PPO(env=env, save_model=save_model,
+        model = PPO(env=env,
+                    save_model=save_model,
                     record_ghost=record_ghost,
                     record_tb=record_tb,
                     save_dir=save_path,
+                    record_wandb=record_wandb,
                     train_config=train_config,
                     **hyperparameters)
 
@@ -261,12 +259,14 @@ def train(env,
             model.learn(total_timesteps=total_timesteps)
     if alg == "snn":
 
-        model = PPO_SNN(env=env, save_model=save_model,
-                    record_ghost=record_ghost,
-                    record_tb=record_tb,
-                    save_dir=save_path,
-                    train_config=train_config,
-                    **hyperparameters)
+        model = PPO_SNN(env=env,
+                        save_model=save_model,
+                        record_ghost=record_ghost,
+                        record_tb=record_tb,
+                        save_dir=save_path,
+                        record_wandb=record_wandb,
+                        train_config=train_config,
+                        **hyperparameters)
 
         # Tries to load in an existing actor/critic model to continue training on
         if actor_model != '' and critic_model != '':
@@ -326,7 +326,7 @@ def test(env, alg, type, deterministic, actor_model):
         if continuous:
             act_dim = env.action_space.shape[0]
         else:
-            act_dim  = env.action_space.n
+            act_dim = env.action_space.n
 
         # Build our policy the same way we build our actor model in PPO
         # policy = ActorNetwork(obs_dim, act_dim)
@@ -352,9 +352,11 @@ def replay(replay_dir, mode):
     # replay = ReplayGhosts(replay_dir, replay_ep)
     replay = ReplayGhosts(replay_dir, mode)
 
+
 def make_graphs(graph_file):
     # Extract absolute file paths
     graph_generator.graph_data(graph_file)
+
 
 def optimize():
     # TODO
@@ -362,7 +364,6 @@ def optimize():
 
 
 def main(args):
-
     # timesteps_per_batch : n_steps
     # num_minibatches : batch_size
     # n_updates_per_iteration : n_epochs
@@ -386,7 +387,6 @@ def main(args):
         'gae_lambda': 0.98,
     }
 
-
     # environment selection
     # simple_env has free movement
     # base_env has car like movement
@@ -406,9 +406,28 @@ def main(args):
 
     # keyword arguments for the environment
     # reset_time : num timesteps after which the episode will terminate
+    # track_type :
+    #   boxes - a simple S_curve, loaded with a map loader
+    #   generator - generates a simple corner around the player, changes every reset
+    #   simple_goal - randomly or statically spawns a random goal with no obstacles, changes every reset
+    track_args = {
+        "boxes_file": "boxes.txt",
+        "sectors_file": "sectors_box.txt",
+
+        "corridor_size": 50,
+
+        "spawn_range": 400,
+        "fixed_goal": [200, -200],
+
+        "initial_pos": [300, 450]
+    }
+
     env_args = {
         "obs_seq": obs,
         "reset_time": 2000,
+        "track_type": "generator",
+        "track_args": track_args,
+
     }
 
     # Track selection
@@ -423,9 +442,10 @@ def main(args):
     # alg : default, baselines, snn
     train_parameters = {
         "total_timesteps": 300000,
-        "record_tb": True,
-        "record_ghost": True,
-        "save_model": True,
+        "record_tb": False,
+        "record_ghost": False,
+        "save_model": False,
+        "record_wandb": False,
         "iteration_type": "mul",
         "alg": "default",
     }
@@ -438,7 +458,6 @@ def main(args):
     # Parameters for testing
     # deterministic : deterministic evaluation value (for stable baselines)
     deterministic = False
-
 
     # Parameters for imitation learning
     # record_expert_data : to record data for imitation learning
@@ -454,14 +473,11 @@ def main(args):
     # parameters for making graphs
     graph_file = "saves/default/LL3/ver_1/graph_data.txt"
 
-
     # Load from YAML
-    #with open(yaml_file_path, 'r') as file:
+    # with open(yaml_file_path, 'r') as file:
     #    loaded_parameters_yaml = yaml.load(file, Loader=yaml.FullLoader)
 
-    #print(loaded_parameters_yaml)
-
-
+    # print(loaded_parameters_yaml)
 
     if args.mode == "play":
         env = env_fn.KartSim(render_mode="human", train=False, **env_args)
@@ -470,7 +486,7 @@ def main(args):
 
     if args.mode == "train":
         env = gym.make('LunarLander-v2')
-        #env = env_fn.KartSim(render_mode=None, train=True, **env_args)
+        # env = env_fn.KartSim(render_mode=None, train=True, **env_args)
         train(env=env,
               **train_parameters,
               experiment_name=experiment_name,
@@ -479,7 +495,7 @@ def main(args):
               )
 
     if args.mode == "test":
-        #env = env_fn.KartSim(render_mode="human", train=False, **env_args)
+        # env = env_fn.KartSim(render_mode="human", train=False, **env_args)
         env = gym.make('LunarLander-v2', render_mode="human")
 
         test(env,
@@ -508,6 +524,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, test, graph, replay
 
-    args.mode = "train"
+    args.mode = "play"
 
     main(args)
