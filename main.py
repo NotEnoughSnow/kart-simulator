@@ -410,6 +410,17 @@ def main(args):
     #   boxes - a simple S_curve, loaded with a map loader
     #   generator - generates a simple corner around the player, changes every reset
     #   simple_goal - randomly or statically spawns a random goal with no obstacles, changes every reset
+    # player args :
+    #   rad_velocity - ...
+    #   0.1 rad/frames, 2pi in 1.281 sec
+    #   example : 0.0379 rad/frames, for frames = 48
+    #   or        1.82 rad/sec
+    #
+    #   max_velocity - ...
+    #   1 meter in 4.546 sec or 0.22 meters in 1 sec
+    #   at 0.22 m/s, the bot should walk 1 meter in 4.546 seconds
+    #   MAX_VELOCITY = 4 * 0.22 * PPM
+
     track_args = {
         "boxes_file": "boxes.txt",
         "sectors_file": "sectors_box.txt",
@@ -422,16 +433,29 @@ def main(args):
         "initial_pos": [300, 450]
     }
 
+    simple_env_player_args = {
+        "player_acc_rate": 15,
+        "max_velocity": 4,
+        "bot_size": 0.192,
+        "bot_weight": 1,
+    }
+    base_env_player_args = {
+        "player_acc_rate": 6,
+        "player_break_rate": 2,
+        "max_velocity": 2,
+        "rad_velocity": 2 * 2.84,
+        "bot_size": 0.192,
+        "bot_weight": 1,
+    }
+
+
     env_args = {
         "obs_seq": obs,
         "reset_time": 2000,
-        "track_type": "generator",
+        "track_type": "boxes",
         "track_args": track_args,
-
+        "player_args": simple_env_player_args if env_fn == simple_env else base_env_player_args,
     }
-
-    # Track selection
-    # TODO track
 
     # Parameters for training
     # total_timesteps : total number of training timesteps
@@ -462,7 +486,7 @@ def main(args):
     # Parameters for imitation learning
     # record_expert_data : to record data for imitation learning
     # expert_ep_count : number of episodes to record
-    record_expert_data = True
+    record_expert_data = False
     expert_ep_count = 1
     player_name = "Amin"
 
