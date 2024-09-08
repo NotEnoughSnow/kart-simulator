@@ -123,11 +123,8 @@ class KartSim(gym.Env):
         self.distance_to_next_points = -MAX_TARGET_DISTANCE
         self.distance_to_next_points_vec = [-MAX_TARGET_DISTANCE, -MAX_TARGET_DISTANCE]
 
-        # FIXME restore shapes to (-1,1), (-1,1)
-        self.action_space = spaces.Box(
-            low=-1, high=1, shape=(2,), dtype=np.float32
-        )
-        # left, right, gas, brake
+        self.action_space = spaces.Discrete(5)
+        # do nothing, accelerate, break, steer_left, steer_right
 
         # TODO use variables
         self.observation_space = spaces.Box(
@@ -172,6 +169,9 @@ class KartSim(gym.Env):
 
         self.info = {}
 
+        self.continuous = False
+
+
     def reset(
             self,
             *,
@@ -196,6 +196,10 @@ class KartSim(gym.Env):
 
     def step(self, action: Union[np.ndarray, int]):
 
+        if not self.continuous:
+            action_array = np.zeros(self.action_space.n)
+            action_array[action] = 1
+
 
         pstart = self._playerBody.position
 
@@ -210,14 +214,19 @@ class KartSim(gym.Env):
 
         #print(action)
 
-        if action is not None:
+        if action_array is not None:
             # [0] does nothing
 
-            steer_value = self._steer(action[0])
-            accel_break_value = self._accelerate_break(action[1])
+            accel_value = self._accelerate(action_array[1])
+            break_value = self._break(action_array[2])
+            steer_left_value = self._steer_left(action_array[3])
+            steer_right_value = self._steer_right(action_array[4])
 
-        self.accel_break_value = accel_break_value
-        self.steer_value = steer_value
+        self.accel_value = accel_value
+        self.break_value = break_value
+
+        self.steer_left_value = steer_left_value
+        self.steer_right_value = steer_right_value
 
         # TODO step based on FPS
         self._space.step(self._dt)
@@ -477,14 +486,29 @@ class KartSim(gym.Env):
             self.sector_info["sector " + str(i)].append(sector_midpoints[i - 1])
 
 
-    def _steer(self, value):
+    def _steer_left(self, value):
         """steering control
 
-        :param value: (-1..1)
+        :param value: (0..1)
         :return:
         """
         value = min(1, value)
-        value = max(-1, value)
+        value = max(0, value)
+
+        if value == 0:
+            return value
+        else:
+            self._steerAngle -= (self.player_rad_velocity / self.FPS) * value
+            return value
+
+    def _steer_right(self, value):
+        """steering control
+
+        :param value: (0..1)
+        :return:
+        """
+        value = min(1, value)
+        value = max(0, value)
 
         if value == 0:
             return value
@@ -504,13 +528,13 @@ class KartSim(gym.Env):
             self._steerAngle -= (RAD_VELOCITY / self.FPS) * value
             return value
     """
-
+    """
     def _accelerate_break(self, value):
-        """acceleration control
+        '''acceleration control
 
         :param value: (-1..1)
         :return:
-        """
+        '''
         # FIXME temp fix for ensuing that value is within (0,1)
         value = min(1, value)
         value = max(-1, value)
@@ -527,6 +551,41 @@ class KartSim(gym.Env):
             return value
         else:
             raise Exception("how ?")
+    """
+
+    def _accelerate(self, value):
+        """acceleration control
+
+        :param value: (0..1)
+        :return:
+        """
+        # FIXME temp fix for ensuing that value is within (0,1)
+        value = min(1, value)
+        value = max(0, value)
+
+        if value == 0:
+            return value
+        else:
+            if self.velocity < self.max_velocity:
+                self._playerBody.apply_impulse_at_local_point((0, self.player_acc_rate * value), (0, 0))
+            return value
+
+    def _break(self, value):
+        """acceleration control
+
+        :param value: (0..1)
+        :return:
+        """
+        # FIXME temp fix for ensuing that value is within (0,1)
+        value = min(1, value)
+        value = max(0, value)
+
+        if value == 0:
+            return value
+        else:
+            if self.forward_direction > 0:
+                self._playerBody.apply_impulse_at_local_point((0, -self.player_break_rate * value), (0, 0))
+            return value
 
 
     """"
