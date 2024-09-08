@@ -62,29 +62,28 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
         expert_episode = []
 
         while not terminated and not truncated:
-            action = torch.zeros(2)
+            action = 0
 
             keys = pygame.key.get_pressed()
 
             if env.metadata["name"] == "kart2D simple_env":
-
                 if keys[pygame.K_w]:
-                    action[0] = -1
+                    action = 1
                 if keys[pygame.K_s]:
-                    action[0] = +1
-                if keys[pygame.K_d]:
-                    action[1] = +1
+                    action = 2
                 if keys[pygame.K_a]:
-                    action[1] = -1
+                    action = 3
+                if keys[pygame.K_d]:
+                    action = 4
             else:
                 if keys[pygame.K_w]:
-                    action[1] = 1
+                    action = 1
                 if keys[pygame.K_SPACE]:
-                    action[1] = -1
-                if keys[pygame.K_d]:
-                    action[0] = 1
+                    action = 2
                 if keys[pygame.K_a]:
-                    action[0] = -1
+                    action = 3
+                if keys[pygame.K_d]:
+                    action = 4
 
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
@@ -94,14 +93,14 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
             total_reward += reward
 
             # Check if the player has moved
-            if not player_moved and not np.all(action.numpy() == 0):
+            if not player_moved and not action == 0:
                 player_moved = True
 
             # print(obs)
 
             # Append timestep data only if player has moved
             if player_moved:
-                expert_episode.append([steps, obs, action.numpy(), reward, terminated, truncated])
+                expert_episode.append([steps, obs, action, reward, terminated, truncated])
                 steps += 1
 
         if truncated:
@@ -400,9 +399,9 @@ def main(args):
     # VELOCITY : single value speed of the agent
     # LIDAR : vision rays
     # LIDAR_CONV : vision rays with conv1d
-    obs = [obs_types.DISTANCE,
-           obs_types.TARGET_ANGLE,
-           ]
+    obs = [#obs_types.DISTANCE,
+           #obs_types.TARGET_ANGLE,
+           obs_types.LIDAR,]
 
     # keyword arguments for the environment
     # reset_time : num timesteps after which the episode will terminate
@@ -435,13 +434,13 @@ def main(args):
 
     simple_env_player_args = {
         "player_acc_rate": 15,
-        "max_velocity": 4,
+        "max_velocity": 2,
         "bot_size": 0.192,
         "bot_weight": 1,
     }
     base_env_player_args = {
-        "player_acc_rate": 6,
-        "player_break_rate": 2,
+        "player_acc_rate": 0.8,
+        "player_break_rate": 1,
         "max_velocity": 2,
         "rad_velocity": 2 * 2.84,
         "bot_size": 0.192,
@@ -509,8 +508,8 @@ def main(args):
              expert_ep_count=expert_ep_count)
 
     if args.mode == "train":
-        env = gym.make('LunarLander-v2')
-        # env = env_fn.KartSim(render_mode=None, train=True, **env_args)
+        #env = gym.make('LunarLander-v2')
+        env = env_fn.KartSim(render_mode=None, train=True, **env_args)
         train(env=env,
               **train_parameters,
               experiment_name=experiment_name,
@@ -519,7 +518,7 @@ def main(args):
               )
 
     if args.mode == "test":
-        # env = env_fn.KartSim(render_mode="human", train=False, **env_args)
+        #env = env_fn.KartSim(render_mode="human", train=False, **env_args)
         env = gym.make('LunarLander-v2', render_mode="human")
 
         test(env,

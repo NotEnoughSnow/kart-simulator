@@ -120,11 +120,8 @@ class KartSim(gym.Env):
         self.distance_to_next_points = -MAX_TARGET_DISTANCE
         self.distance_to_next_points_vec = [-MAX_TARGET_DISTANCE, -MAX_TARGET_DISTANCE]
 
-        # FIXME restore shapes to (-1,1), (-1,1)
-        self.action_space = spaces.Box(
-            low=-1, high=1, shape=(2,), dtype=np.float32
-        )
-        # up_down, left_right
+        self.action_space = spaces.Discrete(5)
+        # do nothing, up, down, left, right
 
         # TODO use variables
         self.observation_space = spaces.Box(
@@ -171,6 +168,8 @@ class KartSim(gym.Env):
 
         self.info = {}
 
+        self.continuous = False
+
     def reset(
             self,
             *,
@@ -194,6 +193,10 @@ class KartSim(gym.Env):
 
     def step(self, action: Union[np.ndarray, int]):
 
+        if not self.continuous:
+            action_array = np.zeros(self.action_space.n)
+            action_array[action] = 1
+
         self._clock.tick()
 
         # if i assign this to FPS, both of them become 0
@@ -209,9 +212,11 @@ class KartSim(gym.Env):
         #print("first step :", self._playerBody.position)
         pstart = self._playerBody.position
 
-        if action is not None:
-            go_up_value = self._go_up_down(action[0])
-            go_left_value = self._go_left_right(action[1])
+        if action_array is not None:
+            go_up_value = self._go_up(action_array[1])
+            go_down_value = self._go_down(action_array[2])
+            go_left_value = self._go_left(action_array[3])
+            go_right_value = self._go_right(action_array[4])
 
         self.go_up_value = None
         self.go_down_value = None
@@ -460,15 +465,32 @@ class KartSim(gym.Env):
             self.sector_info["sector " + str(i)].append(0)
             self.sector_info["sector " + str(i)].append(sector_midpoints[i - 1])
 
-    def _go_up_down(self, value):
+    def _go_up(self, value):
         """acceleration control
 
-        :param value: (-1..1)
+        :param value: (0..1)
         :return:
         """
         # FIXME temp fix for ensuing that value is within (0,1)
         value = min(1, value)
-        value = max(-1, value)
+        value = max(0, value)
+
+        if value == 0:
+            return value
+        else:
+            if self.velocity < MAX_VELOCITY:
+                self._playerBody.apply_impulse_at_local_point((0, -self.player_acc_rate * value), (0, 0))
+            return value
+
+    def _go_down(self, value):
+        """acceleration control
+
+        :param value: (0..1)
+        :return:
+        """
+        # FIXME temp fix for ensuing that value is within (0,1)
+        value = min(1, value)
+        value = max(0, value)
 
         if value == 0:
             return value
@@ -477,15 +499,32 @@ class KartSim(gym.Env):
                 self._playerBody.apply_impulse_at_local_point((0, self.player_acc_rate * value), (0, 0))
             return value
 
-    def _go_left_right(self, value):
+    def _go_left(self, value):
         """acceleration control
 
-        :param value: (-1..1)
+        :param value: (0..1)
         :return:
         """
         # FIXME temp fix for ensuing that value is within (0,1)
         value = min(1, value)
-        value = max(-1, value)
+        value = max(0, value)
+
+        if value == 0:
+            return value
+        else:
+            if self.velocity < MAX_VELOCITY:
+                self._playerBody.apply_impulse_at_local_point((-self.player_acc_rate * value, 0), (0, 0))
+            return value
+
+    def _go_right(self, value):
+        """acceleration control
+
+        :param value: (0..1)
+        :return:
+        """
+        # FIXME temp fix for ensuing that value is within (0,1)
+        value = min(1, value)
+        value = max(0, value)
 
         if value == 0:
             return value
@@ -624,6 +663,9 @@ class KartSim(gym.Env):
         vision_lengths = normalize_vec(wraparound_data, maximum=vision.VISION_LENGTH, minimum=0)
 
         self.vision_lengths = vision_lengths
+
+        print(self.vision_lengths)
+
         return self.vision_lengths
 
     def observation_LIDAR_CONV(self):

@@ -91,7 +91,7 @@ class PPO:
 
 
         print(f"obs shape :{env.observation_space.shape} \n"
-              f"action shape :{env.action_space.shape}")
+              f"action shape :{self.act_dim}")
 
         # Initialize actor and critic networks
         # self.actor = ActorNetwork(self.obs_dim, self.act_dim)  # ALG STEP 1
@@ -461,12 +461,12 @@ class PPO:
             action - the action to take, as a numpy array
             log_prob - the log probability of the selected action in the distribution
         """
+
         if self.continuous:
             # For continuous action spaces
             mean = self.actor(obs)
             dist = MultivariateNormal(mean, self.cov_mat)
         else:
-
             # For discrete action spaces
             logits = self.actor(obs)
             dist = Categorical(logits=logits)
@@ -497,8 +497,6 @@ class PPO:
             log_probs - the log probabilities of the actions taken in batch_acts given batch_obs
         """
 
-        print("**********************************")  # This should print True
-
         # Query critic network for a value V for each batch_obs
         V = self.critic(batch_obs).squeeze()
 
@@ -507,26 +505,16 @@ class PPO:
             mean = self.actor(batch_obs)
             dist = MultivariateNormal(mean, self.cov_mat)
         else:
-
-            print("grad check batch_obs :", batch_obs.requires_grad)  # This should print True
-
             logits = self.actor(batch_obs)
-
-            print("grad check logits :", logits.requires_grad)  # This should print True
-
             dist = Categorical(logits=logits)
 
         # Calculate entropy loss for regularization
         entropy_loss = -dist.entropy().mean()
 
-
-
         if self.record_tb:
             self.writer.add_scalar('train/entropy_loss', entropy_loss, self.logger['t_so_far'])
 
         log_probs = dist.log_prob(batch_acts)
-
-        print("grad check log_probs :", log_probs.requires_grad)  # This should print True
 
         # Return the value vector V of each observation in the batch
         # and log probabilities log_probs of each action in the batch
