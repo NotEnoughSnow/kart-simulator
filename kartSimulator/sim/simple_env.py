@@ -611,10 +611,11 @@ class KartSim(gym.Env):
 
         velocity = np.clip(
             np.abs(normalize_vec([velocity],
-                                 maximum=MAX_VELOCITY,
+                                 maximum=self.max_velocity,
                                  minimum=0)),
             a_max=1,
-            a_min=0)[0] * 300
+            a_min=0)[0]
+
 
         return [velocity]
 
@@ -639,17 +640,24 @@ class KartSim(gym.Env):
         return rotation
 
     def observation_position(self):
-        return self._playerBody.position
+
+        max_pos = max(window_width, window_length)/2
+
+        position = normalize_vec(self._playerBody.position, maximum=max_pos, minimum=0)
+        print(position)
+
+        return position
 
     def observation_distance(self):
-        normalized = [utils.normalize_vec([self.distance_to_next_points], maximum=0, minimum=-MAX_TARGET_DISTANCE)[0]]
-        self.norm_dist = normalized[0]
-        return normalized
+        distance = [utils.normalize_vec([self.distance_to_next_points], maximum=0, minimum=-MAX_TARGET_DISTANCE)[0]]
+
+        return distance
 
     def observation_distance_vec(self):
-        normalized = utils.normalize_vec(self.distance_to_next_points_vec, maximum=0, minimum=-MAX_TARGET_DISTANCE)
-        self.norm_dist_vec = normalized
-        return normalized
+
+        distance = utils.normalize_vec(self.distance_to_next_points_vec, maximum=0, minimum=-MAX_TARGET_DISTANCE)
+
+        return distance
 
     def observation_LIDAR(self):
         # LIDAR vision
@@ -663,9 +671,6 @@ class KartSim(gym.Env):
         vision_lengths = normalize_vec(wraparound_data, maximum=vision.VISION_LENGTH, minimum=0)
 
         self.vision_lengths = vision_lengths
-
-        print(self.vision_lengths)
-
         return self.vision_lengths
 
     def observation_LIDAR_CONV(self):
