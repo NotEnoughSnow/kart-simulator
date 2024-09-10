@@ -81,7 +81,13 @@ def get_spike_counts(spike_trains):
     Returns:
     - Array of spike counts for each neuron.
     """
+
+    num_steps, num_neurons = spike_trains.shape
+
     spike_counts = torch.sum(spike_trains, dim=0)
+
+    spike_counts = spike_counts / num_steps
+
     return spike_counts
 
 
@@ -95,8 +101,12 @@ def get_spike_counts_batched(spike_trains):
     Returns:
     - Array of spike counts for each neuron in each observation (shape: [batch_size, observation_dim]).
     """
+    batch_size, num_steps, num_neurons = spike_trains.shape
+
     # Sum over the time dimension (dim=1) to get spike counts for each neuron in each observation
     spike_counts = torch.sum(spike_trains, dim=1)
+
+    spike_counts = spike_counts / num_steps
 
     return spike_counts
 
@@ -126,6 +136,9 @@ def decode_first_spike_batched(spike_trains):
     # Find the minimum value in each column (i.e., first spike) for each batch
     first_spike_times, _ = spike_times.min(dim=1)
 
+    # Transform the spike times into a format better suited for a categorical
+    first_spike_times = (-2 / (num_steps + 1)) * first_spike_times + 2
+
     # Ensure that this tensor retains gradients
     return first_spike_times
 
@@ -154,6 +167,9 @@ def decode_first_spike(spike_trains):
 
     # Find the minimum value in each column (i.e., first spike)
     first_spike_times, _ = spike_times.min(dim=0)
+
+    # Transform the spike times into a format better suited for a categorical
+    first_spike_times = (-2 / (num_steps + 1)) * first_spike_times + 2
 
     # Ensure that this tensor retains gradients
     return first_spike_times
