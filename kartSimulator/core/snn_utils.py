@@ -18,8 +18,6 @@ def generate_spike_trains(observation, num_steps, threshold, shift):
     - spike_trains: Tensor of spike trains.
     """
 
-    shift = shift.numpy()
-
     # Normalize and clip observation
     shifted_obs = np.add(observation, shift)
 

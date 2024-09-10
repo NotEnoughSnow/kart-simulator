@@ -384,6 +384,7 @@ def main(args):
         'target_kl': None,
         'num_minibatches': 64,
         'gae_lambda': 0.98,
+        'decode_type': "first",
     }
 
 

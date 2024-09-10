@@ -83,6 +83,7 @@ class PPO_SNN:
 
         # TODO automate
         self.threshold = torch.tensor([1.5, 1.5, 5, 5, 3.14, 5, 1, 1])
+        self.shift = np.array([1.5, 1.5, 5, 5, 3.14, 5, 0, 0])
 
         print(f"obs shape :{env.observation_space.shape} \n"
               f"action shape :{env.action_space.shape}")
@@ -143,10 +144,11 @@ class PPO_SNN:
             A_k = self.calculate_gae(batch_rews, batch_vals, batch_dones)
 
             # TODO entry
-            # TODO done
-
             V_st = self.critic(batch_obs_st)[0]
-            V = SNN_utils.decode_first_spike_batched(V_st).squeeze()
+            if self.decode_type == "first":
+                V = SNN_utils.decode_first_spike_batched(V_st).squeeze()
+            if self.decode_type == "count":
+                V = SNN_utils.get_spike_counts_batched(V_st).squeeze()
 
             batch_rtgs = A_k + V.detach()
 
@@ -210,7 +212,6 @@ class PPO_SNN:
                     # Calculate V_phi and pi_theta(a_t | s_t)
                     V, curr_log_probs, dist, entropy_loss = self.evaluate(mini_obs_st, mini_acts)
 
-
                     # Calculate the ratio pi_theta(a_t | s_t) / pi_theta_k(a_t | s_t)
                     # NOTE: we just subtract the logs, which is the same as
                     # dividing the values and then canceling the log with e^log.
@@ -222,7 +223,6 @@ class PPO_SNN:
                     ratios = torch.exp(logratios)
 
                     approx_kl = ((ratios - 1) - logratios).mean()
-
 
                     # Calculate surrogate losses.
                     surr1 = ratios * mini_advantage
@@ -381,7 +381,7 @@ class PPO_SNN:
                 obs_st = SNN_utils.generate_spike_trains(obs,
                                                          num_steps=self.num_steps,
                                                          threshold=self.threshold,
-                                                         shift=self.threshold)
+                                                         shift=self.shift)
                 batch_obs_st.append(obs_st)
                 batch_obs.append(obs)
 
@@ -390,11 +390,11 @@ class PPO_SNN:
                 action, log_prob = self.get_action(obs_st)
 
                 # TODO entry
-                # TODO done
-
                 val_st = self.critic(obs_st)[0]
-                val = SNN_utils.decode_first_spike(val_st)
-
+                if self.decode_type == "first":
+                    val = SNN_utils.decode_first_spike(val_st)
+                if self.decode_type == "count":
+                    val = SNN_utils.get_spike_counts(val_st)
 
                 obs, rew, terminated, truncated, info = self.env.step(action)
 
@@ -446,7 +446,7 @@ class PPO_SNN:
         batch_obs_st = torch.tensor(np.array(batch_obs_st), dtype=torch.float)
         batch_acts = torch.tensor(np.array(batch_acts), dtype=torch.float)
         batch_log_probs = torch.tensor(np.array(batch_log_probs), dtype=torch.float)
-        # batch_rtgs = self.compute_rtgs(batch_rews)  # ALG STEP 4
+        # batch_rtgs = self.compute_rtgs(batch_rews)
 
         # Log the episodic returns and episodic lengths in this batch.
         self.logger['batch_rews'] = batch_rews
@@ -469,16 +469,22 @@ class PPO_SNN:
         if self.continuous:
             # For continuous action spaces
             # TODO entry
-            # TODO done
             mean_st = self.actor(obs_st)[0]
-            mean = SNN_utils.decode_first_spike(mean_st)
+            if self.decode_type == "first":
+                mean = SNN_utils.decode_first_spike(mean_st)
+            if self.decode_type == "count":
+                mean = SNN_utils.get_spike_counts(mean_st)
             dist = MultivariateNormal(mean, self.cov_mat)
         else:
             # For discrete action spaces
             # TODO entry
-            # TODO done
             logits_st = self.actor(obs_st)[0]
-            logits = SNN_utils.decode_first_spike(logits_st)
+            if self.decode_type == "first":
+                logits = SNN_utils.decode_first_spike(logits_st)
+            if self.decode_type == "count":
+                logits = SNN_utils.get_spike_counts(logits_st)
+
+
             dist = Categorical(logits=logits)
 
         # Sample an action from the distribution
@@ -509,23 +515,30 @@ class PPO_SNN:
 
         # Query critic network for a value V for each batch_obs
         # TODO entry
-        # TODO done
         V_st = self.critic(batch_obs_st)[0]
-        V = SNN_utils.decode_first_spike_batched(V_st).squeeze()
+        if self.decode_type == "first":
+            V = SNN_utils.decode_first_spike_batched(V_st).squeeze()
+        if self.decode_type == "count":
+            V = SNN_utils.get_spike_counts_batched(V_st).squeeze()
 
         # Calculate the log probabilities of batch actions using most recent actor network
         if self.continuous:
             # TODO entry
-            # TODO done
             mean_st = self.actor(batch_obs_st)[0]
-            mean = SNN_utils.decode_first_spike_batched(mean_st)
+            if self.decode_type == "first":
+                mean = SNN_utils.decode_first_spike_batched(mean_st)
+            if self.decode_type == "count":
+                mean = SNN_utils.get_spike_counts_batched(mean_st)
             dist = MultivariateNormal(mean, self.cov_mat)
         else:
             # TODO entry
-            # TODO done
             logits_st = self.actor(batch_obs_st)[0]
-            logits = SNN_utils.decode_first_spike_batched(logits_st)
+            if self.decode_type == "first":
+                logits = SNN_utils.decode_first_spike_batched(logits_st)
+            if self.decode_type == "count":
+                logits = SNN_utils.get_spike_counts_batched(logits_st)
             dist = Categorical(logits=logits)
+
 
         # Calculate entropy loss for regularization
         entropy_loss = -dist.entropy().mean()
@@ -562,6 +575,7 @@ class PPO_SNN:
         self.target_kl = None
         self.num_minibatches = 8
         self.gae_lambda = 0.95
+        self.decode_type = "first"
 
         # Miscellaneous parameters
         self.render_every_i = 10  # Only render every n iterations
