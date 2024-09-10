@@ -389,7 +389,7 @@ def main(args):
     # environment selection
     # simple_env has free movement
     # base_env has car like movement
-    env_fn = simple_env
+    env_fn = base_env
 
     # list of observations:
     # DISTANCE : distance to goal
@@ -399,9 +399,11 @@ def main(args):
     # VELOCITY : single value speed of the agent
     # LIDAR : vision rays
     # LIDAR_CONV : vision rays with conv1d
-    obs = [#obs_types.DISTANCE,
-           #obs_types.TARGET_ANGLE,
-           obs_types.LIDAR,]
+
+    # obs_types.DISTANCE,
+    # obs_types.TARGET_ANGLE,
+    obs = [obs_types.POSITION,
+           ]
 
     # keyword arguments for the environment
     # reset_time : num timesteps after which the episode will terminate
@@ -439,8 +441,8 @@ def main(args):
         "bot_weight": 1,
     }
     base_env_player_args = {
-        "player_acc_rate": 0.8,
-        "player_break_rate": 1,
+        "player_acc_rate": 1,
+        "player_break_rate": 2,
         "max_velocity": 2,
         "rad_velocity": 2 * 2.84,
         "bot_size": 0.192,

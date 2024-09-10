@@ -76,8 +76,6 @@ class KartSim(gym.Env):
         self.obs_seq = obs_seq
         self.obs_len = 0
 
-        for item in obs_seq:
-            self.obs_len += item[1]
 
         print(self.obs_len)
 
@@ -123,13 +121,38 @@ class KartSim(gym.Env):
         self.distance_to_next_points = -MAX_TARGET_DISTANCE
         self.distance_to_next_points_vec = [-MAX_TARGET_DISTANCE, -MAX_TARGET_DISTANCE]
 
+        low = []
+        high = []
+
+        for obs_type in obs_seq:
+            if len(obs_type) == 3:
+                self.obs_len += len(obs_type[1])
+
+                for item_low in obs_type[1]:
+                    low.append(item_low)
+
+                for item_high in obs_type[2]:
+                    high.append(item_high)
+            else:
+                self.obs_len += len(obs_type[2])
+
+                for i in range(obs_type[1]):
+                    low.append(-obs_type[2][0])
+                    high.append(obs_type[3][0])
+
+
+        print("low ", low)
+        print("high ", high)
+
+        low = np.array(low).astype(np.float32)
+        high = np.array(high).astype(np.float32)
+
         self.action_space = spaces.Discrete(5)
         # do nothing, accelerate, break, steer_left, steer_right
 
+
         # TODO use variables
-        self.observation_space = spaces.Box(
-            low=-400, high=400, shape=(self.obs_len,), dtype=np.float32
-        )
+        self.observation_space = spaces.Box(low, high)
 
         self.initial_angle = 0 + ANGLE_DIFF
         self.vision_points = []
@@ -685,7 +708,8 @@ class KartSim(gym.Env):
                                  maximum=self.max_velocity,
                                  minimum=0)),
             a_max=1,
-            a_min=0)[0] * 300
+            a_min=0)[0]
+
 
         return [velocity]
 
@@ -694,31 +718,43 @@ class KartSim(gym.Env):
         steer_angle = normalize_vec([self._steerAngle], 0.0142, -0.0142)
 
         # assign rotations
-        rotation = [(self._playerBody.angle - ANGLE_DIFF) * 300, steer_angle[0] * 300]
+        rotation = [(self._playerBody.angle - ANGLE_DIFF), steer_angle[0]]
 
         return rotation
 
     def observation_target_angle(self):
 
-        x = self.goal_pos[0] - self._playerBody.position[0]
+        x = self._playerBody.position[0] - self.goal_pos[0]
+        y = self._playerBody.position[1] - self.goal_pos[1]
 
-        y = self.goal_pos[1] - self._playerBody.position[1]
+        magnitude = math.sqrt(x ** 2 + y ** 2)
 
-        self.angle_to_target = math.atan2(y,-x)
+        self.angle_to_target_cos = x / magnitude
+        self.angle_to_target_sin = - y / magnitude
 
         # assign rotations
-        rotation = [self.angle_to_target]
+        rotation = [self.angle_to_target_cos, self.angle_to_target_sin]
 
         return rotation
 
     def observation_position(self):
-        return self._playerBody.position
+
+        max_pos = max(window_width, window_length)/2
+
+        position = normalize_vec(self._playerBody.position, maximum=max_pos, minimum=0)
+
+        return position
 
     def observation_distance(self):
-        return [utils.normalize_vec([self.distance_to_next_points], maximum=0, minimum=-MAX_TARGET_DISTANCE)[0]]
+        distance = [utils.normalize_vec([self.distance_to_next_points], maximum=0, minimum=-MAX_TARGET_DISTANCE)[0]]
+
+        return distance
 
     def observation_distance_vec(self):
-        return utils.normalize_vec(self.distance_to_next_points_vec, maximum=0, minimum=-MAX_TARGET_DISTANCE)
+
+        distance = utils.normalize_vec(self.distance_to_next_points_vec, maximum=0, minimum=-MAX_TARGET_DISTANCE)
+
+        return distance
 
     def observation_LIDAR(self):
         # LIDAR vision
