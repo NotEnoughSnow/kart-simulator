@@ -484,7 +484,6 @@ class PPO_SNN:
             if self.decode_type == "count":
                 logits = SNN_utils.get_spike_counts(logits_st)
 
-
             dist = Categorical(logits=logits)
 
         # Sample an action from the distribution

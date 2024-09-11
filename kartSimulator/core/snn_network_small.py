@@ -17,11 +17,11 @@ class SNN_small(nn.Module):
 
         # Define layers
         self.fc1 = nn.Linear(input_size, hidden_size, dtype=torch.float)
-        self.fc1.weight.data += 0.0075
+        self.fc1.weight.data += 0.005
         self.lif1 = snn.Leaky(beta=beta1, spike_grad=surrogate.fast_sigmoid())
 
         self.fc2 = nn.Linear(hidden_size, output_size, dtype=torch.float)
-        self.fc2.weight.data += 0.0075
+        self.fc2.weight.data += 0.005
         self.lif2 = snn.Leaky(beta=beta2, learn_beta=True, spike_grad=surrogate.fast_sigmoid())
 
     def forward(self, x):
@@ -54,6 +54,8 @@ class SNN_small(nn.Module):
             cur2 = self.fc2(spk1)
             spk2, mem2 = self.lif2(cur2, mem2)
 
+            ###
+
             spk2_rec.append(spk2)
             mem2_rec.append(mem2)
 
@@ -69,3 +71,10 @@ class SNN_small(nn.Module):
         #print("should not be none :", output_spk.grad_fn)  # This should not be None
 
         return output_spk, output_mem
+
+
+    # TODO compare weight changes for every step before and after, layer 1
+    # TODO average output spike time, ratio of output spikes that spike at least once
+    # TODO linear readout layer, all spike trains => feed the spike trains through a FF network
+    # TODO sum over a sequence : will be the logits
+    # linear readout layer

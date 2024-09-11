@@ -384,7 +384,6 @@ def main(args):
         'target_kl': None,
         'num_minibatches': 64,
         'gae_lambda': 0.98,
-        'decode_type': "first",
     }
 
 
@@ -428,7 +427,7 @@ def main(args):
         "record_ghost": True,
         "save_model": True,
         "iteration_type": "mul",
-        "alg": "default",
+        "alg": "snn",
     }
 
     # Save parameters
@@ -465,7 +464,9 @@ def main(args):
 
 
     if args.mode == "play":
-        env = env_fn.KartSim(render_mode="human", train=False, **env_args)
+        env = gym.make('LunarLander-v2')
+
+        #env = env_fn.KartSim(render_mode="human", train=False, **env_args)
         play(env=env, save_dir=save_dir, player_name=player_name, record=record_expert_data,
              expert_ep_count=expert_ep_count)
 
@@ -487,7 +488,7 @@ def main(args):
              alg=train_parameters["alg"],
              type=experiment_name,
              deterministic=deterministic,
-             actor_model=f'./saves/default/{experiment_name}/ver_1/ppo_actor.pth'),
+             actor_model=f'./saves/snn/{experiment_name}/ver_1/ppo_actor.pth'),
 
     if args.mode == "replay":
         replay(replay_dir=replay_files,
@@ -509,6 +510,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, test, graph, replay
 
-    args.mode = "train"
+    args.mode = "play"
 
     main(args)
