@@ -304,15 +304,15 @@ class KartSim(gym.Env):
         if self.finish:
             terminated = True
             self.reward += 1000
-            step_reward = self.reward
+            #step_reward = self.reward
 
         # if collide with track then terminate
         if self.out_of_track:
             truncated = True
             self.reward += 0
-            step_reward = self.reward
+            #step_reward = self.reward
 
-        #step_reward = self.reward
+        step_reward = self.reward
 
         return step_reward, terminated, truncated
 
