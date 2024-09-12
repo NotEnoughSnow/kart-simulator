@@ -60,9 +60,11 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
         player_moved = False  # Reset flag at the start of each episode
 
         expert_episode = []
+        print("---------------------------------------------")
 
         while not terminated and not truncated:
             action = 0
+
 
             keys = pygame.key.get_pressed()
 
@@ -104,15 +106,13 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
                 steps += 1
 
         if truncated:
-            print("hit a wall")
+            print("hit a wall, ")
             print(f"total rewards this ep:{total_reward}")
 
         if terminated:
-            print("finished")
+            print("finished, ")
             print(f"total rewards this ep:{total_reward}")
             # TODO times
-
-        print(steps)
 
         # wrap expert data and steps in expert episode
         expert_ep_lens.append(steps)
@@ -403,6 +403,11 @@ def main(args):
     # obs_types.DISTANCE,
     # obs_types.TARGET_ANGLE,
     obs = [obs_types.POSITION,
+           obs_types.ROTATION,
+           obs_types.VELOCITY,
+           obs_types.DISTANCE,
+           obs_types.TARGET_ANGLE,
+           obs_types.LIDAR,
            ]
 
     # keyword arguments for the environment
@@ -468,16 +473,16 @@ def main(args):
     train_parameters = {
         "total_timesteps": 300000,
         "record_tb": False,
-        "record_ghost": False,
-        "save_model": False,
-        "record_wandb": False,
+        "record_ghost": True,
+        "save_model": True,
+        "record_wandb": True,
         "iteration_type": "mul",
         "alg": "default",
     }
 
     # Save parameters
     # experiment_name : change to test out different conditions
-    experiment_name = "LL4"
+    experiment_name = "RE2"
     save_dir = "./saves/"
 
     # Parameters for testing
@@ -492,8 +497,8 @@ def main(args):
     player_name = "Amin"
 
     # Parameters for replays
-    replay_files = ["saves/default/B2/ver_1/ghost.hdf5"]
-    mode = "batch"
+    replay_files = ["saves/default/RE1/ver_1/ghost.hdf5"]
+    mode = "all"
 
     # parameters for making graphs
     graph_file = "saves/default/LL3/ver_1/graph_data.txt"
@@ -506,7 +511,10 @@ def main(args):
 
     if args.mode == "play":
         env = env_fn.KartSim(render_mode="human", train=False, **env_args)
-        play(env=env, save_dir=save_dir, player_name=player_name, record=record_expert_data,
+        play(env=env,
+             save_dir=save_dir,
+             player_name=player_name,
+             record=record_expert_data,
              expert_ep_count=expert_ep_count)
 
     if args.mode == "train":
@@ -549,6 +557,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, test, graph, replay
 
-    args.mode = "play"
+    args.mode = "replay"
 
     main(args)

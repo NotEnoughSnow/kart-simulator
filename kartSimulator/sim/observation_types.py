@@ -1,4 +1,4 @@
-LIDAR = ["LIDAR", 370, [-1.5], [1.5]]
+LIDAR = ["LIDAR", 70, [-1.5], [1.5]]
 LIDAR_CONV = ["LIDAR_conv", 360, [-1.5], [1.5]]
 ROTATION = ["rotation", [-6.29, -2],[6.29, 2]]
 TARGET_ANGLE = ["target_angle", [-1, -1], [1, 1]]

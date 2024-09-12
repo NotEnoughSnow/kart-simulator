@@ -56,7 +56,7 @@ class PPO:
         if self.record_wandb:
             wandb.init(
                 # set the wandb project where this run will be logged
-                project="PPO-SNN-Lunar-Landing",
+                project="PPO-Racing-Env",
 
                 # track hyperparameters and run metadata
                 config=train_config
@@ -206,7 +206,6 @@ class PPO:
 
                     # Calculate V_phi and pi_theta(a_t | s_t)
                     V, curr_log_probs, dist, entropy_loss = self.evaluate(mini_obs, mini_acts)
-                    print("grad check curr_log_probs :", curr_log_probs.requires_grad)  # This should print True
 
                     # Calculate the ratio pi_theta(a_t | s_t) / pi_theta_k(a_t | s_t)
                     # NOTE: we just subtract the logs, which is the same as
@@ -219,13 +218,10 @@ class PPO:
                     ratios = torch.exp(logratios)
 
                     approx_kl = ((ratios - 1) - logratios).mean()
-                    print("grad check ratios :", ratios.requires_grad)  # This should print True
 
                     # Calculate surrogate losses.
                     surr1 = ratios * mini_advantage
                     surr2 = torch.clamp(ratios, 1 - self.clip, 1 + self.clip) * mini_advantage
-                    print("grad check surr1 :", surr1.requires_grad)  # This should print True
-                    print("grad check surr2 :", surr2.requires_grad)  # This should print True
 
                     # Calculate actor and critic losses.
                     # NOTE: we take the negative min of the surrogate losses because we're trying to maximize
@@ -233,7 +229,6 @@ class PPO:
                     # performance function maximizes it.
 
                     actor_loss = (-torch.min(surr1, surr2)).mean()
-                    print("grad check initial loss :", actor_loss.requires_grad)  # This should print True
 
                     actor_loss = actor_loss + self.ent_coef * entropy_loss
                     critic_loss = nn.MSELoss()(V, mini_rtgs)
@@ -244,9 +239,6 @@ class PPO:
 
                     # Calculate gradients and perform backward propagation for actor network
                     self.actor_optim.zero_grad()
-
-                    print("grad check final loss :", actor_loss.requires_grad)  # This should print True
-
 
                     actor_loss.backward(retain_graph=True)
                     nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)

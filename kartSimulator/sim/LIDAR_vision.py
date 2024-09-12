@@ -7,7 +7,7 @@ import torch
 VISION_LENGTH = 100
 NO_VISION_CONSTANT = VISION_LENGTH / 6
 VISION_FOV = 360
-RAY_COUNT = 360
+RAY_COUNT = 60
 
 halfwinsize = 5
 torch.manual_seed(0)
