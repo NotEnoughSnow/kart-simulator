@@ -75,9 +75,6 @@ class KartSim(gym.Env):
         self.obs_seq = obs_seq
         self.obs_len = 0
 
-        for item in obs_seq:
-            self.obs_len += item[1]
-
         speed = 1.0
 
         if not train:
@@ -120,13 +117,32 @@ class KartSim(gym.Env):
         self.distance_to_next_points = -MAX_TARGET_DISTANCE
         self.distance_to_next_points_vec = [-MAX_TARGET_DISTANCE, -MAX_TARGET_DISTANCE]
 
+        low = []
+        high = []
+
+        for obs_type in obs_seq:
+            if len(obs_type) == 3:
+                self.obs_len += len(obs_type[1])
+
+                for item_low in obs_type[1]:
+                    low.append(item_low)
+
+                for item_high in obs_type[2]:
+                    high.append(item_high)
+            else:
+                self.obs_len += len(obs_type[2])
+
+                for i in range(obs_type[1]):
+                    low.append(-obs_type[2][0])
+                    high.append(obs_type[3][0])
+
+        low = np.array(low).astype(np.float32)
+        high = np.array(high).astype(np.float32)
+
+        self.observation_space = spaces.Box(low, high)
+
         self.action_space = spaces.Discrete(5)
         # do nothing, up, down, left, right
-
-        # TODO use variables
-        self.observation_space = spaces.Box(
-            low=-1000, high=1000, shape=(self.obs_len,), dtype=np.float32
-        )
 
         self.vision_points = []
         self.vision_lengths = []
@@ -296,7 +312,7 @@ class KartSim(gym.Env):
             self.distance_to_next_points = self.distance(pend, self.goal_pos)
 
             target_number = int(self.next_sector_name[-1])
-            self.next_target_rew = 2000/(self.distance_to_next_points+50) - 10
+            #self.next_target_rew = 2000/(self.distance_to_next_points+50) - 10
 
             initial_potential = self.potential_curve(self.distance(self.goal_pos, pstart))
             final_potential = self.potential_curve(self.distance(self.goal_pos, pend))
@@ -317,15 +333,15 @@ class KartSim(gym.Env):
         if self.finish:
             terminated = True
             self.reward += 1000
-            step_reward = self.reward
+            #step_reward = self.reward
 
         # if collide with track then terminate
         if self.out_of_track:
             truncated = True
             self.reward += 0
-            step_reward = self.reward
+            #step_reward = self.reward
 
-        #step_reward = self.reward
+        step_reward = self.reward
 
         return step_reward, terminated, truncated
 
@@ -365,7 +381,6 @@ class KartSim(gym.Env):
         self.ui_manager.add_ui_text("norm dist", self.norm_dist, ".3f")
         self.ui_manager.add_ui_text("total reward", self.reward, ".3f")
         self.ui_manager.add_ui_text("act.rew from target", self.next_target_rew_act, ".3f")
-        self.ui_manager.add_ui_text("dist.rew from target", self.next_target_rew, ".4f")
         self.ui_manager.add_ui_text("angle to target", self.angle_to_target_cos, ".3f")
         self.ui_manager.add_ui_text("angle to target", self.angle_to_target_sin, ".3f")
 
