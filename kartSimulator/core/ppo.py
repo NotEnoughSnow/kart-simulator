@@ -8,7 +8,6 @@ import torch
 from torch import nn
 from torch.distributions import MultivariateNormal, Categorical
 from torch.optim.adam import Adam
-from torch.utils.tensorboard import SummaryWriter
 import kartSimulator.core.snn_utils as SNN_utils
 
 import h5py
@@ -40,7 +39,6 @@ class PPO:
 
         print(train_config)
 
-        self.record_tb = record_tb
         self.record_ghost = record_ghost
         self.save_model = save_model
         self.record_wandb = record_wandb
@@ -65,13 +63,8 @@ class PPO:
 
         #sys.stdout = Tee(sys.stdout, self.output_file)
 
-
-
         print(f"Saving to '{self.run_directory}' after training")
 
-        if self.record_tb:
-            print("Recording tensorboard data")
-            self.writer = SummaryWriter(self.run_directory)
 
         # Initialize hyperparameters for training with PPO
         self._init_hyperparameters(hyperparameters)
@@ -205,8 +198,6 @@ class PPO:
             # print("mini batch ", minibatch_size)
 
             explained_variance = 1 - torch.var(batch_rtgs - V) / torch.var(batch_rtgs)
-            if self.record_tb:
-                self.writer.add_scalar('train/explained_variance', explained_variance, self.logger['t_so_far'])
 
             if self.record_wandb:
                 wandb.log({
@@ -288,15 +279,6 @@ class PPO:
                     value_loss = critic_loss
 
                     loss_arr.append(actor_loss.detach())
-
-                    if self.record_tb:
-                        self.writer.add_scalar('train/clip_range', self.clip, self.logger['t_so_far'])
-                        self.writer.add_scalar('train/clip_fraction', clip_fraction, self.logger['t_so_far'])
-                        self.writer.add_scalar('train/approx_kl', approx_kl, self.logger['t_so_far'])
-                        self.writer.add_scalar('train/policy_gradient_loss', policy_gradient_loss,
-                                               self.logger['t_so_far'])
-                        self.writer.add_scalar('train/value_loss', value_loss, self.logger['t_so_far'])
-                        self.writer.add_scalar('train/loss', total_loss, self.logger['t_so_far'])
 
                     if self.record_wandb:
                         wandb.log({
@@ -434,8 +416,6 @@ class PPO:
                 # print(rew)
 
                 # TODO add fps
-                if self.record_tb:
-                    self.writer.add_scalar('time/fps', info.get("fps", 0), self.logger['t_so_far'])
 
                 ep_t += 1
 
@@ -449,10 +429,6 @@ class PPO:
 
             ep_rew_mean = np.sum(ep_rews)
             # print(ep_rew_mean)
-
-            if self.record_tb:
-                self.writer.add_scalar('rollout/ep_rew_mean', ep_rew_mean, self.logger['t_so_far'])
-                self.writer.add_scalar('rollout/ep_len_mean', (ep_t + 1), self.logger['t_so_far'])
 
             if self.record_wandb:
                 wandb.log({
@@ -536,11 +512,6 @@ class PPO:
 
         # Calculate entropy loss for regularization
         entropy_loss = -dist.entropy().mean()
-
-
-
-        if self.record_tb:
-            self.writer.add_scalar('train/entropy_loss', entropy_loss, self.logger['t_so_far'])
 
         log_probs = dist.log_prob(batch_acts)
 
