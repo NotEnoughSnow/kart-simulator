@@ -426,7 +426,7 @@ def main(args):
     # alg : default, baselines, snn
     train_parameters = {
         "total_timesteps": 300000,
-        "record_tb": True,
+        "record_tb": False,
         "record_ghost": False,
         "save_model": False,
         "record_wandb": False,
