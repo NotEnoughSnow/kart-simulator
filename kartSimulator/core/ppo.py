@@ -1,3 +1,4 @@
+import multiprocessing
 import time
 import sys
 
@@ -21,7 +22,7 @@ from kartSimulator.core.standard_network import FFNetwork
 
 class PPO:
 
-    def __init__(self, env, record_ghost, save_model, record_tb, save_dir, train_config, **hyperparameters):
+    def __init__(self, env, record_ghost, save_model, record_tb, save_dir, record_wandb, train_config, **hyperparameters):
 
 
         # Make sure the environment is compatible with our code
@@ -39,29 +40,30 @@ class PPO:
 
         print(train_config)
 
-        # start a new wandb run to track this script
-        wandb.init(
-            # set the wandb project where this run will be logged
-            project="PPO-SNN-Lunar-Landing",
-
-            # track hyperparameters and run metadata
-            config=train_config
-        )
-
-
         self.record_tb = record_tb
         self.record_ghost = record_ghost
         self.save_model = save_model
-        self.record_wandb = True
+        self.record_wandb = record_wandb
+
+        if self.record_wandb:
+            # start a new wandb run to track this script
+            wandb.init(
+                # set the wandb project where this run will be logged
+                project="PPO-SNN-Lunar-Landing",
+
+                # track hyperparameters and run metadata
+                config=train_config
+            )
+
 
         self.run_directory = save_dir
 
         # Specify the file where you want to save the output
         output_file = f"{save_dir}/graph_data.txt"
 
-        self.output_file = open(output_file, 'w')
+        #self.output_file = open(output_file, 'w')
 
-        sys.stdout = Tee(sys.stdout, self.output_file)
+        #sys.stdout = Tee(sys.stdout, self.output_file)
 
 
 
@@ -129,8 +131,44 @@ class PPO:
 
         while t_so_far < total_timesteps:
 
-            batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout()
+            num_processes = 4  # Number of processes to run concurrently
+
+            queue = multiprocessing.Queue()  # Queue for communication
+            processes = []
+
+            # Start multiple processes for rollout
+            for i in range(num_processes):
+                p = multiprocessing.Process(target=self.rollout, args=(queue, i))
+                processes.append(p)
+                p.start()
+
+            #batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout()
             # batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens, batch_ghosts = self.rollout()
+
+            # Collect results from all processes
+            batch_obs = []
+            batch_acts = []
+            batch_log_probs = []
+            batch_rews = []
+            batch_lens = []
+            batch_vals = []
+            batch_dones = []
+            batch_ghosts = []
+
+            for _ in range(num_processes):
+                batch_obs_p, batch_acts_p, batch_log_probs_p, batch_rews_p, batch_lens_p, batch_vals_p, batch_dones_p, batch_ghosts_p = queue.get()
+                batch_obs.extend(batch_obs_p)
+                batch_acts.extend(batch_acts_p)
+                batch_log_probs.extend(batch_log_probs_p)
+                batch_rews.extend(batch_rews_p)
+                batch_lens.extend(batch_lens_p)
+                batch_vals.extend(batch_vals_p)
+                batch_dones.extend(batch_dones_p)
+                batch_ghosts.extend(batch_ghosts_p)
+
+            # Make sure all processes have finished
+            for p in processes:
+                p.join()
 
             self.logger['batch_delta_t'] = time.time_ns()
 
@@ -200,7 +238,6 @@ class PPO:
 
                     # Calculate V_phi and pi_theta(a_t | s_t)
                     V, curr_log_probs, dist, entropy_loss = self.evaluate(mini_obs, mini_acts)
-                    print("grad check curr_log_probs :", curr_log_probs.requires_grad)  # This should print True
 
                     # Calculate the ratio pi_theta(a_t | s_t) / pi_theta_k(a_t | s_t)
                     # NOTE: we just subtract the logs, which is the same as
@@ -213,13 +250,10 @@ class PPO:
                     ratios = torch.exp(logratios)
 
                     approx_kl = ((ratios - 1) - logratios).mean()
-                    print("grad check ratios :", ratios.requires_grad)  # This should print True
 
                     # Calculate surrogate losses.
                     surr1 = ratios * mini_advantage
                     surr2 = torch.clamp(ratios, 1 - self.clip, 1 + self.clip) * mini_advantage
-                    print("grad check surr1 :", surr1.requires_grad)  # This should print True
-                    print("grad check surr2 :", surr2.requires_grad)  # This should print True
 
                     # Calculate actor and critic losses.
                     # NOTE: we take the negative min of the surrogate losses because we're trying to maximize
@@ -227,8 +261,6 @@ class PPO:
                     # performance function maximizes it.
 
                     actor_loss = (-torch.min(surr1, surr2)).mean()
-                    print("grad check initial loss :", actor_loss.requires_grad)  # This should print True
-
                     actor_loss = actor_loss + self.ent_coef * entropy_loss
                     critic_loss = nn.MSELoss()(V, mini_rtgs)
 
@@ -238,8 +270,6 @@ class PPO:
 
                     # Calculate gradients and perform backward propagation for actor network
                     self.actor_optim.zero_grad()
-
-                    print("grad check final loss :", actor_loss.requires_grad)  # This should print True
 
 
                     actor_loss.backward(retain_graph=True)
@@ -313,7 +343,8 @@ class PPO:
 
         print("Finished successfully!")
 
-        wandb.finish()
+        if self.record_wandb:
+            wandb.finish()
 
         self.output_file.close()
 
@@ -337,7 +368,7 @@ class PPO:
 
         return torch.tensor(batch_advantages, dtype=torch.float)
 
-    def rollout(self):
+    def rollout(self, queue, idx):
 
         batch_obs = []
         batch_acts = []
@@ -441,7 +472,9 @@ class PPO:
         self.logger['batch_rews'] = batch_rews
         self.logger['batch_lens'] = batch_lens
 
-        return batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts
+        # Put results in the queue to collect them in the main process
+        queue.put((batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts))
+        # return batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts
 
     def get_action(self, obs):
         """
@@ -490,8 +523,6 @@ class PPO:
             log_probs - the log probabilities of the actions taken in batch_acts given batch_obs
         """
 
-        print("**********************************")  # This should print True
-
         # Query critic network for a value V for each batch_obs
         V = self.critic(batch_obs).squeeze()
 
@@ -500,13 +531,7 @@ class PPO:
             mean = self.actor(batch_obs)
             dist = MultivariateNormal(mean, self.cov_mat)
         else:
-
-            print("grad check batch_obs :", batch_obs.requires_grad)  # This should print True
-
             logits = self.actor(batch_obs)
-
-            print("grad check logits :", logits.requires_grad)  # This should print True
-
             dist = Categorical(logits=logits)
 
         # Calculate entropy loss for regularization
@@ -518,8 +543,6 @@ class PPO:
             self.writer.add_scalar('train/entropy_loss', entropy_loss, self.logger['t_so_far'])
 
         log_probs = dist.log_prob(batch_acts)
-
-        print("grad check log_probs :", log_probs.requires_grad)  # This should print True
 
         # Return the value vector V of each observation in the batch
         # and log probabilities log_probs of each action in the batch
