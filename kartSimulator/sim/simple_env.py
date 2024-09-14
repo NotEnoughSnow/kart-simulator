@@ -163,6 +163,19 @@ class KartSim(gym.Env):
 
         self.info = {}
 
+    def __getstate__(self):
+        # Exclude 'clock' from being pickled
+        state = self.__dict__.copy()
+        del state['_clock']
+        del state['_background']
+        return state
+
+    def __setstate__(self, state):
+        # Restore state and recreate clock if necessary
+        self.__dict__.update(state)
+        self._clock = pygame.time.Clock()
+        self._background = pygame.Surface((window_width, window_length))
+
     def reset(
             self,
             *,
