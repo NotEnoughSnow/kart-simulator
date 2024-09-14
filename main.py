@@ -218,6 +218,7 @@ def train(env,
           record_tb,
           record_ghost,
           save_model,
+          record_wandb,
           iteration_type,
           hyperparameters,
           ):
@@ -238,6 +239,7 @@ def train(env,
                     record_ghost=record_ghost,
                     record_tb=record_tb,
                     save_dir=save_path,
+                    record_wandb=record_wandb,
                     train_config=train_config,
                     **hyperparameters)
 
@@ -265,6 +267,7 @@ def train(env,
                     record_ghost=record_ghost,
                     record_tb=record_tb,
                     save_dir=save_path,
+                    record_wandb=record_wandb,
                     train_config=train_config,
                     **hyperparameters)
 
@@ -424,10 +427,11 @@ def main(args):
     train_parameters = {
         "total_timesteps": 300000,
         "record_tb": True,
-        "record_ghost": True,
-        "save_model": True,
+        "record_ghost": False,
+        "save_model": False,
+        "record_wandb": False,
         "iteration_type": "mul",
-        "alg": "snn",
+        "alg": "default",
     }
 
     # Save parameters
@@ -510,6 +514,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, test, graph, replay
 
-    args.mode = "play"
+    args.mode = "train"
 
     main(args)

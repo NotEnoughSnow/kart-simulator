@@ -173,3 +173,80 @@ def decode_first_spike(spike_trains):
 
     # Ensure that this tensor retains gradients
     return first_spike_times
+
+def get_first_spike_batched(spike_trains):
+    """
+    Decodes the first spike time from batched spike trains using the 'time to first spike' method.
+
+    Parameters:
+        spike_trains - The batched spike trains with shape (batch_size, num_steps, num_neurons).
+
+    Returns:
+        decoded_vector - A tensor representing the first spike times for each neuron in each batch with gradients retained.
+    """
+    batch_size, num_steps, num_neurons = spike_trains.shape
+
+    time_tensor = torch.arange(1, num_steps + 1, dtype=torch.float32, requires_grad=True).unsqueeze(0).unsqueeze(
+        2).expand(batch_size, num_steps, num_neurons)
+    spike_times = spike_trains * time_tensor
+    spike_times = spike_times + (1 - spike_trains) * (num_steps + 1)
+    first_spike_times, _ = spike_times.min(dim=1)
+
+    return first_spike_times
+
+def get_first_spike(spike_trains):
+    """
+    Decodes the first spike time from spike trains using the 'time to first spike' method.
+
+    Parameters:
+        spike_trains - The spike trains with shape (num_steps, num_neurons).
+
+    Returns:
+        decoded_vector - A tensor representing the first spike times for each neuron with gradients retained.
+    """
+    num_steps, num_neurons = spike_trains.shape
+
+    time_tensor = torch.arange(1, num_steps + 1, dtype=torch.float32, requires_grad=True).unsqueeze(1).expand(num_steps,
+                                                                                                              num_neurons)
+    spike_times = spike_trains * time_tensor
+    spike_times = spike_times + (1 - spike_trains) * (num_steps + 1)
+    first_spike_times, _ = spike_times.min(dim=0)
+
+    return first_spike_times
+
+def compute_spike_metrics(spk_output):
+    """
+    Compute the average spike time and ratio of neurons that spike at least once.
+
+    Handles both batched ([batch_size, num_steps, output_size]) and unbatched ([num_steps, output_size]) outputs.
+
+    Parameters:
+        spk_output: Spiking activity output from the actor network.
+                    Shape can be either [batch_size, num_steps, output_size] or [num_steps, output_size].
+
+    Returns:
+        avg_spike_time: The average time at which spikes occur
+        spike_ratio: The ratio of neurons that spike at least once
+    """
+    if spk_output.dim() == 3:
+        # Batched case: [batch_size, num_steps, output_size]
+        spike_times = get_first_spike_batched(spk_output)
+        avg_spike_time = torch.mean(spike_times)  # Average spike time
+
+        # Calculate the ratio of neurons that spiked at least once per batch
+        spike_ratio = (spk_output.sum(dim=1) > 0).float().mean()
+
+    elif spk_output.dim() == 2:
+        # Unbatched case: [num_steps, output_size]
+        spike_times = get_first_spike(spk_output)
+        avg_spike_time = torch.mean(spike_times)  # Average spike time
+
+        # Calculate the ratio of neurons that spiked at least once
+        spike_ratio = (spk_output.sum(dim=0) > 0).float().mean()
+
+    else:
+        raise ValueError("spk_output must have 2 or 3 dimensions, got shape: {}".format(spk_output.shape))
+
+    return avg_spike_time.detach(), spike_ratio.detach()
+
+
