@@ -1,6 +1,8 @@
+import os
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+
 import gymnasium as gym
 import yaml
-import os
 import sys
 
 import torch
@@ -431,7 +433,7 @@ def main(args):
         "save_model": False,
         "record_wandb": False,
         "iteration_type": "mul",
-        "alg": "default",
+        "alg": "snn",
     }
 
     # Save parameters

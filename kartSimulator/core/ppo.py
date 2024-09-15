@@ -1,4 +1,4 @@
-import multiprocessing
+import os
 import time
 import sys
 
@@ -9,6 +9,7 @@ from torch import nn
 from torch.distributions import MultivariateNormal, Categorical
 from torch.optim.adam import Adam
 import kartSimulator.core.snn_utils as SNN_utils
+from joblib import Parallel, delayed
 
 import h5py
 
@@ -17,6 +18,7 @@ import wandb
 from kartSimulator.core.actor_network import ActorNetwork
 from kartSimulator.core.critic_network import CriticNetwork
 from kartSimulator.core.standard_network import FFNetwork
+import pickle
 
 
 class PPO:
@@ -99,6 +101,9 @@ class PPO:
             self.cov_var = torch.full(size=(self.act_dim,), fill_value=0.5)
             self.cov_mat = torch.diag(self.cov_var)
 
+        self.num_processes = 4  # Number of processes to run concurrently
+
+
         # This logger will help us with printing out summaries of each iteration
         self.logger = {
             'delta_t': time.time_ns(),
@@ -109,6 +114,47 @@ class PPO:
             'actor_losses': [],  # losses of actor network in current iteration
             'lr': [],
         }
+
+    def parallel_rollout(self):
+
+        results = Parallel(n_jobs=4)(delayed(self.rollout)() for _ in range(4))
+
+        # Initialize empty lists/tensors for each variable
+        batch_obs = []
+        batch_acts = []
+        batch_log_probs = []
+        batch_rews = []
+        batch_lens = []
+        batch_vals = []
+        batch_dones = []
+        batch_ghosts = []
+
+        # Combine results from all processes
+        for result in results:
+            batch_obs.append(result[0])  # Collect tensors
+            batch_acts.append(result[1])  # Collect tensors
+            batch_log_probs.append(result[2])  # Collect 1D tensors
+            batch_rews.extend(result[3])  # Collect 2D lists
+            batch_lens.extend(result[4])  # Collect 1D lists
+            batch_vals.extend(result[5])  # Collect 2D lists
+            batch_dones.extend(result[6])  # Collect 2D lists
+            batch_ghosts.extend(result[7])  # Collect 2D vectors
+
+        # Concatenate tensors along the first dimension
+        batch_obs = torch.cat(batch_obs, dim=0)
+        batch_acts = torch.cat(batch_acts, dim=0)
+        batch_log_probs = torch.cat(batch_log_probs, dim=0)
+
+        # Now you have combined tensors/lists for batch_obs, batch_acts, etc.
+        # print("Combined batch_obs:", batch_obs)
+        # print("Combined batch_acts:", batch_acts)
+        # print("Combined batch_log_probs:", batch_log_probs)
+        # print("Combined batch_rews:", batch_rews)
+        # print("Combined batch_lens:", batch_lens)
+        # print("Combined batch_vals:", batch_vals)
+        # print("Combined batch_dones:", batch_dones)
+
+        return batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts
 
     def learn(self, total_timesteps):
 
@@ -124,44 +170,21 @@ class PPO:
 
         while t_so_far < total_timesteps:
 
-            num_processes = 4  # Number of processes to run concurrently
+            parallel = True
 
-            queue = multiprocessing.Queue()  # Queue for communication
-            processes = []
+            if parallel:
+                batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.parallel_rollout()
+            else:
+                batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout()
 
-            # Start multiple processes for rollout
-            for i in range(num_processes):
-                p = multiprocessing.Process(target=self.rollout, args=(queue, i))
-                processes.append(p)
-                p.start()
+            avg_ep_lens = np.mean(batch_lens)
+            avg_ep_rews = np.mean([np.sum(ep_rews) for ep_rews in batch_rews])
 
-            #batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout()
-            # batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens, batch_ghosts = self.rollout()
-
-            # Collect results from all processes
-            batch_obs = []
-            batch_acts = []
-            batch_log_probs = []
-            batch_rews = []
-            batch_lens = []
-            batch_vals = []
-            batch_dones = []
-            batch_ghosts = []
-
-            for _ in range(num_processes):
-                batch_obs_p, batch_acts_p, batch_log_probs_p, batch_rews_p, batch_lens_p, batch_vals_p, batch_dones_p, batch_ghosts_p = queue.get()
-                batch_obs.extend(batch_obs_p)
-                batch_acts.extend(batch_acts_p)
-                batch_log_probs.extend(batch_log_probs_p)
-                batch_rews.extend(batch_rews_p)
-                batch_lens.extend(batch_lens_p)
-                batch_vals.extend(batch_vals_p)
-                batch_dones.extend(batch_dones_p)
-                batch_ghosts.extend(batch_ghosts_p)
-
-            # Make sure all processes have finished
-            for p in processes:
-                p.join()
+            if self.record_wandb:
+                wandb.log({
+                    "rollout/ep_rew_mean": avg_ep_rews,
+                    "rollout/ep_len_mean": avg_ep_lens,
+                }, step=self.logger['t_so_far'])
 
             self.logger['batch_delta_t'] = time.time_ns()
 
@@ -350,8 +373,11 @@ class PPO:
 
         return torch.tensor(batch_advantages, dtype=torch.float)
 
-    def rollout(self, queue, idx):
-
+    def rollout(self):
+        try:
+            pickle.dumps(self)
+        except Exception as e:
+            print(f"Cannot pickle: {e}")
         batch_obs = []
         batch_acts = []
         batch_log_probs = []
@@ -396,7 +422,6 @@ class PPO:
                 # FIXME actions are not in range(-1,1)
                 action, log_prob = self.get_action(obs)
                 val = self.critic(obs)
-
                 obs, rew, terminated, truncated, info = self.env.step(action)
 
                 done = terminated or truncated
@@ -427,6 +452,7 @@ class PPO:
             batch_vals.append(ep_vals)
             batch_dones.append(ep_dones)
 
+            '''
             ep_rew_mean = np.sum(ep_rews)
             # print(ep_rew_mean)
 
@@ -434,7 +460,7 @@ class PPO:
                 wandb.log({
                     "rollout/ep_rew_mean": ep_rew_mean,
                     "rollout/ep_len_mean": (ep_t + 1),
-                }, step=self.logger['t_so_far'])
+                }, step=self.logger['t_so_far'])'''
 
 
 
@@ -442,15 +468,17 @@ class PPO:
         batch_obs = torch.tensor(np.array(batch_obs), dtype=torch.float)
         batch_acts = torch.tensor(np.array(batch_acts), dtype=torch.float)
         batch_log_probs = torch.tensor(np.array(batch_log_probs), dtype=torch.float)
-        # batch_rtgs = self.compute_rtgs(batch_rews)  # ALG STEP 4
+        # batch_rtgs = self.compute_rtgs(batch_rews)
 
         # Log the episodic returns and episodic lengths in this batch.
         self.logger['batch_rews'] = batch_rews
         self.logger['batch_lens'] = batch_lens
 
         # Put results in the queue to collect them in the main process
-        queue.put((batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts))
-        # return batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts
+        #print(f"Process {os.getpid()} put data in the queue")
+
+        return batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts
+
 
     def get_action(self, obs):
         """
