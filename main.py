@@ -429,9 +429,9 @@ def main(args):
     train_parameters = {
         "total_timesteps": 300000,
         "record_tb": False,
-        "record_ghost": False,
-        "save_model": False,
-        "record_wandb": False,
+        "record_ghost": True,
+        "save_model": True,
+        "record_wandb": True,
         "iteration_type": "mul",
         "alg": "snn",
     }

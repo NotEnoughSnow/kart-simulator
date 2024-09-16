@@ -59,11 +59,11 @@ class PPO_SNN:
         self.run_directory = save_dir
 
         # Specify the file where you want to save the output
-        #output_file = f"{save_dir}/graph_data.txt"
+        output_file = f"{save_dir}/graph_data.txt"
 
-        #self.output_file = open(output_file, 'w')
+        self.output_file = open(output_file, 'w')
 
-        #sys.stdout = Tee(sys.stdout, self.output_file)
+        sys.stdout = Tee(sys.stdout, self.output_file)
 
         print(f"Saving to '{self.run_directory}' after training")
 
@@ -406,10 +406,6 @@ class PPO_SNN:
         return torch.tensor(batch_advantages, dtype=torch.float)
 
     def rollout(self):
-        try:
-            pickle.dumps(self)
-        except Exception as e:
-            print(f"Cannot pickle: {e}")
         batch_obs = []
         batch_obs_st = []
         batch_acts = []
