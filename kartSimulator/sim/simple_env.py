@@ -325,7 +325,7 @@ class KartSim(gym.Env):
 
         # reward for closing distance to sector medians
         #self.reward += self.next_target_rew
-        self.reward += self.next_target_rew_act
+        self.reward += self.next_target_rew_act/80
 
         # TODO assign sector and lap based rewards
 
@@ -338,7 +338,7 @@ class KartSim(gym.Env):
         # if collide with track then terminate
         if self.out_of_track:
             truncated = True
-            self.reward += 0
+            self.reward -= 500
             #step_reward = self.reward
 
         step_reward = self.reward
@@ -578,7 +578,7 @@ class KartSim(gym.Env):
             self._last_sector_time = self._current_episode_time
 
             # reward based on sector time
-            self.reward += self._calculate_reward(time_diff)
+            #self.reward += self._calculate_reward(time_diff)
 
             if data["number"] == self._num_sectors:
                 self.finish = True
@@ -659,7 +659,6 @@ class KartSim(gym.Env):
         max_pos = max(window_width, window_length)/2
 
         position = normalize_vec(self._playerBody.position, maximum=max_pos, minimum=0)
-        print(position)
 
         return position
 

@@ -389,7 +389,7 @@ def main(args):
     # environment selection
     # simple_env has free movement
     # base_env has car like movement
-    env_fn = base_env
+    env_fn = simple_env
 
     # list of observations:
     # DISTANCE : distance to goal
@@ -403,11 +403,9 @@ def main(args):
     # obs_types.DISTANCE,
     # obs_types.TARGET_ANGLE,
     obs = [obs_types.POSITION,
-           obs_types.ROTATION,
            obs_types.VELOCITY,
            obs_types.DISTANCE,
            obs_types.TARGET_ANGLE,
-           obs_types.LIDAR,
            ]
 
     # keyword arguments for the environment
@@ -471,7 +469,7 @@ def main(args):
     # iteration_type : mul for default mode, one to run a single iteration
     # alg : default, baselines, snn
     train_parameters = {
-        "total_timesteps": 300000,
+        "total_timesteps": 5000000,
         "record_tb": False,
         "record_ghost": True,
         "save_model": True,
@@ -497,7 +495,7 @@ def main(args):
     player_name = "Amin"
 
     # Parameters for replays
-    replay_files = ["saves/default/RE1/ver_1/ghost.hdf5"]
+    replay_files = ["saves/default/RE2/ver_1/ghost.hdf5", "saves/default/RE1/ver_1/ghost.hdf5"]
     mode = "all"
 
     # parameters for making graphs
