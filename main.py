@@ -427,7 +427,7 @@ def main(args):
     # iteration_type : mul for default mode, one to run a single iteration
     # alg : default, baselines, snn
     train_parameters = {
-        "total_timesteps": 300000,
+        "total_timesteps": 1000000,
         "record_tb": False,
         "record_ghost": True,
         "save_model": True,
@@ -438,7 +438,7 @@ def main(args):
 
     # Save parameters
     # experiment_name : change to test out different conditions
-    experiment_name = "LL4"
+    experiment_name = "LL5"
     save_dir = "./saves/"
 
     # Parameters for testing

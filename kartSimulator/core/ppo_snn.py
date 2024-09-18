@@ -82,7 +82,7 @@ class PPO_SNN:
         else:
             self.act_dim = env.action_space.n
 
-        self.num_steps = 32
+        self.num_steps = 50
 
         # TODO automate
         self.threshold = torch.tensor([1.5, 1.5, 5, 5, 3.14, 5, 1, 1])
