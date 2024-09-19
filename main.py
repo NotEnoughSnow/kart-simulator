@@ -217,7 +217,7 @@ def train(env,
           alg,
           experiment_name,
           save_dir,
-          record_tb,
+          record_output,
           record_ghost,
           save_model,
           record_wandb,
@@ -229,17 +229,20 @@ def train(env,
 
     base_dir = save_dir+f"{alg}/"
 
-    save_path, ver_number = utils.get_next_run_directory(base_dir, experiment_name)
-
-    train_config = save_train_data(env, base_dir, experiment_name, ver_number, alg, total_timesteps, hyperparameters)
-
+    if (record_output or record_ghost or save_model) is True:
+        save_path, ver_number = utils.get_next_run_directory(base_dir, experiment_name)
+        train_config = save_train_data(env, base_dir, experiment_name, ver_number, alg, total_timesteps, hyperparameters)
+    else:
+        train_config = None
+        save_path = None
 
 
     if alg == "default":
 
-        model = PPO(env=env, save_model=save_model,
+        model = PPO(env=env,
+                    save_model=save_model,
                     record_ghost=record_ghost,
-                    record_tb=record_tb,
+                    record_output=record_output,
                     save_dir=save_path,
                     record_wandb=record_wandb,
                     train_config=train_config,
@@ -265,9 +268,10 @@ def train(env,
             model.learn(total_timesteps=total_timesteps)
     if alg == "snn":
 
-        model = PPO_SNN(env=env, save_model=save_model,
+        model = PPO_SNN(env=env,
+                    save_model=save_model,
                     record_ghost=record_ghost,
-                    record_tb=record_tb,
+                    record_output=record_output,
                     save_dir=save_path,
                     record_wandb=record_wandb,
                     train_config=train_config,
@@ -294,7 +298,7 @@ def train(env,
     if alg == "baselines":
         # TODO fix save_dir not needing experiment name
 
-        baselines.train(env, save_dir, record_tb, experiment_name, steps=total_timesteps)
+        baselines.train(env, save_dir, record_output, experiment_name, steps=total_timesteps)
 
 
 def test(env, alg, type, deterministic, actor_model):
@@ -427,13 +431,13 @@ def main(args):
     # iteration_type : mul for default mode, one to run a single iteration
     # alg : default, baselines, snn
     train_parameters = {
-        "total_timesteps": 1000000,
-        "record_tb": False,
-        "record_ghost": True,
-        "save_model": True,
-        "record_wandb": True,
+        "total_timesteps": 5000,
+        "record_output": False,
+        "record_ghost": False,
+        "save_model": False,
+        "record_wandb": False,
         "iteration_type": "mul",
-        "alg": "snn",
+        "alg": "default",
     }
 
     # Save parameters

@@ -24,7 +24,7 @@ from kartSimulator.core.snn_network_small import SNN_small
 
 class PPO_SNN:
 
-    def __init__(self, env, record_ghost, save_model, record_tb, save_dir, record_wandb, train_config, **hyperparameters):
+    def __init__(self, env, record_ghost, save_model, record_output, save_dir, record_wandb, train_config, **hyperparameters):
 
         # Make sure the environment is compatible with our code
         assert (type(env.observation_space) == gym.spaces.Box)
@@ -42,7 +42,7 @@ class PPO_SNN:
         print(train_config)
 
         self.record_wandb = record_wandb
-        self.record_tb = record_tb
+        self.record_output = record_output
         self.record_ghost = record_ghost
         self.save_model = save_model
 
@@ -58,18 +58,15 @@ class PPO_SNN:
 
         self.run_directory = save_dir
 
-        # Specify the file where you want to save the output
-        output_file = f"{save_dir}/graph_data.txt"
+        if self.record_output:
+            # Specify the file where you want to save the output
+            output_file = f"{save_dir}/graph_data.txt"
+            self.output_file = open(output_file, 'w')
+            sys.stdout = Tee(sys.stdout, self.output_file)
 
-        self.output_file = open(output_file, 'w')
+        if (record_ghost or record_output or save_model) is True:
+            print(f"Saving to '{self.run_directory}' after training")
 
-        sys.stdout = Tee(sys.stdout, self.output_file)
-
-        print(f"Saving to '{self.run_directory}' after training")
-
-        if self.record_tb:
-            print("Recording tensorboard data")
-            self.writer = SummaryWriter(self.run_directory)
 
         # Initialize hyperparameters for training with PPO
         self._init_hyperparameters(hyperparameters)
@@ -82,18 +79,18 @@ class PPO_SNN:
         else:
             self.act_dim = env.action_space.n
 
-        self.num_steps = 50
-
         # TODO automate
         self.threshold = torch.tensor([1.5, 1.5, 5, 5, 3.14, 5, 1, 1])
         self.shift = np.array([1.5, 1.5, 5, 5, 3.14, 5, 0, 0])
 
-        print(f"obs shape :{env.observation_space.shape} \n"
-              f"action shape :{env.action_space.shape}")
+        print(f"obs shape :{self.act_dim} \n"
+              f"action shape :{self.act_dim}")
 
         # Initialize actor and critic networks
         # self.actor = ActorNetwork(self.obs_dim, self.act_dim)
         # self.critic = CriticNetwork(self.obs_dim, 1)
+
+        print(self.num_steps)
 
         self.actor = SNN_small(self.obs_dim, self.act_dim, self.num_steps)
         self.critic = SNN_small(self.obs_dim, 1, self.num_steps)
@@ -228,8 +225,6 @@ class PPO_SNN:
             # print("mini batch ", minibatch_size)
 
             explained_variance = 1 - torch.var(batch_rtgs - V) / torch.var(batch_rtgs)
-            if self.record_tb:
-                self.writer.add_scalar('train/explained_variance', explained_variance, self.logger['t_so_far'])
 
             if self.record_wandb:
                 wandb.log({
@@ -325,15 +320,6 @@ class PPO_SNN:
                     value_loss = critic_loss
 
                     loss_arr.append(actor_loss.detach())
-
-                    if self.record_tb:
-                        self.writer.add_scalar('train/clip_range', self.clip, self.logger['t_so_far'])
-                        self.writer.add_scalar('train/clip_fraction', clip_fraction, self.logger['t_so_far'])
-                        self.writer.add_scalar('train/approx_kl', approx_kl, self.logger['t_so_far'])
-                        self.writer.add_scalar('train/policy_gradient_loss', policy_gradient_loss,
-                                               self.logger['t_so_far'])
-                        self.writer.add_scalar('train/value_loss', value_loss, self.logger['t_so_far'])
-                        self.writer.add_scalar('train/loss', total_loss, self.logger['t_so_far'])
 
                     if self.record_wandb:
                         wandb.log({
@@ -483,8 +469,6 @@ class PPO_SNN:
                 # print(rew)
 
                 # TODO add fps
-                if self.record_tb:
-                    self.writer.add_scalar('time/fps', info.get("fps", 0), self.logger['t_so_far'])
 
                 ep_t += 1
 
@@ -498,10 +482,6 @@ class PPO_SNN:
 
             ep_rew_mean = np.sum(ep_rews)
             # print(ep_rew_mean)
-
-            if self.record_tb:
-                self.writer.add_scalar('rollout/ep_rew_mean', ep_rew_mean, self.logger['t_so_far'])
-                self.writer.add_scalar('rollout/ep_len_mean', (ep_t + 1), self.logger['t_so_far'])
 
             if self.record_wandb:
                 wandb.log({
@@ -630,8 +610,10 @@ class PPO_SNN:
         # Calculate entropy loss for regularization
         entropy_loss = -dist.entropy().mean()
 
-        if self.record_tb:
-            self.writer.add_scalar('train/entropy_loss', entropy_loss, self.logger['t_so_far'])
+        if self.record_wandb:
+            wandb.log({
+                "train/entropy_loss": entropy_loss,
+            }, step=self.logger['t_so_far'])
 
         log_probs = dist.log_prob(batch_acts)
 
@@ -663,6 +645,7 @@ class PPO_SNN:
         self.num_minibatches = 8
         self.gae_lambda = 0.95
         self.decode_type = "lrl"
+        self.num_steps = 50
 
         # Miscellaneous parameters
         self.render_every_i = 10  # Only render every n iterations
