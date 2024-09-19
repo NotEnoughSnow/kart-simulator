@@ -23,7 +23,7 @@ import pickle
 
 class PPO:
 
-    def __init__(self, env, record_ghost, save_model, record_tb, save_dir, record_wandb, train_config, **hyperparameters):
+    def __init__(self, env, record_ghost, save_model, record_output, save_dir, record_wandb, train_config, **hyperparameters):
 
 
         # Make sure the environment is compatible with our code
@@ -44,6 +44,7 @@ class PPO:
         self.record_ghost = record_ghost
         self.save_model = save_model
         self.record_wandb = record_wandb
+        self.record_output = record_output
 
         if self.record_wandb:
             # start a new wandb run to track this script
@@ -56,16 +57,17 @@ class PPO:
             )
 
 
+
         self.run_directory = save_dir
 
-        # Specify the file where you want to save the output
-        output_file = f"{save_dir}/graph_data.txt"
+        if self.record_output:
+            # Specify the file where you want to save the output
+            output_file = f"{save_dir}/graph_data.txt"
+            self.output_file = open(output_file, 'w')
+            sys.stdout = Tee(sys.stdout, self.output_file)
 
-        #self.output_file = open(output_file, 'w')
-
-        #sys.stdout = Tee(sys.stdout, self.output_file)
-
-        print(f"Saving to '{self.run_directory}' after training")
+        if (record_ghost or record_output or save_model) is True:
+            print(f"Saving to '{self.run_directory}' after training")
 
 
         # Initialize hyperparameters for training with PPO
@@ -351,7 +353,8 @@ class PPO:
         if self.record_wandb:
             wandb.finish()
 
-        self.output_file.close()
+        if self.record_output:
+            self.output_file.close()
 
     def calculate_gae(self, rewards, values, dones):
         batch_advantages = []
@@ -540,6 +543,11 @@ class PPO:
 
         # Calculate entropy loss for regularization
         entropy_loss = -dist.entropy().mean()
+
+        if self.record_wandb:
+            wandb.log({
+                "train/entropy_loss": entropy_loss,
+            }, step=self.logger['t_so_far'])
 
         log_probs = dist.log_prob(batch_acts)
 
