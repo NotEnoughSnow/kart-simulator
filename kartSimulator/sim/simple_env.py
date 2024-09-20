@@ -16,11 +16,9 @@ import pygame
 
 from kartSimulator.sim.utils import normalize_vec
 
-from kartSimulator.sim.maps.map_generator import MapGenerator
-from kartSimulator.sim.maps.map_loader import MapLoader
-from kartSimulator.sim.maps.random_point import RandomPoint
-
 from kartSimulator.sim.ui_manager import UImanager
+
+from kartSimulator.sim.maps.track_factory import TrackFactory
 
 # TODO changes to kart speed
 # max_velocity, burgerbot = 0.22
@@ -28,22 +26,11 @@ from kartSimulator.sim.ui_manager import UImanager
 
 PPM = 100
 
-BOT_SIZE = 0.192
-BOT_WEIGHT = 1
-
 # 1 meter in 4.546 sec or 0.22 meters in 1 sec
 # at 0.22 m/s, the bot should walk 1 meter in 4.546 seconds
 #MAX_VELOCITY = 4 * 0.22 * PPM
 
 MAX_VELOCITY = 4 * PPM
-
-# 0.1 rad/frames, 2pi in 1.281 sec
-
-# example : 0.0379 rad/frames, for frames = 48
-# or        1.82 rad/sec
-RAD_VELOCITY = 2.84
-
-# RAD_VELOCITY = 10
 
 MAX_TARGET_DISTANCE = 600
 
@@ -62,7 +49,14 @@ class KartSim(gym.Env):
                 "reset_time": 300,
                 }
 
-    def __init__(self, render_mode=None, train=False, obs_seq=[], reset_time=300):
+    def __init__(self, render_mode=None,
+                 train=False,
+                 obs_seq=[],
+                 reset_time=300,
+                 track_type="default",
+                 track_args=None,
+                 player_args=None,
+                 ):
 
         print("loaded env:", self.metadata["name"])
 
@@ -71,12 +65,15 @@ class KartSim(gym.Env):
         self.metadata["reset_time"] = reset_time
         self.metadata["obs_seq"] = obs_seq
 
+        # player stuff
+        self.max_velocity = player_args["max_velocity"] * PPM
+        self.player_acc_rate = player_args["player_acc_rate"]
+        self.bot_size = player_args["bot_size"]
+        self.bot_weight = player_args["bot_weight"]
+
         self.reset_time = reset_time
         self.obs_seq = obs_seq
         self.obs_len = 0
-
-        for item in obs_seq:
-            self.obs_len += item[1]
 
         speed = 1.0
 
@@ -120,18 +117,33 @@ class KartSim(gym.Env):
         self.distance_to_next_points = -MAX_TARGET_DISTANCE
         self.distance_to_next_points_vec = [-MAX_TARGET_DISTANCE, -MAX_TARGET_DISTANCE]
 
-        # FIXME restore shapes to (-1,1), (-1,1)
-        self.action_space = spaces.Box(
-            low=-1, high=1, shape=(2,), dtype=np.float32
-        )
-        # up_down, left_right
+        low = []
+        high = []
 
-        # TODO use variables
-        self.observation_space = spaces.Box(
-            low=-1000, high=1000, shape=(self.obs_len,), dtype=np.float32
-        )
+        for obs_type in obs_seq:
+            if len(obs_type) == 3:
+                self.obs_len += len(obs_type[1])
 
-        self.initial_pos = 300, 450
+                for item_low in obs_type[1]:
+                    low.append(item_low)
+
+                for item_high in obs_type[2]:
+                    high.append(item_high)
+            else:
+                self.obs_len += len(obs_type[2])
+
+                for i in range(obs_type[1]):
+                    low.append(-obs_type[2][0])
+                    high.append(obs_type[3][0])
+
+        low = np.array(low).astype(np.float32)
+        high = np.array(high).astype(np.float32)
+
+        self.observation_space = spaces.Box(low, high)
+
+        self.action_space = spaces.Discrete(5)
+        # do nothing, up, down, left, right
+
         self.vision_points = []
         self.vision_lengths = []
 
@@ -142,10 +154,19 @@ class KartSim(gym.Env):
         self.next_target_rew = 0
         self.next_target_rew_act = 0
 
-        self._create_ball()
-        self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
+        #self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
         #self.map = MapGenerator(self._space, WORLD_CENTER, 50)
         #self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
+
+        self.map = TrackFactory.create_track(track_type,
+                                             self._space,
+                                             WORLD_CENTER,
+                                             **track_args)
+
+        self.initial_pos = self.map.initial_pos
+
+        self.create_player()
+
 
         # map walls
         # sector initiation
@@ -163,18 +184,7 @@ class KartSim(gym.Env):
 
         self.info = {}
 
-    def __getstate__(self):
-        # Exclude 'clock' from being pickled
-        state = self.__dict__.copy()
-        del state['_clock']
-        del state['_background']
-        return state
-
-    def __setstate__(self, state):
-        # Restore state and recreate clock if necessary
-        self.__dict__.update(state)
-        self._clock = pygame.time.Clock()
-        self._background = pygame.Surface((window_width, window_length))
+        self.continuous = False
 
     def reset(
             self,
@@ -199,6 +209,10 @@ class KartSim(gym.Env):
 
     def step(self, action: Union[np.ndarray, int]):
 
+        if not self.continuous:
+            action_array = np.zeros(self.action_space.n)
+            action_array[action] = 1
+
         self._clock.tick()
 
         # if i assign this to FPS, both of them become 0
@@ -214,9 +228,11 @@ class KartSim(gym.Env):
         #print("first step :", self._playerBody.position)
         pstart = self._playerBody.position
 
-        if action is not None:
-            go_up_value = self._go_up_down(action[0])
-            go_left_value = self._go_left_right(action[1])
+        if action_array is not None:
+            go_up_value = self._go_up(action_array[1])
+            go_down_value = self._go_down(action_array[2])
+            go_left_value = self._go_left(action_array[3])
+            go_right_value = self._go_right(action_array[4])
 
         self.go_up_value = None
         self.go_down_value = None
@@ -296,7 +312,7 @@ class KartSim(gym.Env):
             self.distance_to_next_points = self.distance(pend, self.goal_pos)
 
             target_number = int(self.next_sector_name[-1])
-            self.next_target_rew = 2000/(self.distance_to_next_points+50) - 10
+            #self.next_target_rew = 2000/(self.distance_to_next_points+50) - 10
 
             initial_potential = self.potential_curve(self.distance(self.goal_pos, pstart))
             final_potential = self.potential_curve(self.distance(self.goal_pos, pend))
@@ -309,7 +325,7 @@ class KartSim(gym.Env):
 
         # reward for closing distance to sector medians
         #self.reward += self.next_target_rew
-        self.reward += self.next_target_rew_act
+        self.reward += self.next_target_rew_act/80
 
         # TODO assign sector and lap based rewards
 
@@ -322,7 +338,7 @@ class KartSim(gym.Env):
         # if collide with track then terminate
         if self.out_of_track:
             truncated = True
-            self.reward += 0
+            self.reward -= 500
             #step_reward = self.reward
 
         step_reward = self.reward
@@ -365,7 +381,6 @@ class KartSim(gym.Env):
         self.ui_manager.add_ui_text("norm dist", self.norm_dist, ".3f")
         self.ui_manager.add_ui_text("total reward", self.reward, ".3f")
         self.ui_manager.add_ui_text("act.rew from target", self.next_target_rew_act, ".3f")
-        self.ui_manager.add_ui_text("dist.rew from target", self.next_target_rew, ".4f")
         self.ui_manager.add_ui_text("angle to target", self.angle_to_target_cos, ".3f")
         self.ui_manager.add_ui_text("angle to target", self.angle_to_target_sin, ".3f")
 
@@ -465,43 +480,77 @@ class KartSim(gym.Env):
             self.sector_info["sector " + str(i)].append(0)
             self.sector_info["sector " + str(i)].append(sector_midpoints[i - 1])
 
-    def _go_up_down(self, value):
+    def _go_up(self, value):
         """acceleration control
 
-        :param value: (-1..1)
+        :param value: (0..1)
         :return:
         """
         # FIXME temp fix for ensuing that value is within (0,1)
         value = min(1, value)
-        value = max(-1, value)
+        value = max(0, value)
 
         if value == 0:
             return value
         else:
             if self.velocity < MAX_VELOCITY:
-                self._playerBody.apply_impulse_at_local_point((0, 15 * value), (0, 0))
+                self._playerBody.apply_impulse_at_local_point((0, -self.player_acc_rate * value), (0, 0))
             return value
 
-    def _go_left_right(self, value):
+    def _go_down(self, value):
         """acceleration control
 
-        :param value: (-1..1)
+        :param value: (0..1)
         :return:
         """
         # FIXME temp fix for ensuing that value is within (0,1)
         value = min(1, value)
-        value = max(-1, value)
+        value = max(0, value)
 
         if value == 0:
             return value
         else:
             if self.velocity < MAX_VELOCITY:
-                self._playerBody.apply_impulse_at_local_point((15 * value, 0), (0, 0))
+                self._playerBody.apply_impulse_at_local_point((0, self.player_acc_rate * value), (0, 0))
             return value
 
-    def _create_ball(self) -> None:
-        mass = BOT_WEIGHT
-        radius = BOT_SIZE * PPM
+    def _go_left(self, value):
+        """acceleration control
+
+        :param value: (0..1)
+        :return:
+        """
+        # FIXME temp fix for ensuing that value is within (0,1)
+        value = min(1, value)
+        value = max(0, value)
+
+        if value == 0:
+            return value
+        else:
+            if self.velocity < MAX_VELOCITY:
+                self._playerBody.apply_impulse_at_local_point((-self.player_acc_rate * value, 0), (0, 0))
+            return value
+
+    def _go_right(self, value):
+        """acceleration control
+
+        :param value: (0..1)
+        :return:
+        """
+        # FIXME temp fix for ensuing that value is within (0,1)
+        value = min(1, value)
+        value = max(0, value)
+
+        if value == 0:
+            return value
+        else:
+            if self.velocity < MAX_VELOCITY:
+                self._playerBody.apply_impulse_at_local_point((self.player_acc_rate * value, 0), (0, 0))
+            return value
+
+    def create_player(self) -> None:
+        mass = self.bot_weight
+        radius = self.bot_size * PPM
         inertia = pymunk.moment_for_circle(mass, 0, radius, (0, 0))
         body = pymunk.Body(mass, inertia)
         body.position = self.initial_pos
@@ -529,7 +578,7 @@ class KartSim(gym.Env):
             self._last_sector_time = self._current_episode_time
 
             # reward based on sector time
-            self.reward += self._calculate_reward(time_diff)
+            #self.reward += self._calculate_reward(time_diff)
 
             if data["number"] == self._num_sectors:
                 self.finish = True
@@ -577,10 +626,11 @@ class KartSim(gym.Env):
 
         velocity = np.clip(
             np.abs(normalize_vec([velocity],
-                                 maximum=MAX_VELOCITY,
+                                 maximum=self.max_velocity,
                                  minimum=0)),
             a_max=1,
-            a_min=0)[0] * 300
+            a_min=0)[0]
+
 
         return [velocity]
 
@@ -605,17 +655,23 @@ class KartSim(gym.Env):
         return rotation
 
     def observation_position(self):
-        return self._playerBody.position
+
+        max_pos = max(window_width, window_length)/2
+
+        position = normalize_vec(self._playerBody.position, maximum=max_pos, minimum=0)
+
+        return position
 
     def observation_distance(self):
-        normalized = [utils.normalize_vec([self.distance_to_next_points], maximum=0, minimum=-MAX_TARGET_DISTANCE)[0]]
-        self.norm_dist = normalized[0]
-        return normalized
+        distance = [utils.normalize_vec([self.distance_to_next_points], maximum=0, minimum=-MAX_TARGET_DISTANCE)[0]]
+
+        return distance
 
     def observation_distance_vec(self):
-        normalized = utils.normalize_vec(self.distance_to_next_points_vec, maximum=0, minimum=-MAX_TARGET_DISTANCE)
-        self.norm_dist_vec = normalized
-        return normalized
+
+        distance = utils.normalize_vec(self.distance_to_next_points_vec, maximum=0, minimum=-MAX_TARGET_DISTANCE)
+
+        return distance
 
     def observation_LIDAR(self):
         # LIDAR vision

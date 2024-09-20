@@ -23,40 +23,51 @@ import pickle
 
 class PPO:
 
-    def __init__(self, env, record_ghost, save_model, record_output, save_dir, record_wandb, train_config, **hyperparameters):
+    def __init__(self,
+                 env,
+                 record_ghost,
+                 save_model,
+                 record_output,
+                 save_dir,
+                 record_wandb,
+                 train_config,
+                 **hyperparameters):
 
+
+        self.pid = os.getpid()
+        # Initialize hyperparameters for training with PPO
+        self._init_hyperparameters(hyperparameters)
 
         # Make sure the environment is compatible with our code
         assert (type(env.observation_space) == gym.spaces.Box)
 
         # Determine if the action space is continuous or discrete
         if isinstance(env.action_space, gym.spaces.Box):
-            print("Using a continuous action space")
+            if self.verbose == 2:
+                print("Using a continuous action space")
             self.continuous = True
         elif isinstance(env.action_space, gym.spaces.Discrete):
-            print("Using a discrete action space")
+            if self.verbose == 2:
+                print("Using a discrete action space")
             self.continuous = False
         else:
             raise NotImplementedError("The action space type is not supported.")
 
-        print(train_config)
 
         self.record_ghost = record_ghost
         self.save_model = save_model
         self.record_wandb = record_wandb
         self.record_output = record_output
 
+
         if self.record_wandb:
-            # start a new wandb run to track this script
             wandb.init(
                 # set the wandb project where this run will be logged
-                project="PPO-SNN-Lunar-Landing",
+                project="PPO-Racing-Env",
 
                 # track hyperparameters and run metadata
                 config=train_config
             )
-
-
 
         self.run_directory = save_dir
 
@@ -67,11 +78,11 @@ class PPO:
             sys.stdout = Tee(sys.stdout, self.output_file)
 
         if (record_ghost or record_output or save_model) is True:
-            print(f"Saving to '{self.run_directory}' after training")
+            if self.verbose == 0:
+                pass
+            else:
+                print(f"Saving to '{self.run_directory}' after training")
 
-
-        # Initialize hyperparameters for training with PPO
-        self._init_hyperparameters(hyperparameters)
 
         self.env = env
         self.obs_dim = env.observation_space.shape[0]
@@ -82,9 +93,13 @@ class PPO:
             self.act_dim = env.action_space.n
 
 
-
-        print(f"obs shape :{env.observation_space.shape} \n"
-              f"action shape :{env.action_space.shape}")
+        if self.verbose == 0:
+            pass
+        elif self.verbose == 1:
+            pass
+        elif self.verbose == 2:
+            print(f"obs shape :{self.act_dim} \n"
+                  f"action shape :{self.act_dim}")
 
         # Initialize actor and critic networks
         # self.actor = ActorNetwork(self.obs_dim, self.act_dim)  # ALG STEP 1
@@ -117,52 +132,14 @@ class PPO:
             'lr': [],
         }
 
-    def parallel_rollout(self):
-
-        results = Parallel(n_jobs=4)(delayed(self.rollout)() for _ in range(4))
-
-        # Initialize empty lists/tensors for each variable
-        batch_obs = []
-        batch_acts = []
-        batch_log_probs = []
-        batch_rews = []
-        batch_lens = []
-        batch_vals = []
-        batch_dones = []
-        batch_ghosts = []
-
-        # Combine results from all processes
-        for result in results:
-            batch_obs.append(result[0])  # Collect tensors
-            batch_acts.append(result[1])  # Collect tensors
-            batch_log_probs.append(result[2])  # Collect 1D tensors
-            batch_rews.extend(result[3])  # Collect 2D lists
-            batch_lens.extend(result[4])  # Collect 1D lists
-            batch_vals.extend(result[5])  # Collect 2D lists
-            batch_dones.extend(result[6])  # Collect 2D lists
-            batch_ghosts.extend(result[7])  # Collect 2D vectors
-
-        # Concatenate tensors along the first dimension
-        batch_obs = torch.cat(batch_obs, dim=0)
-        batch_acts = torch.cat(batch_acts, dim=0)
-        batch_log_probs = torch.cat(batch_log_probs, dim=0)
-
-        # Now you have combined tensors/lists for batch_obs, batch_acts, etc.
-        # print("Combined batch_obs:", batch_obs)
-        # print("Combined batch_acts:", batch_acts)
-        # print("Combined batch_log_probs:", batch_log_probs)
-        # print("Combined batch_rews:", batch_rews)
-        # print("Combined batch_lens:", batch_lens)
-        # print("Combined batch_vals:", batch_vals)
-        # print("Combined batch_dones:", batch_dones)
-
-        return batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts
-
     def learn(self, total_timesteps):
 
-        print(
-            f"Learning... Running {self.timesteps_per_batch} timesteps per batch for a total of {total_timesteps} timesteps",
-            end='')
+        if self.verbose == 0:
+            pass
+        elif self.verbose == 1:
+            print(f"{self.pid} started")
+        elif self.verbose == 2:
+            print(f"Learning... Running {self.timesteps_per_batch} timesteps per batch for a total of {total_timesteps} timesteps")
 
         t_so_far = 0  # Timesteps simulated so far
         i_so_far = 0  # Iterations ran so far
@@ -172,12 +149,7 @@ class PPO:
 
         while t_so_far < total_timesteps:
 
-            parallel = True
-
-            if parallel:
-                batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.parallel_rollout()
-            else:
-                batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout()
+            batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout()
 
             avg_ep_lens = np.mean(batch_lens)
             avg_ep_rews = np.mean([np.sum(ep_rews) for ep_rews in batch_rews])
@@ -277,6 +249,7 @@ class PPO:
                     # performance function maximizes it.
 
                     actor_loss = (-torch.min(surr1, surr2)).mean()
+
                     actor_loss = actor_loss + self.ent_coef * entropy_loss
                     critic_loss = nn.MSELoss()(V, mini_rtgs)
 
@@ -286,7 +259,6 @@ class PPO:
 
                     # Calculate gradients and perform backward propagation for actor network
                     self.actor_optim.zero_grad()
-
 
                     actor_loss.backward(retain_graph=True)
                     nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
@@ -324,8 +296,13 @@ class PPO:
             avg_loss = sum(loss_arr) / len(loss_arr)
             self.logger['actor_losses'].append(avg_loss)
 
-            # Print a summary of our training so far
-            self._log_summary()
+            if self.verbose == 0:
+                pass
+            elif self.verbose == 1:
+                pass
+            elif self.verbose == 2:
+                # Print a summary of our training so far
+                self._log_summary()
 
             # Save our model if it's time
             if self.save_model:
@@ -348,7 +325,12 @@ class PPO:
                             batches=total_ghost_ep,
                             batch_lengths=total_ghost_ts, )
 
-        print("Finished successfully!")
+        if self.verbose == 0:
+            pass
+        elif self.verbose == 1:
+            print(f"{self.pid} Finished successfully!")
+        elif self.verbose == 2:
+            print("Finished successfully!")
 
         if self.record_wandb:
             wandb.finish()
@@ -494,12 +476,12 @@ class PPO:
             action - the action to take, as a numpy array
             log_prob - the log probability of the selected action in the distribution
         """
+
         if self.continuous:
             # For continuous action spaces
             mean = self.actor(obs)
             dist = MultivariateNormal(mean, self.cov_mat)
         else:
-
             # For discrete action spaces
             logits = self.actor(obs)
             dist = Categorical(logits=logits)
@@ -579,6 +561,7 @@ class PPO:
         self.target_kl = None
         self.num_minibatches = 8
         self.gae_lambda = 0.95
+        self.verbose = 2
 
         # Miscellaneous parameters
         self.render_every_i = 10  # Only render every n iterations
