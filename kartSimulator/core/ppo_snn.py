@@ -40,6 +40,7 @@ class PPO_SNN:
         # Initialize hyperparameters for training with PPO
         self._init_hyperparameters(hyperparameters)
 
+
         # Make sure the environment is compatible with our code
         assert (type(env.observation_space) == gym.spaces.Box)
 
@@ -69,6 +70,7 @@ class PPO_SNN:
                 # track hyperparameters and run metadata
                 config=train_config
             )
+
 
         self.run_directory = save_dir
 
@@ -179,7 +181,7 @@ class PPO_SNN:
         if self.verbose == 0:
             pass
         elif self.verbose == 1:
-            pass
+            print(f"{self.pid} started")
         elif self.verbose == 2:
             print(f"Learning... Running {self.timesteps_per_batch} timesteps per batch for a total of {total_timesteps} timesteps")
 
@@ -191,12 +193,7 @@ class PPO_SNN:
 
         while t_so_far < total_timesteps:
 
-            parallel = False
-
-            if parallel:
-                batch_obs, batch_obs_st, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.parallel_rollout()
-            else:
-                batch_obs, batch_obs_st, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout()
+            batch_obs, batch_obs_st, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout()
 
             #batch_obs, batch_obs_st, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout()
             # batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens, batch_ghosts = self.rollout()

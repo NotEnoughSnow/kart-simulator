@@ -98,6 +98,7 @@ class MapGenerator(abs_map):
         self.space = space
 
         self.wc = world_center.copy()
+        self.initial_pos = self.wc
 
         self.create_cubes()
 
@@ -214,10 +215,10 @@ class MapGenerator(abs_map):
         # Return player's starting angle
         return directions, player_angle, random_position
 
-    def reset(self, playerShape):
+    def reset(self, playerShapes):
 
         for item in self.space.shapes:
-            if item != playerShape:
+            if item not in playerShapes:
                 self.space.remove(item)
 
         directions, angle, position = self.generate_random_direction()

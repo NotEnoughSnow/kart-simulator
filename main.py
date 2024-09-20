@@ -62,33 +62,32 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
         player_moved = False  # Reset flag at the start of each episode
 
         expert_episode = []
+        print("---------------------------------------------")
 
         while not terminated and not truncated:
-            action = torch.zeros(2)
+            action = 0
+
 
             keys = pygame.key.get_pressed()
 
             if env.metadata["name"] == "kart2D simple_env":
-
                 if keys[pygame.K_w]:
-                    action[0] = -1
+                    action = 1
                 if keys[pygame.K_s]:
-                    action[0] = +1
-                if keys[pygame.K_d]:
-                    action[1] = +1
+                    action = 2
                 if keys[pygame.K_a]:
-                    action[1] = -1
+                    action = 3
+                if keys[pygame.K_d]:
+                    action = 4
             else:
                 if keys[pygame.K_w]:
-                    action[1] = 1
+                    action = 1
                 if keys[pygame.K_SPACE]:
-                    action[1] = -1
-                if keys[pygame.K_d]:
-                    action[0] = 1
+                    action = 2
                 if keys[pygame.K_a]:
-                    action[0] = -1
-
-
+                    action = 3
+                if keys[pygame.K_d]:
+                    action = 4
 
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
@@ -98,26 +97,24 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
             total_reward += reward
 
             # Check if the player has moved
-            if not player_moved and not np.all(action.numpy() == 0):
+            if not player_moved and not action == 0:
                 player_moved = True
 
             # print(obs)
 
             # Append timestep data only if player has moved
             if player_moved:
-                expert_episode.append([steps, obs, action.numpy(), reward, terminated, truncated])
+                expert_episode.append([steps, obs, action, reward, terminated, truncated])
                 steps += 1
 
         if truncated:
-            print("hit a wall")
+            print("hit a wall, ")
             print(f"total rewards this ep:{total_reward}")
 
         if terminated:
-            print("finished")
+            print("finished, ")
             print(f"total rewards this ep:{total_reward}")
             # TODO times
-
-        print(steps)
 
         # wrap expert data and steps in expert episode
         expert_ep_lens.append(steps)
@@ -183,25 +180,24 @@ def write_file(expert_run, expert_ep_lens, info, filename):
 
 
 def save_train_data(env, save_dir, experiment_name, ver_number, alg, total_timesteps, hyperparameters):
-
     # env name
     # map
     # obs
     # hyperparameters
 
     parameters = {
-        "type" : experiment_name,
-        "version" : ver_number,
-        "algorithm" : alg,
-        "env name" : env.metadata.get("name", "None"),
-        "evn track" : env.metadata.get("track", "None"),
-        "obs types" : env.metadata.get("obs_seq", "None"),
-        "total timesteps" : total_timesteps,
-        "hyperparameters" : hyperparameters,
+        "type": experiment_name,
+        "version": ver_number,
+        "algorithm": alg,
+        "env name": env.metadata.get("name", "None"),
+        "evn track": env.metadata.get("track", "None"),
+        "obs types": env.metadata.get("obs_seq", "None"),
+        "total timesteps": total_timesteps,
+        "hyperparameters": hyperparameters,
     }
 
-    save_dir = save_dir+f"{experiment_name}/"
-    yaml_file_path = save_dir+"parameters.yaml"
+    save_dir = save_dir + f"{experiment_name}/"
+    yaml_file_path = save_dir + "parameters.yaml"
 
     if not os.path.exists(yaml_file_path):
         with open(yaml_file_path, 'w') as file:
@@ -227,7 +223,7 @@ def train(env,
     actor_model = ''
     critic_model = ''
 
-    base_dir = save_dir+f"{alg}/"
+    base_dir = save_dir + f"{alg}/"
 
     if (record_output or record_ghost or save_model) is True:
         save_path, ver_number = utils.get_next_run_directory(base_dir, experiment_name)
@@ -235,7 +231,6 @@ def train(env,
     else:
         train_config = None
         save_path = None
-
 
     if alg == "default":
 
@@ -276,6 +271,7 @@ def train(env,
                     record_wandb=record_wandb,
                     train_config=train_config,
                     **hyperparameters)
+
 
         # Tries to load in an existing actor/critic model to continue training on
         if actor_model != '' and critic_model != '':
@@ -335,7 +331,7 @@ def test(env, alg, type, deterministic, actor_model):
         if continuous:
             act_dim = env.action_space.shape[0]
         else:
-            act_dim  = env.action_space.n
+            act_dim = env.action_space.n
 
         # Build our policy the same way we build our actor model in PPO
         # policy = ActorNetwork(obs_dim, act_dim)
@@ -361,9 +357,11 @@ def replay(replay_dir, mode):
     # replay = ReplayGhosts(replay_dir, replay_ep)
     replay = ReplayGhosts(replay_dir, mode)
 
+
 def make_graphs(graph_file):
     # Extract absolute file paths
     graph_generator.graph_data(graph_file)
+
 
 def optimize():
     # TODO
@@ -371,7 +369,6 @@ def optimize():
 
 
 def main(args):
-
     # timesteps_per_batch : n_steps
     # num_minibatches : batch_size
     # n_updates_per_iteration : n_epochs
@@ -393,8 +390,8 @@ def main(args):
         'target_kl': None,
         'num_minibatches': 64,
         'gae_lambda': 0.98,
+        'verbose': 2,
     }
-
 
     # environment selection
     # simple_env has free movement
@@ -409,19 +406,67 @@ def main(args):
     # VELOCITY : single value speed of the agent
     # LIDAR : vision rays
     # LIDAR_CONV : vision rays with conv1d
-    obs = [obs_types.DISTANCE,
+
+    # obs_types.DISTANCE,
+    # obs_types.TARGET_ANGLE,
+    obs = [obs_types.POSITION,
+           obs_types.VELOCITY,
+           obs_types.DISTANCE,
            obs_types.TARGET_ANGLE,
            ]
 
     # keyword arguments for the environment
     # reset_time : num timesteps after which the episode will terminate
+    # track_type :
+    #   boxes - a simple S_curve, loaded with a map loader
+    #   generator - generates a simple corner around the player, changes every reset
+    #   simple_goal - randomly or statically spawns a random goal with no obstacles, changes every reset
+    # player args :
+    #   rad_velocity - ...
+    #   0.1 rad/frames, 2pi in 1.281 sec
+    #   example : 0.0379 rad/frames, for frames = 48
+    #   or        1.82 rad/sec
+    #
+    #   max_velocity - ...
+    #   1 meter in 4.546 sec or 0.22 meters in 1 sec
+    #   at 0.22 m/s, the bot should walk 1 meter in 4.546 seconds
+    #   MAX_VELOCITY = 4 * 0.22 * PPM
+
+    track_args = {
+        "boxes_file": "boxes.txt",
+        "sectors_file": "sectors_box.txt",
+
+        "corridor_size": 50,
+
+        "spawn_range": 400,
+        "fixed_goal": [200, -200],
+
+        "initial_pos": [300, 450]
+    }
+
+    simple_env_player_args = {
+        "player_acc_rate": 15,
+        "max_velocity": 2,
+        "bot_size": 0.192,
+        "bot_weight": 1,
+    }
+    base_env_player_args = {
+        "player_acc_rate": 1,
+        "player_break_rate": 2,
+        "max_velocity": 2,
+        "rad_velocity": 2 * 2.84,
+        "bot_size": 0.192,
+        "bot_weight": 1,
+    }
+
+
     env_args = {
         "obs_seq": obs,
         "reset_time": 2000,
+        "track_type": "boxes",
+        "track_args": track_args,
+        "player_args": simple_env_player_args if env_fn == simple_env else base_env_player_args,
     }
-
-    # Track selection
-    # TODO track
 
     # Parameters for training
     # total_timesteps : total number of training timesteps
@@ -431,53 +476,51 @@ def main(args):
     # iteration_type : mul for default mode, one to run a single iteration
     # alg : default, baselines, snn
     train_parameters = {
-        "total_timesteps": 5000,
+        "total_timesteps": 1000,
         "record_output": False,
         "record_ghost": False,
         "save_model": False,
         "record_wandb": False,
         "iteration_type": "mul",
-        "alg": "default",
+        "alg": "snn",
     }
 
     # Save parameters
     # experiment_name : change to test out different conditions
-    experiment_name = "LL5"
+    experiment_name = "RE2"
     save_dir = "./saves/"
 
     # Parameters for testing
     # deterministic : deterministic evaluation value (for stable baselines)
     deterministic = False
 
-
     # Parameters for imitation learning
     # record_expert_data : to record data for imitation learning
     # expert_ep_count : number of episodes to record
-    record_expert_data = True
+    record_expert_data = False
     expert_ep_count = 1
     player_name = "Amin"
 
     # Parameters for replays
-    replay_files = ["saves/default/B2/ver_1/ghost.hdf5"]
-    mode = "batch"
+    replay_files = ["saves/default/RE2/ver_1/ghost.hdf5", "saves/default/RE1/ver_1/ghost.hdf5"]
+    mode = "all"
 
     # parameters for making graphs
     graph_file = "saves/default/LL3/ver_1/graph_data.txt"
 
-
     # Load from YAML
-    #with open(yaml_file_path, 'r') as file:
+    # with open(yaml_file_path, 'r') as file:
     #    loaded_parameters_yaml = yaml.load(file, Loader=yaml.FullLoader)
 
-    #print(loaded_parameters_yaml)
-
-
+    # print(loaded_parameters_yaml)
 
     if args.mode == "play":
-        env = gym.make('LunarLander-v2')
 
-        #env = env_fn.KartSim(render_mode="human", train=False, **env_args)
-        play(env=env, save_dir=save_dir, player_name=player_name, record=record_expert_data,
+        env = env_fn.KartSim(render_mode="human", train=False, **env_args)
+        play(env=env,
+             save_dir=save_dir,
+             player_name=player_name,
+             record=record_expert_data,
              expert_ep_count=expert_ep_count)
 
     if args.mode == "train":
