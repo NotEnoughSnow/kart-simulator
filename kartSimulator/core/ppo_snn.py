@@ -1,5 +1,6 @@
 import time
 import sys
+import os
 
 import gymnasium as gym
 import numpy as np
@@ -9,6 +10,7 @@ from torch.distributions import MultivariateNormal, Categorical
 from torch.optim.adam import Adam
 from torch.utils.tensorboard import SummaryWriter
 import kartSimulator.core.snn_utils as SNN_utils
+from stable_baselines3.common.evaluation import evaluate_policy  # For evaluating the model
 
 import h5py
 
@@ -24,22 +26,34 @@ from kartSimulator.core.snn_network_small import SNN_small
 
 class PPO_SNN:
 
-    def __init__(self, env, record_ghost, save_model, record_output, save_dir, record_wandb, train_config, **hyperparameters):
+    def __init__(self,
+                 env,
+                 record_ghost,
+                 save_model,
+                 record_output,
+                 save_dir,
+                 record_wandb,
+                 train_config,
+                 **hyperparameters):
+
+        self.pid = os.getpid()
+        # Initialize hyperparameters for training with PPO
+        self._init_hyperparameters(hyperparameters)
 
         # Make sure the environment is compatible with our code
         assert (type(env.observation_space) == gym.spaces.Box)
 
         # Determine if the action space is continuous or discrete
         if isinstance(env.action_space, gym.spaces.Box):
-            print("Using a continuous action space")
+            if self.verbose == 2:
+                print("Using a continuous action space")
             self.continuous = True
         elif isinstance(env.action_space, gym.spaces.Discrete):
-            print("Using a discrete action space")
+            if self.verbose == 2:
+                print("Using a discrete action space")
             self.continuous = False
         else:
             raise NotImplementedError("The action space type is not supported.")
-
-        print(train_config)
 
         self.record_wandb = record_wandb
         self.record_output = record_output
@@ -65,11 +79,11 @@ class PPO_SNN:
             sys.stdout = Tee(sys.stdout, self.output_file)
 
         if (record_ghost or record_output or save_model) is True:
-            print(f"Saving to '{self.run_directory}' after training")
+            if self.verbose == 0:
+                pass
+            else:
+                print(f"Saving to '{self.run_directory}' after training")
 
-
-        # Initialize hyperparameters for training with PPO
-        self._init_hyperparameters(hyperparameters)
 
         self.env = env
         self.obs_dim = env.observation_space.shape[0]
@@ -83,14 +97,17 @@ class PPO_SNN:
         self.threshold = torch.tensor([1.5, 1.5, 5, 5, 3.14, 5, 1, 1])
         self.shift = np.array([1.5, 1.5, 5, 5, 3.14, 5, 0, 0])
 
-        print(f"obs shape :{self.act_dim} \n"
-              f"action shape :{self.act_dim}")
+        if self.verbose == 0:
+            pass
+        elif self.verbose == 1:
+            pass
+        elif self.verbose == 2:
+            print(f"obs shape :{self.act_dim} \n"
+                  f"action shape :{self.act_dim}")
 
         # Initialize actor and critic networks
         # self.actor = ActorNetwork(self.obs_dim, self.act_dim)
         # self.critic = CriticNetwork(self.obs_dim, 1)
-
-        print(self.num_steps)
 
         self.actor = SNN_small(self.obs_dim, self.act_dim, self.num_steps)
         self.critic = SNN_small(self.obs_dim, 1, self.num_steps)
@@ -159,9 +176,12 @@ class PPO_SNN:
 
     def learn(self, total_timesteps):
 
-        print(
-            f"Learning... Running {self.timesteps_per_batch} timesteps per batch for a total of {total_timesteps} timesteps",
-            end='')
+        if self.verbose == 0:
+            pass
+        elif self.verbose == 1:
+            pass
+        elif self.verbose == 2:
+            print(f"Learning... Running {self.timesteps_per_batch} timesteps per batch for a total of {total_timesteps} timesteps")
 
         t_so_far = 0  # Timesteps simulated so far
         i_so_far = 0  # Iterations ran so far
@@ -340,8 +360,13 @@ class PPO_SNN:
             avg_loss = sum(loss_arr) / len(loss_arr)
             self.logger['actor_losses'].append(avg_loss)
 
-            # Print a summary of our training so far
-            self._log_summary()
+            if self.verbose == 0:
+                pass
+            elif self.verbose == 1:
+                pass
+            elif self.verbose == 2:
+                # Print a summary of our training so far
+                self._log_summary()
 
             # Save our model if it's time
             if self.save_model:
@@ -364,12 +389,18 @@ class PPO_SNN:
                             batches=total_ghost_ep,
                             batch_lengths=total_ghost_ts, )
 
-        print("Finished successfully!")
+        if self.verbose == 0:
+            pass
+        elif self.verbose == 1:
+            print(f"{self.pid} Finished successfully!")
+        elif self.verbose == 2:
+            print("Finished successfully!")
 
         if self.record_wandb:
             wandb.finish()
 
-        self.output_file.close()
+        if self.record_output:
+            self.output_file.close()
 
     def calculate_gae(self, rewards, values, dones):
         batch_advantages = []
@@ -646,6 +677,7 @@ class PPO_SNN:
         self.gae_lambda = 0.95
         self.decode_type = "lrl"
         self.num_steps = 50
+        self.verbose = 2
 
         # Miscellaneous parameters
         self.render_every_i = 10  # Only render every n iterations
@@ -745,6 +777,11 @@ class PPO_SNN:
 
                     # Create dataset for actions within the episode
                     ep_group.create_dataset('actions', data=ep_data)
+
+    def get_actor(self):
+
+        return self.actor, self.actor.state_dict()
+
 
 
 class Tee(object):
