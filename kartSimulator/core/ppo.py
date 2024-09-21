@@ -98,7 +98,7 @@ class PPO:
         elif self.verbose == 1:
             pass
         elif self.verbose == 2:
-            print(f"obs shape :{self.act_dim} \n"
+            print(f"obs shape :{self.obs_dim} \n"
                   f"action shape :{self.act_dim}")
 
         # Initialize actor and critic networks
@@ -338,6 +338,8 @@ class PPO:
         if self.record_output:
             self.output_file.close()
 
+        return self.env.num_finishes, self.env.highest_goal
+
     def calculate_gae(self, rewards, values, dones):
         batch_advantages = []
         for ep_rews, ep_vals, ep_dones in zip(rewards, values, dones):
@@ -359,10 +361,6 @@ class PPO:
         return torch.tensor(batch_advantages, dtype=torch.float)
 
     def rollout(self):
-        try:
-            pickle.dumps(self)
-        except Exception as e:
-            print(f"Cannot pickle: {e}")
         batch_obs = []
         batch_acts = []
         batch_log_probs = []
@@ -415,6 +413,12 @@ class PPO:
                 # print("position", info["position"])
 
                 ghost_ep.append(info.get("position", [0,0]))
+
+                if info.get("highest", None) is not None:
+                    if self.record_wandb:
+                        wandb.log({
+                            "race/highest_score": info["highest"],
+                        }, step=self.logger['t_so_far'])
 
                 # TODO simplify batch actions and ghost data
                 # Track recent reward, action, and action log probability
@@ -636,6 +640,11 @@ class PPO:
         self.logger['batch_lens'] = []
         self.logger['batch_rews'] = []
         self.logger['actor_losses'] = []
+
+
+    def get_actor(self):
+
+        return self.actor, self.actor.state_dict()
 
     def save_ghost(self, env, batches, batch_lengths):
         # Saving data to HDF5

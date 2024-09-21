@@ -62,7 +62,7 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
         player_moved = False  # Reset flag at the start of each episode
 
         expert_episode = []
-        print("---------------------------------------------")
+        #print("---------------------------------------------")
 
         while not terminated and not truncated:
             action = 0
@@ -93,8 +93,11 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                     env.reset()
 
-            obs, reward, terminated, truncated, _ = env.step(action)
+            obs, reward, terminated, truncated, info = env.step(action)
             total_reward += reward
+
+            if info.get("highest", None) is not None:
+                print(info["highest"])
 
             # Check if the player has moved
             if not player_moved and not action == 0:
@@ -108,13 +111,15 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
                 steps += 1
 
         if truncated:
-            print("hit a wall, ")
-            print(f"total rewards this ep:{total_reward}")
+            #print("hit a wall, ")
+            #print(f"total rewards this ep:{total_reward}")
+            pass
 
         if terminated:
-            print("finished, ")
-            print(f"total rewards this ep:{total_reward}")
+            #print("finished, ")
+            #print(f"total rewards this ep:{total_reward}")
             # TODO times
+            pass
 
         # wrap expert data and steps in expert episode
         expert_ep_lens.append(steps)
@@ -409,7 +414,7 @@ def main(args):
 
     # obs_types.DISTANCE,
     # obs_types.TARGET_ANGLE,
-    obs = [obs_types.POSITION,
+    obs = [obs_types.LIDAR,
            obs_types.VELOCITY,
            obs_types.DISTANCE,
            obs_types.TARGET_ANGLE,
@@ -476,18 +481,18 @@ def main(args):
     # iteration_type : mul for default mode, one to run a single iteration
     # alg : default, baselines, snn
     train_parameters = {
-        "total_timesteps": 1000,
-        "record_output": False,
-        "record_ghost": False,
-        "save_model": False,
-        "record_wandb": False,
+        "total_timesteps": 1000000,
+        "record_output": True,
+        "record_ghost": True,
+        "save_model": True,
+        "record_wandb": True,
         "iteration_type": "mul",
-        "alg": "snn",
+        "alg": "default",
     }
 
     # Save parameters
     # experiment_name : change to test out different conditions
-    experiment_name = "RE2"
+    experiment_name = "RE3"
     save_dir = "./saves/"
 
     # Parameters for testing
@@ -502,11 +507,11 @@ def main(args):
     player_name = "Amin"
 
     # Parameters for replays
-    replay_files = ["saves/default/RE2/ver_1/ghost.hdf5", "saves/default/RE1/ver_1/ghost.hdf5"]
+    replay_files = ["saves/default/RE3/ver_2/ghost.hdf5"]
     mode = "all"
 
     # parameters for making graphs
-    graph_file = "saves/default/LL3/ver_1/graph_data.txt"
+    graph_file = "saves/default/LL3/ver_2/graph_data.txt"
 
     # Load from YAML
     # with open(yaml_file_path, 'r') as file:
@@ -524,8 +529,8 @@ def main(args):
              expert_ep_count=expert_ep_count)
 
     if args.mode == "train":
-        env = gym.make('LunarLander-v2')
-        #env = env_fn.KartSim(render_mode=None, train=True, **env_args)
+        #env = gym.make('LunarLander-v2')
+        env = env_fn.KartSim(render_mode=None, train=True, **env_args)
         train(env=env,
               **train_parameters,
               experiment_name=experiment_name,
@@ -563,6 +568,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, test, graph, replay
 
-    args.mode = "train"
+    args.mode = "replay"
 
     main(args)

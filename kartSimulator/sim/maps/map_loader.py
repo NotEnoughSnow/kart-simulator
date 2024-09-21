@@ -6,6 +6,9 @@ import kartSimulator.sim.utils as utils
 class MapLoader(abs_map):
 
     def __init__(self, space,  track_file, sector_file, initial_pos):
+        self.missing_walls_flag = True
+        self.missing_sectors_flag = True
+
         self.space = space
         self.sector_name = sector_file
         self.track_name = track_file
@@ -35,6 +38,8 @@ class MapLoader(abs_map):
             line.collision_type = 1
             line.filter = pymunk.ShapeFilter(categories=0x1)
 
+        self.missing_walls_flag = False
+
         return static_lines
 
     def create_goals(self, mode):
@@ -59,5 +64,7 @@ class MapLoader(abs_map):
         for i in range(len(static_sector_lines)):
             static_sector_lines[i].collision_type = i + 2
             static_sector_lines[i].filter = pymunk.ShapeFilter(categories=0x10)
+
+        self.missing_sectors_flag = False
 
         return static_sector_lines, sector_midpoints

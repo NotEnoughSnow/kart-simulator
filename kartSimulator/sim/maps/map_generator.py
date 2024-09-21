@@ -94,6 +94,10 @@ class MapGenerator(abs_map):
 
     def __init__(self, space, world_center, corr_size):
 
+        self.missing_walls_flag = True
+        self.missing_sectors_flag = True
+
+
         self.corridor_size = corr_size
         self.space = space
 
@@ -225,6 +229,9 @@ class MapGenerator(abs_map):
 
         self.directions = directions
 
+        self.missing_walls_flag = True
+        self.missing_sectors_flag = True
+
         return directions, angle, position
 
     def create_walls(self):
@@ -239,6 +246,8 @@ class MapGenerator(abs_map):
             shape = pymunk.Segment(static_body, wall[0], wall[1], 0.0)
             #shape.color = (255, 255, 255, 255)
             static_lines.append(shape)
+
+        self.missing_walls_flag = False
 
         return static_lines
 
@@ -276,6 +285,9 @@ class MapGenerator(abs_map):
         for i in range(len(static_sector_lines)):
             static_sector_lines[i].collision_type = i + 2
             static_sector_lines[i].filter = pymunk.ShapeFilter(categories=0x10)
+
+        self.missing_sectors_flag = False
+
 
 
         return static_sector_lines, sector_midpoints
