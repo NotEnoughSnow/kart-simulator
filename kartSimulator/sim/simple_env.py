@@ -184,6 +184,9 @@ class KartSim(gym.Env):
 
         self.info = {}
 
+        self.highest_goal = 0
+        self.num_finishes = 0
+
         self.continuous = False
 
     def reset(
@@ -203,6 +206,8 @@ class KartSim(gym.Env):
         self._init_player(position)
 
         observation = self.observation()
+
+        #print("huh ", len(self._space.shapes))
 
         # return self.step(None)[0], {}
         return observation, {}
@@ -279,6 +284,8 @@ class KartSim(gym.Env):
 
         self.info["fps"] = self._clock.get_fps()
         self.info["position"] = self._playerBody.position
+        self.info["highest"] = self.highest_goal
+
 
         return state, step_reward, terminated, truncated, self.info
 
@@ -317,6 +324,10 @@ class KartSim(gym.Env):
             initial_potential = self.potential_curve(self.distance(self.goal_pos, pstart))
             final_potential = self.potential_curve(self.distance(self.goal_pos, pend))
             self.next_target_rew_act = final_potential - initial_potential
+
+            # If the agent is moving away (i.e., next_target_rew_act < 0), apply double the penalty
+            if self.next_target_rew_act < 0:
+                self.next_target_rew_act *= 2  # Double the penalty for moving away
 
             #initial_potential = self.potential_curve(self.distance(goal, pstart))
 
@@ -451,8 +462,10 @@ class KartSim(gym.Env):
         self._num_sectors = num_sectors
 
     def _init_world(self):
-        self._add_walls()
-        self._add_sectors()
+        if self.map.missing_walls_flag:
+            self._add_walls()
+        if self.map.missing_sectors_flag:
+            self._add_sectors()
         self.out_of_track = False
 
     def _init_player(self, position):
@@ -570,9 +583,11 @@ class KartSim(gym.Env):
         # sets the next milestone name, limited by number of sectors
         if self._num_sectors >= data["number"] + 1:
             self.next_sector_name = "sector " + str(data["number"] + 1)
+            if data["number"] > self.highest_goal:
+                self.highest_goal = data["number"]
 
         if self.sector_info.get(name)[0] == 0:
-            print("visited " + name + " for the first time")
+            #print("visited " + name + " for the first time")
             time_diff = self._current_episode_time - self._last_sector_time
             self.sector_info[name][0] = time_diff
             self._last_sector_time = self._current_episode_time
@@ -581,6 +596,9 @@ class KartSim(gym.Env):
             #self.reward += self._calculate_reward(time_diff)
 
             if data["number"] == self._num_sectors:
+                print("reached goal!")
+                self.num_finishes += 1
+                self.highest_goal = self._num_sectors
                 self.finish = True
 
         return True

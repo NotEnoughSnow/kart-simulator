@@ -3,15 +3,16 @@ import os
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 import optuna
-import gymnasium as gym
-from kartSimulator.core.ppo_snn import PPO_SNN
+
+from kartSimulator.core.ppo import PPO
 import numpy as np
-import kartSimulator.core.snn_utils as SNN_utils
-import torch
+
+from kartSimulator.sim.simple_env import KartSim
+import kartSimulator.sim.observation_types as obs_types
 
 from torch.distributions import Categorical
 
-def eval_policy(actor, env, n_eval_episodes=5, num_steps = 32, threshold = None, shift=None):
+def eval_policy(actor, env, n_eval_episodes=5):
     """
     Evaluates the given actor (policy) in the environment for a fixed number of episodes.
 
@@ -31,12 +32,7 @@ def eval_policy(actor, env, n_eval_episodes=5, num_steps = 32, threshold = None,
         while not (terminated or truncated):
             # Get action from the actor (policy network)
 
-            obs_st = SNN_utils.generate_spike_trains(obs,
-                                                     num_steps=num_steps,
-                                                     threshold=threshold,
-                                                     shift=shift)
-
-            logits, _ = actor.forward(obs_st)  # Assuming 'forward' method in actor handles the action logic
+            logits = actor.forward(obs)  # Assuming 'forward' method in actor handles the action logic
 
 
             dist = Categorical(logits=logits)
@@ -54,13 +50,14 @@ def eval_policy(actor, env, n_eval_episodes=5, num_steps = 32, threshold = None,
 
 # Objective function for Optuna
 def objective(trial):
+
     hyperparameters = {
         'timesteps_per_batch': trial.suggest_int('timesteps_per_batch', 512, 2048, step=512),
         'max_timesteps_per_episode': trial.suggest_int('max_timesteps_per_episode', 500, 1000),
         'gamma': trial.suggest_float('gamma', 0.95, 0.9999, log=True),
         'ent_coef': trial.suggest_float('ent_coef', 0.001, 0.1, log=True),
         'n_updates_per_iteration': trial.suggest_int('n_updates_per_iteration', 1, 10),
-        'lr': trial.suggest_float('lr', 5e-4, 1e-2, log=True),
+        'lr': trial.suggest_float('lr', 1e-5, 1e-2, log=True),
         'clip': trial.suggest_float('clip', 0.1, 0.3),
         'max_grad_norm': 0.5,  # Fixed
         'render_every_i': 10,  # Fixed
@@ -70,56 +67,86 @@ def objective(trial):
         'verbose': 1,  # Fixed
     }
 
-    # SNN-specific hyperparameters
-    SNN_hyperparameters = {
-        "num_steps": 32,  # Fixed
+    obs = [obs_types.LIDAR,
+           obs_types.VELOCITY,
+           obs_types.DISTANCE,
+           obs_types.TARGET_ANGLE,
+           ]
+
+    track_args = {
+        "boxes_file": "boxes.txt",
+        "sectors_file": "sectors_box.txt",
+
+        "corridor_size": 50,
+
+        "spawn_range": 400,
+        "fixed_goal": [200, -200],
+
+        "initial_pos": [300, 450]
     }
 
-    threshold = torch.tensor([1.5, 1.5, 5, 5, 3.14, 5, 1, 1])
-    shift = np.array([1.5, 1.5, 5, 5, 3.14, 5, 0, 0])
+    simple_env_player_args = {
+        "player_acc_rate": 15,
+        "max_velocity": 2,
+        "bot_size": 0.192,
+        "bot_weight": 1,
+    }
+    base_env_player_args = {
+        "player_acc_rate": 1,
+        "player_break_rate": 2,
+        "max_velocity": 2,
+        "rad_velocity": 2 * 2.84,
+        "bot_size": 0.192,
+        "bot_weight": 1,
+    }
 
-    env = gym.make('LunarLander-v2')
-    total_timesteps = 100000
+    env_args = {
+        "obs_seq": obs,
+        "reset_time": 2000,
+        "track_type": "boxes",
+        "track_args": track_args,
+        #"player_args": simple_env_player_args if env_fn == simple_env else base_env_player_args,
+        "player_args": simple_env_player_args,
 
-    model = PPO_SNN(env=env,
+    }
+
+    env = KartSim(render_mode=None, train=False, **env_args)
+
+    total_timesteps = 300000
+
+    model = PPO(env=env,
                     save_model=False,
                     record_ghost=False,
                     record_output=False,
                     save_dir=False,
                     record_wandb=False,
                     train_config=None,
-                    **SNN_hyperparameters,
                     **hyperparameters)
 
-    # Train the model
-    model.learn(total_timesteps=total_timesteps)
+    num_finishes, highest = model.learn(total_timesteps=total_timesteps)
 
     actor, actor_state_dict = model.get_actor()
 
-    # Evaluate the model
-    mean_reward = eval_policy(actor,
-                              env,
-                              n_eval_episodes=15,
-                              num_steps=SNN_hyperparameters["num_steps"],
-                              threshold=threshold,
-                              shift=shift)
 
+    mean_reward = eval_policy(actor, env, n_eval_episodes=15)
 
-    return mean_reward  # Metric for optuna
+    result = num_finishes*1000 + highest*100 + mean_reward
+
+    return result  # Metric for optuna
 
 
 # Function to initialize the study and create the database
 def initialize_study():
-    study = optuna.create_study(direction="maximize", storage="sqlite:///./saves/hp_opt/optuna_snn_study.db",
-                                study_name="snn_optimization", load_if_exists=True)
+    study = optuna.create_study(direction="maximize", storage="sqlite:///./saves/hp_opt/optuna_racing_lidar_study.db",
+                                study_name="racing_lidar_optimization", load_if_exists=True)
     print("Database and study initialized!")
 
 
 # Run the study in parallel processes
 def run_study():
-    study = optuna.create_study(direction="maximize", storage="sqlite:///./saves/hp_opt/optuna_snn_study.db",
-                                study_name="snn_optimization", load_if_exists=True)
-    study.optimize(objective, n_trials=3)
+    study = optuna.create_study(direction="maximize", storage="sqlite:///./saves/hp_opt/optuna_racing_lidar_study.db",
+                                study_name="racing_lidar_optimization", load_if_exists=True)
+    study.optimize(objective, n_trials=20)
 
 
 if __name__ == "__main__":
@@ -143,5 +170,5 @@ if __name__ == "__main__":
         p.join()
 
     # Load the study to retrieve the best result
-    study = optuna.load_study(study_name="snn_optimization", storage="sqlite:///./saves/hp_opt/optuna_snn_study.db")
+    study = optuna.load_study(study_name="racing_lidar_optimization", storage="sqlite:///./saves/hp_opt/optuna_racing_lidar_study.db")
     print("Best hyperparameters:", study.best_params)

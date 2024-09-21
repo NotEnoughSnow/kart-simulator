@@ -16,7 +16,6 @@ import h5py
 
 import wandb
 from joblib import Parallel, delayed
-import pickle
 
 from kartSimulator.core.actor_network import ActorNetwork
 from kartSimulator.core.critic_network import CriticNetwork
@@ -104,7 +103,7 @@ class PPO_SNN:
         elif self.verbose == 1:
             pass
         elif self.verbose == 2:
-            print(f"obs shape :{self.act_dim} \n"
+            print(f"obs shape :{self.obs_dim} \n"
                   f"action shape :{self.act_dim}")
 
         # Initialize actor and critic networks
