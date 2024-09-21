@@ -1,4 +1,5 @@
 import os
+
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 import gymnasium as gym
@@ -62,11 +63,10 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
         player_moved = False  # Reset flag at the start of each episode
 
         expert_episode = []
-        #print("---------------------------------------------")
+        # print("---------------------------------------------")
 
         while not terminated and not truncated:
             action = 0
-
 
             keys = pygame.key.get_pressed()
 
@@ -111,13 +111,13 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
                 steps += 1
 
         if truncated:
-            #print("hit a wall, ")
-            #print(f"total rewards this ep:{total_reward}")
+            # print("hit a wall, ")
+            # print(f"total rewards this ep:{total_reward}")
             pass
 
         if terminated:
-            #print("finished, ")
-            #print(f"total rewards this ep:{total_reward}")
+            # print("finished, ")
+            # print(f"total rewards this ep:{total_reward}")
             # TODO times
             pass
 
@@ -232,7 +232,8 @@ def train(env,
 
     if (record_output or record_ghost or save_model) is True:
         save_path, ver_number = utils.get_next_run_directory(base_dir, experiment_name)
-        train_config = save_train_data(env, base_dir, experiment_name, ver_number, alg, total_timesteps, hyperparameters)
+        train_config = save_train_data(env, base_dir, experiment_name, ver_number, alg, total_timesteps,
+                                       hyperparameters)
     else:
         train_config = None
         save_path = None
@@ -269,14 +270,13 @@ def train(env,
     if alg == "snn":
 
         model = PPO_SNN(env=env,
-                    save_model=save_model,
-                    record_ghost=record_ghost,
-                    record_output=record_output,
-                    save_dir=save_path,
-                    record_wandb=record_wandb,
-                    train_config=train_config,
-                    **hyperparameters)
-
+                        save_model=save_model,
+                        record_ghost=record_ghost,
+                        record_output=record_output,
+                        save_dir=save_path,
+                        record_wandb=record_wandb,
+                        train_config=train_config,
+                        **hyperparameters)
 
         # Tries to load in an existing actor/critic model to continue training on
         if actor_model != '' and critic_model != '':
@@ -382,6 +382,7 @@ def main(args):
     # gae-lambda : gae_lambda
     # render_every_i : stats_window_size
 
+    '''
     hyperparameters = {
         'timesteps_per_batch': 1024,
         'max_timesteps_per_episode': 700,
@@ -395,6 +396,22 @@ def main(args):
         'target_kl': None,
         'num_minibatches': 64,
         'gae_lambda': 0.98,
+        'verbose': 2,
+    }'''
+
+    hyperparameters = {
+        'timesteps_per_batch': 1536,
+        'max_timesteps_per_episode': 532,
+        'gamma': 0.953967047499649,
+        'ent_coef': 0.025207482956178077,
+        'n_updates_per_iteration': 4,
+        'lr': 0.0007110770474581087,
+        'clip': 0.13188007179986103,
+        'max_grad_norm': 0.5,
+        'render_every_i': 10,
+        'target_kl': None,
+        'num_minibatches': 32,
+        'gae_lambda': 0.9780986230450706,
         'verbose': 2,
     }
 
@@ -464,7 +481,6 @@ def main(args):
         "bot_weight": 1,
     }
 
-
     env_args = {
         "obs_seq": obs,
         "reset_time": 2000,
@@ -481,7 +497,7 @@ def main(args):
     # iteration_type : mul for default mode, one to run a single iteration
     # alg : default, baselines, snn
     train_parameters = {
-        "total_timesteps": 1000000,
+        "total_timesteps": 100000,
         "record_output": True,
         "record_ghost": True,
         "save_model": True,
@@ -492,7 +508,7 @@ def main(args):
 
     # Save parameters
     # experiment_name : change to test out different conditions
-    experiment_name = "RE3"
+    experiment_name = "RE4"
     save_dir = "./saves/"
 
     # Parameters for testing
@@ -520,7 +536,6 @@ def main(args):
     # print(loaded_parameters_yaml)
 
     if args.mode == "play":
-
         env = env_fn.KartSim(render_mode="human", train=False, **env_args)
         play(env=env,
              save_dir=save_dir,
@@ -529,7 +544,7 @@ def main(args):
              expert_ep_count=expert_ep_count)
 
     if args.mode == "train":
-        #env = gym.make('LunarLander-v2')
+        # env = gym.make('LunarLander-v2')
         env = env_fn.KartSim(render_mode=None, train=True, **env_args)
         train(env=env,
               **train_parameters,
@@ -539,7 +554,7 @@ def main(args):
               )
 
     if args.mode == "test":
-        #env = env_fn.KartSim(render_mode="human", train=False, **env_args)
+        # env = env_fn.KartSim(render_mode="human", train=False, **env_args)
         env = gym.make('LunarLander-v2', render_mode="human")
 
         test(env,
