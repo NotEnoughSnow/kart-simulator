@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from torch.distributions import Categorical
-from kartSimulator.sim.simple_env import KartSim
+from kartSimulator.sim.base_env import KartSim
 import kartSimulator.sim.observation_types as obs_types
 
 def eval_policy(actor, env, n_eval_episodes=5):
@@ -47,6 +47,7 @@ if __name__ == "__main__":
 
     hyperparameters = {
         'timesteps_per_batch': 1024,
+        'max_timesteps_per_episode': 700,
         'gamma': 0.999,
         'ent_coef': 0.01,
         'n_updates_per_iteration': 4,
@@ -63,6 +64,7 @@ if __name__ == "__main__":
     obs = [obs_types.LIDAR,
            obs_types.VELOCITY,
            obs_types.DISTANCE,
+           obs_types.ROTATION,
            obs_types.TARGET_ANGLE,
            ]
 
@@ -99,7 +101,7 @@ if __name__ == "__main__":
         "track_type": "boxes",
         "track_args": track_args,
         #"player_args": simple_env_player_args if env_fn == simple_env else base_env_player_args,
-        "player_args": simple_env_player_args,
+        "player_args": base_env_player_args,
 
     }
 
@@ -120,9 +122,9 @@ if __name__ == "__main__":
 
     actor, actor_state_dict = model.get_actor()
 
+    print("what")
 
-
-    mean_reward = eval_policy(actor, env, n_eval_episodes=15)
+    mean_reward = eval_policy(actor, env, n_eval_episodes=1)
 
     print(num_finishes)
     print(highest)
