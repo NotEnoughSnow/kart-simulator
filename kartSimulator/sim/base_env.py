@@ -193,6 +193,12 @@ class KartSim(gym.Env):
 
         self.info = {}
 
+        self.highest_goal = 0
+        self.num_finishes = 0
+
+        self.standing_still_timesteps = 0
+        self.velocity_reward = 0
+
         self.continuous = False
 
 
@@ -285,6 +291,7 @@ class KartSim(gym.Env):
         terminated = False
         truncated = False
 
+        self.check_standing_still(20, 200)
 
         if action is not None:
             step_reward, terminated, truncated = self.reward_function(pstart, pend)
@@ -312,10 +319,23 @@ class KartSim(gym.Env):
             self.render(self.render_mode)
 
         self.info["fps"] = self._clock.get_fps()
-
         self.info["position"] = self._playerBody.position
+        self.info["highest"] = self.highest_goal
 
         return state, step_reward, terminated, truncated, self.info
+
+    def check_standing_still(self, threshold=15, max_still_timesteps=200):
+        if np.abs(self.velocity) < threshold:  # Velocity close to zero
+            self.standing_still_timesteps += 1
+        else:
+            self.standing_still_timesteps = 0  # Reset if moving
+
+        # If agent has been still for too long, truncate the episode
+        if self.standing_still_timesteps >= max_still_timesteps:
+            #print("cut")
+            self.out_of_track = True
+            self.standing_still_timesteps = 0
+
 
     def potential_curve(self, x):
         # If x=0, then pot is maximal
@@ -357,6 +377,10 @@ class KartSim(gym.Env):
 
         # penelty for existing
         # self.reward -= 1
+
+        # -0.5 at 0 speed, 1.5 at 100 speed
+        self.velocity_reward = (self.velocity / 100) * 2 - 0.5
+        self.reward += self.velocity_reward
 
         # reward for closing distance to sector medians
         #self.reward += self.next_target_rew
@@ -416,6 +440,7 @@ class KartSim(gym.Env):
         self.ui_manager.add_ui_text("norm dist", self.norm_dist, ".3f")
         self.ui_manager.add_ui_text("total reward", self.reward, ".3f")
         self.ui_manager.add_ui_text("act.rew from target", self.next_target_rew_act, ".3f")
+        self.ui_manager.add_ui_text("vel.rew", self.velocity_reward, ".3f")
         self.ui_manager.add_ui_text("angle to target c", self.angle_to_target_cos, ".3f")
         self.ui_manager.add_ui_text("angle to target s", self.angle_to_target_sin, ".3f")
 
@@ -429,6 +454,10 @@ class KartSim(gym.Env):
 
         self.ui_manager.add_ui_text("norm dist vec x", self.norm_dist_vec[0], ".3f")
         self.ui_manager.add_ui_text("norm dist vec y", self.norm_dist_vec[1], ".3f")
+
+        self.ui_manager.add_ui_text("standing_still_timesteps", self.standing_still_timesteps, ".0f")
+
+
 
 
     def close(self):
@@ -657,6 +686,8 @@ class KartSim(gym.Env):
         # sets the next milestone name, limited by number of sectors
         if self._num_sectors >= data["number"] + 1:
             self.next_sector_name = "sector " + str(data["number"] + 1)
+            if data["number"] > self.highest_goal:
+                self.highest_goal = data["number"]
 
         if self.sector_info.get(name)[0] == 0:
             print("visited " + name + " for the first time")
@@ -669,6 +700,9 @@ class KartSim(gym.Env):
             #print("reward from time :", self._calculate_reward(time_diff))
 
             if data["number"] == self._num_sectors:
+                print("reached goal!")
+                self.num_finishes += 1
+                self.highest_goal = self._num_sectors
                 self.finish = True
 
         return True
@@ -725,9 +759,14 @@ class KartSim(gym.Env):
     def observation_rotation(self):
         # normalize steer_angle
         steer_angle = normalize_vec([self._steerAngle], 0.0142, -0.0142)
+        player_angle = (self._playerBody.angle - ANGLE_DIFF)
+
+        # Calculate the cosine and sine of the player's angle
+        player_angle_cos = math.cos(player_angle)
+        player_angle_sin = math.sin(player_angle)
 
         # assign rotations
-        rotation = [(self._playerBody.angle - ANGLE_DIFF), steer_angle[0]]
+        rotation = [player_angle_cos, player_angle_sin, steer_angle[0]]
 
         return rotation
 

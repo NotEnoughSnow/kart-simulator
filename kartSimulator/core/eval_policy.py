@@ -73,7 +73,7 @@ def rollout(policy, env, render):
             # Query deterministic action from policy and run it
             #action, _ = policy(obs)
 
-            env.render()
+            #env.render()
 
             # Query deterministic action from policy
             if isinstance(env.action_space, gym.spaces.Discrete):
