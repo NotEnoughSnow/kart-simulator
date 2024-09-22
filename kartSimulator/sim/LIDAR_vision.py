@@ -36,7 +36,7 @@ def apply_circularity(data):
 
     return wraparound_data
 
-
+'''
 def draw_rays(window_surface, anchor, contact_point, scalar, draw_contact, draw_lines):
     for point in contact_point:
         point = point[0] * scalar, point[1] * scalar
@@ -48,6 +48,26 @@ def draw_rays(window_surface, anchor, contact_point, scalar, draw_contact, draw_
         # Draw the segment
         if draw_lines and contact_point != (0, 0):
             pygame.draw.line(window_surface, (255, 255, 255), anchor, point + anchor, 1)
+'''
+def draw_rays(window_surface, anchor, contact_point, scalar, draw_contact, draw_lines):
+
+    for i in range(len(contact_point)):
+        point = contact_point[i][0] * scalar, contact_point[i][1] * scalar
+
+        # Draw a red dot at the point of intersection
+        if draw_contact and contact_point != (0, 0):
+            if i == len(contact_point)//2 + 1:
+                pygame.draw.circle(window_surface, (0, 255, 0), point + anchor, 2)
+            else:
+                pygame.draw.circle(window_surface, (255, 0, 0), point + anchor, 2)
+
+        # Draw the segment
+        if draw_lines and contact_point != (0, 0):
+            if i == len(contact_point)//2 + 1:
+                pygame.draw.line(window_surface, (0, 255, 0), anchor, point + anchor, 1)
+            else:
+                pygame.draw.line(window_surface, (255, 255, 255), anchor, point + anchor, 1)
+
 
 def draw_cone(window_surface, body):
 
@@ -94,7 +114,7 @@ def cast_rays(space, body):
     vision_contacts = []
 
     # Draw the rays
-    for i in range(RAY_COUNT):
+    for i in range(RAY_COUNT-1):
         # Calculate the angle of the ray
         angle = start_angle + i * angle_increment
         # Calculate the end point of the ray
@@ -140,7 +160,7 @@ def cast_rays_lengths(space, body):
     vision_lengths = []
 
     # Draw the rays
-    for i in range(RAY_COUNT):
+    for i in range(RAY_COUNT-1):
         # Calculate the angle of the ray
         angle = start_angle + i * angle_increment
         # Calculate the end point of the ray

@@ -96,9 +96,6 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
             obs, reward, terminated, truncated, info = env.step(action)
             total_reward += reward
 
-            if info.get("highest", None) is not None:
-                print(info["highest"])
-
             # Check if the player has moved
             if not player_moved and not action == 0:
                 player_moved = True
@@ -384,8 +381,7 @@ def main(args):
 
     '''
     hyperparameters = {
-        'timesteps_per_batch': 1024,
-        'max_timesteps_per_episode': 700,
+        'timesteps_per_batch': 4024,
         'gamma': 0.999,
         'ent_coef': 0.01,
         'n_updates_per_iteration': 4,
@@ -397,11 +393,10 @@ def main(args):
         'num_minibatches': 64,
         'gae_lambda': 0.98,
         'verbose': 2,
-    }'''
+    }
 
     hyperparameters = {
-        'timesteps_per_batch': 1536,
-        'max_timesteps_per_episode': 532,
+        'timesteps_per_batch': 3536,
         'gamma': 0.953967047499649,
         'ent_coef': 0.025207482956178077,
         'n_updates_per_iteration': 4,
@@ -412,6 +407,22 @@ def main(args):
         'target_kl': None,
         'num_minibatches': 32,
         'gae_lambda': 0.9780986230450706,
+        'verbose': 2,
+    }
+    '''
+
+    hyperparameters = {
+        'timesteps_per_batch': 4096,
+        'gamma': 0.9634703441998751,
+        'ent_coef': 0.004797586864549939,
+        'n_updates_per_iteration': 7,
+        'lr': 0.00017887220926944984,
+        'clip': 0.2,
+        'max_grad_norm': 0.5,
+        'render_every_i': 10,
+        'target_kl': None,
+        'num_minibatches': 80,
+        'gae_lambda': 0.9642298634023644,
         'verbose': 2,
     }
 
@@ -433,6 +444,7 @@ def main(args):
     # obs_types.TARGET_ANGLE,
     obs = [obs_types.LIDAR,
            obs_types.VELOCITY,
+           # obs_types.ROTATION,
            obs_types.DISTANCE,
            obs_types.TARGET_ANGLE,
            ]
@@ -473,7 +485,7 @@ def main(args):
         "bot_weight": 1,
     }
     base_env_player_args = {
-        "player_acc_rate": 1,
+        "player_acc_rate": 2,
         "player_break_rate": 2,
         "max_velocity": 2,
         "rad_velocity": 2 * 2.84,
@@ -483,7 +495,7 @@ def main(args):
 
     env_args = {
         "obs_seq": obs,
-        "reset_time": 2000,
+        "reset_time": 5000,
         "track_type": "boxes",
         "track_args": track_args,
         "player_args": simple_env_player_args if env_fn == simple_env else base_env_player_args,
@@ -497,7 +509,7 @@ def main(args):
     # iteration_type : mul for default mode, one to run a single iteration
     # alg : default, baselines, snn
     train_parameters = {
-        "total_timesteps": 100000,
+        "total_timesteps": 5000000,
         "record_output": True,
         "record_ghost": True,
         "save_model": True,
@@ -508,7 +520,7 @@ def main(args):
 
     # Save parameters
     # experiment_name : change to test out different conditions
-    experiment_name = "RE4"
+    experiment_name = "RE6"
     save_dir = "./saves/"
 
     # Parameters for testing
@@ -523,8 +535,8 @@ def main(args):
     player_name = "Amin"
 
     # Parameters for replays
-    replay_files = ["saves/default/RE3/ver_2/ghost.hdf5"]
-    mode = "all"
+    replay_files = ["saves/default/RE6/ver_1/ghost.hdf5"]
+    mode = "batch"
 
     # parameters for making graphs
     graph_file = "saves/default/LL3/ver_2/graph_data.txt"
@@ -554,14 +566,14 @@ def main(args):
               )
 
     if args.mode == "test":
-        # env = env_fn.KartSim(render_mode="human", train=False, **env_args)
-        env = gym.make('LunarLander-v2', render_mode="human")
+        env = env_fn.KartSim(render_mode="human", train=False, **env_args)
+        # env = gym.make('LunarLander-v2', render_mode="human")
 
         test(env,
              alg=train_parameters["alg"],
              type=experiment_name,
              deterministic=deterministic,
-             actor_model=f'./saves/snn/{experiment_name}/ver_1/ppo_actor.pth'),
+             actor_model=f'./saves/default/{experiment_name}/ver_1/ppo_actor.pth'),
 
     if args.mode == "replay":
         replay(replay_dir=replay_files,
@@ -583,6 +595,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, test, graph, replay
 
-    args.mode = "replay"
+    args.mode = "train"
 
     main(args)

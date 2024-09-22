@@ -187,6 +187,8 @@ class KartSim(gym.Env):
         self.highest_goal = 0
         self.num_finishes = 0
 
+        self.deserting_timesteps = 0
+
         self.continuous = False
 
     def reset(
@@ -262,6 +264,8 @@ class KartSim(gym.Env):
         terminated = False
         truncated = False
 
+        self.check_deserting(30)
+
         if action is not None:
             step_reward, terminated, truncated = self.reward_function(pstart, pend)
 
@@ -288,6 +292,19 @@ class KartSim(gym.Env):
 
 
         return state, step_reward, terminated, truncated, self.info
+
+    def check_deserting(self, max_deserting_timesteps=200):
+
+        if self.next_target_rew_act < 0:  # going opposite of target
+            self.deserting_timesteps += 1
+        else:
+            self.deserting_timesteps = 0  # Reset if moving
+
+        # If agent has been still for too long, truncate the episode
+        if self.deserting_timesteps >= max_deserting_timesteps:
+            #print("cut")
+            self.out_of_track = True
+            self.deserting_timesteps = 0
 
     def potential_curve(self, x):
         # If x=0, then pot is maximal
@@ -327,7 +344,7 @@ class KartSim(gym.Env):
 
             # If the agent is moving away (i.e., next_target_rew_act < 0), apply double the penalty
             if self.next_target_rew_act < 0:
-                self.next_target_rew_act *= 2  # Double the penalty for moving away
+                self.next_target_rew_act *= 1.5  # extra penalty for moving away
 
             #initial_potential = self.potential_curve(self.distance(goal, pstart))
 
@@ -405,6 +422,9 @@ class KartSim(gym.Env):
 
         self.ui_manager.add_ui_text("norm dist vec x", self.norm_dist_vec[0], ".3f")
         self.ui_manager.add_ui_text("norm dist vec y", self.norm_dist_vec[1], ".3f")
+
+        self.ui_manager.add_ui_text("deserting timesteps", self.deserting_timesteps, ".0f")
+
 
     def close(self):
         if self.render_mode is not None:
