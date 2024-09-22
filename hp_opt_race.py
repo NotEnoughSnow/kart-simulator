@@ -52,17 +52,16 @@ def eval_policy(actor, env, n_eval_episodes=5):
 def objective(trial):
 
     hyperparameters = {
-        'timesteps_per_batch': trial.suggest_int('timesteps_per_batch', 512, 2048, step=512),
-        'max_timesteps_per_episode': trial.suggest_int('max_timesteps_per_episode', 500, 1000),
-        'gamma': trial.suggest_float('gamma', 0.95, 0.9999, log=True),
+        'timesteps_per_batch': trial.suggest_int('timesteps_per_batch', 512, 4096, step=512),
+        'gamma': trial.suggest_float('gamma', 0.92, 0.9999, log=True),
         'ent_coef': trial.suggest_float('ent_coef', 0.001, 0.1, log=True),
-        'n_updates_per_iteration': trial.suggest_int('n_updates_per_iteration', 1, 10),
+        'n_updates_per_iteration': trial.suggest_int('n_updates_per_iteration', 1, 11, step=2),
         'lr': trial.suggest_float('lr', 1e-5, 1e-2, log=True),
-        'clip': trial.suggest_float('clip', 0.1, 0.3),
+        'clip': 0.2,
         'max_grad_norm': 0.5,  # Fixed
         'render_every_i': 10,  # Fixed
         'target_kl': None,  # Fixed
-        'num_minibatches': trial.suggest_int('num_minibatches', 16, 128, step=16),
+        'num_minibatches': trial.suggest_int('num_minibatches', 16, 128, step=8),
         'gae_lambda': trial.suggest_float('gae_lambda', 0.9, 0.99),
         'verbose': 1,  # Fixed
     }
@@ -112,7 +111,7 @@ def objective(trial):
 
     env = KartSim(render_mode=None, train=False, **env_args)
 
-    total_timesteps = 300000
+    total_timesteps = 100000
 
     model = PPO(env=env,
                     save_model=False,
@@ -130,22 +129,27 @@ def objective(trial):
 
     mean_reward = eval_policy(actor, env, n_eval_episodes=15)
 
-    result = num_finishes*1000 + highest*100 + mean_reward
+    print("## results :")
+    print("num_finishes :", num_finishes)
+    print("highest :", highest)
+    print("mean_reward :", mean_reward)
+
+    result = num_finishes*2000 + highest*200 + mean_reward
 
     return result  # Metric for optuna
 
 
 # Function to initialize the study and create the database
 def initialize_study():
-    study = optuna.create_study(direction="maximize", storage="sqlite:///./saves/hp_opt/optuna_racing_lidar_study.db",
-                                study_name="racing_lidar_optimization", load_if_exists=True)
+    study = optuna.create_study(direction="maximize", storage="sqlite:///./saves/hp_opt/optuna_hp.db",
+                                study_name="racing_simple", load_if_exists=True)
     print("Database and study initialized!")
 
 
 # Run the study in parallel processes
 def run_study():
-    study = optuna.create_study(direction="maximize", storage="sqlite:///./saves/hp_opt/optuna_racing_lidar_study.db",
-                                study_name="racing_lidar_optimization", load_if_exists=True)
+    study = optuna.create_study(direction="maximize", storage="sqlite:///./saves/hp_opt/optuna_hp.db",
+                                study_name="racing_simple", load_if_exists=True)
     study.optimize(objective, n_trials=20)
 
 
@@ -157,7 +161,7 @@ if __name__ == "__main__":
     import multiprocessing
 
     #n_parallel_workers = multiprocessing.cpu_count()  # Adjust based on available resources
-    n_parallel_workers = 4
+    n_parallel_workers = 2
 
     processes = []
 
@@ -170,5 +174,5 @@ if __name__ == "__main__":
         p.join()
 
     # Load the study to retrieve the best result
-    study = optuna.load_study(study_name="racing_lidar_optimization", storage="sqlite:///./saves/hp_opt/optuna_racing_lidar_study.db")
+    study = optuna.load_study(study_name="racing_simple", storage="sqlite:///./saves/hp_opt/optuna_hp.db")
     print("Best hyperparameters:", study.best_params)
