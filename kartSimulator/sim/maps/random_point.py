@@ -10,7 +10,6 @@ class RandomPoint(abs_map):
     def __init__(self, space, spawn_range, fixed_goal, wc):
         self.space = space
         self.spawn_range = spawn_range
-        self.initial_pos = self.wc
 
         if fixed_goal is not None:
             self.random = True
@@ -18,6 +17,11 @@ class RandomPoint(abs_map):
         else:
             self.random = False
         self.wc = wc.copy()
+
+        self.initial_pos = self.wc
+        self.missing_walls_flag = True
+        self.missing_sectors_flag = True
+
 
     def reset(self, playerShapes):
 
@@ -29,9 +33,15 @@ class RandomPoint(abs_map):
 
         angle = 0
 
+        self.missing_walls_flag = True
+        self.missing_sectors_flag = True
+
         return None, angle, position
 
     def create_walls(self):
+
+        self.missing_walls_flag = False
+
         return []
 
     def create_goals(self, mode="random"):
@@ -71,5 +81,7 @@ class RandomPoint(abs_map):
         for i in range(len(static_sector_lines)):
             static_sector_lines[i].collision_type = i + 2
             static_sector_lines[i].filter = pymunk.ShapeFilter(categories=0x10)
+
+        self.missing_sectors_flag = False
 
         return static_sector_lines, sector_midpoints
