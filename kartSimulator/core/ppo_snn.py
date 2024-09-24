@@ -64,7 +64,9 @@ class PPO_SNN:
             # start a new wandb run to track this script
             wandb.init(
                 # set the wandb project where this run will be logged
-                project="PPO-SNN-Lunar-Landing",
+                #project="PPO-SNN-Lunar-Landing",
+                project="PPO-Racing-Env",
+
 
                 # track hyperparameters and run metadata
                 config=train_config
@@ -95,8 +97,12 @@ class PPO_SNN:
             self.act_dim = env.action_space.n
 
         # TODO automate
-        self.threshold = torch.tensor([1.5, 1.5, 5, 5, 3.14, 5, 1, 1])
-        self.shift = np.array([1.5, 1.5, 5, 5, 3.14, 5, 0, 0])
+        #self.threshold = torch.tensor([1.5, 1.5, 5, 5, 3.14, 5, 1, 1])
+        #self.shift = np.array([1.5, 1.5, 5, 5, 3.14, 5, 0, 0])
+
+        self.threshold = torch.tensor(env.high)
+        self.shift = np.abs(env.low)
+
 
         if self.verbose == 0:
             pass

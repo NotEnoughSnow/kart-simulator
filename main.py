@@ -416,11 +416,11 @@ def main(args):
         'gamma': 0.9634703441998751,
         'ent_coef': 0.004797586864549939,
         'n_updates_per_iteration': 7,
-        'lr': 0.00017887220926944984,
+        'lr': 0.0017887220926944984,
         'clip': 0.2,
         'max_grad_norm': 0.5,
         'render_every_i': 10,
-        'target_kl': None,
+        'target_kl': 0.6,
         'num_minibatches': 80,
         'gae_lambda': 0.9642298634023644,
         'verbose': 2,
@@ -467,6 +467,8 @@ def main(args):
     #   MAX_VELOCITY = 4 * 0.22 * PPM
 
     track_args = {
+        #"boxes_file": "shapes.txt",
+        #"sectors_file": "sectors.txt",
         "boxes_file": "boxes.txt",
         "sectors_file": "sectors_box.txt",
 
@@ -509,7 +511,7 @@ def main(args):
     # iteration_type : mul for default mode, one to run a single iteration
     # alg : default, baselines, snn
     train_parameters = {
-        "total_timesteps": 5000000,
+        "total_timesteps": 1000000,
         "record_output": True,
         "record_ghost": True,
         "save_model": True,
@@ -518,14 +520,16 @@ def main(args):
         "alg": "default",
     }
 
+
     # Save parameters
     # experiment_name : change to test out different conditions
-    experiment_name = "RE6"
+    experiment_name = "SNN1"
     save_dir = "./saves/"
 
     # Parameters for testing
     # deterministic : deterministic evaluation value (for stable baselines)
     deterministic = False
+    test_dir = "./saves/default/RE6/ver_2/ppo_actor.pth"
 
     # Parameters for imitation learning
     # record_expert_data : to record data for imitation learning
@@ -536,7 +540,7 @@ def main(args):
 
     # Parameters for replays
     replay_files = ["saves/default/RE6/ver_1/ghost.hdf5"]
-    mode = "batch"
+    mode = "all"
 
     # parameters for making graphs
     graph_file = "saves/default/LL3/ver_2/graph_data.txt"
@@ -567,13 +571,13 @@ def main(args):
 
     if args.mode == "test":
         env = env_fn.KartSim(render_mode="human", train=False, **env_args)
-        # env = gym.make('LunarLander-v2', render_mode="human")
+        #env = gym.make('LunarLander-v2', render_mode="human")
 
         test(env,
              alg=train_parameters["alg"],
              type=experiment_name,
              deterministic=deterministic,
-             actor_model=f'./saves/default/{experiment_name}/ver_1/ppo_actor.pth'),
+             actor_model=test_dir),
 
     if args.mode == "replay":
         replay(replay_dir=replay_files,
@@ -595,6 +599,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, test, graph, replay
 
-    args.mode = "train"
+    args.mode = "test"
 
     main(args)

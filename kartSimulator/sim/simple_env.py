@@ -136,10 +136,10 @@ class KartSim(gym.Env):
                     low.append(-obs_type[2][0])
                     high.append(obs_type[3][0])
 
-        low = np.array(low).astype(np.float32)
-        high = np.array(high).astype(np.float32)
+        self.low = np.array(low).astype(np.float32)
+        self.high = np.array(high).astype(np.float32)
 
-        self.observation_space = spaces.Box(low, high)
+        self.observation_space = spaces.Box(self.low, self.high)
 
         self.action_space = spaces.Discrete(5)
         # do nothing, up, down, left, right
