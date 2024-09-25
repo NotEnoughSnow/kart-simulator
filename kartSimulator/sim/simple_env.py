@@ -306,15 +306,6 @@ class KartSim(gym.Env):
             self.out_of_track = True
             self.deserting_timesteps = 0
 
-    def potential_curve(self, x):
-        # If x=0, then pot is maximal
-        # As x decreases, pot increases monotonically
-        if x >= 0:
-            pot = 1.0 - x
-        else:
-            pot = 1.0
-        return pot
-
     def distance(self, a, b):
         return np.linalg.norm(a - b)
 
@@ -338,9 +329,12 @@ class KartSim(gym.Env):
             target_number = int(self.next_sector_name[-1])
             #self.next_target_rew = 2000/(self.distance_to_next_points+50) - 10
 
-            initial_potential = self.potential_curve(self.distance(self.goal_pos, pstart))
-            final_potential = self.potential_curve(self.distance(self.goal_pos, pend))
-            self.next_target_rew_act = final_potential - initial_potential
+            initial_potential = -self.distance(self.goal_pos, pstart)
+            final_potential = -self.distance(self.goal_pos, pend)
+
+            speed_trans = math.exp(self.velocity/100)/12
+
+            self.next_target_rew_act = (final_potential - initial_potential)*speed_trans
 
             # If the agent is moving away (i.e., next_target_rew_act < 0), apply double the penalty
             if self.next_target_rew_act < 0:
@@ -353,23 +347,26 @@ class KartSim(gym.Env):
 
         # reward for closing distance to sector medians
         #self.reward += self.next_target_rew
-        self.reward += self.next_target_rew_act/80
+        self.cont_reward += self.next_target_rew_act / 80
 
         # TODO assign sector and lap based rewards
 
         # if finish lap then truncated
         if self.finish:
             terminated = True
-            self.reward += 1000
+            self.cont_reward += 1000
             #step_reward = self.reward
 
         # if collide with track then terminate
         if self.out_of_track:
             truncated = True
-            self.reward -= 500
+            self.cont_reward -= 500
             #step_reward = self.reward
 
-        step_reward = self.reward
+        step_reward = self.cont_reward + self.onetime_reward
+        self.onetime_reward = 0
+
+        #print(step_reward)
 
         return step_reward, terminated, truncated
 
@@ -407,7 +404,7 @@ class KartSim(gym.Env):
         self.ui_manager.add_ui_text("next target", self.next_sector_name, "")
         self.ui_manager.add_ui_text("distance to target", self.distance_to_next_points, ".4f")
         self.ui_manager.add_ui_text("norm dist", self.norm_dist, ".3f")
-        self.ui_manager.add_ui_text("total reward", self.reward, ".3f")
+        self.ui_manager.add_ui_text("total reward", self.cont_reward, ".3f")
         self.ui_manager.add_ui_text("act.rew from target", self.next_target_rew_act, ".3f")
         self.ui_manager.add_ui_text("angle to target", self.angle_to_target_cos, ".3f")
         self.ui_manager.add_ui_text("angle to target", self.angle_to_target_sin, ".3f")
@@ -494,7 +491,8 @@ class KartSim(gym.Env):
         self.steer_right_value = 0
         self.steer_left_value = 0
 
-        self.reward = 0
+        self.cont_reward = 0
+        self.onetime_reward = 0
         self.prev_reward = 0
 
         # self._playerBody.position = self.initial_pos
@@ -613,6 +611,9 @@ class KartSim(gym.Env):
             self._last_sector_time = self._current_episode_time
 
             # reward based on sector time
+            self.onetime_reward += self._calculate_reward(time_diff)
+            print(f"in : {time_diff} received : {self._calculate_reward(time_diff)}")
+
             #self.reward += self._calculate_reward(time_diff)
 
             if data["number"] == self._num_sectors:
@@ -637,6 +638,8 @@ class KartSim(gym.Env):
 
     def _calculate_reward(self, time):
         return 1 / 3 * math.exp(1 / 100 * -time + 7)
+
+
 
     def observation(self):
         obs_methods = {

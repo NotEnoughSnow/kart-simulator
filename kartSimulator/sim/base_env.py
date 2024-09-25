@@ -336,16 +336,6 @@ class KartSim(gym.Env):
             self.out_of_track = True
             self.standing_still_timesteps = 0
 
-
-    def potential_curve(self, x):
-        # If x=0, then pot is maximal
-        # As x decreases, pot increases monotonically
-        if x >= 0:
-            pot = 1.0 - x
-        else:
-            pot = 1.0
-        return pot
-
     def distance(self, a, b):
         return np.linalg.norm(a - b)
 
@@ -369,37 +359,38 @@ class KartSim(gym.Env):
             target_number = int(self.next_sector_name[-1])
             #self.next_target_rew = 2000/(self.distance_to_next_points+50) - 10
 
-            initial_potential = self.potential_curve(self.distance(self.goal_pos, pstart))
-            final_potential = self.potential_curve(self.distance(self.goal_pos, pend))
-            self.next_target_rew_act = final_potential - initial_potential
+            initial_potential = -self.distance(self.goal_pos, pstart)
+            final_potential = -self.distance(self.goal_pos, pend)
+
+            speed_trans = math.exp(self.velocity / 100) / 2
+
+            self.next_target_rew_act = (final_potential - initial_potential)*speed_trans
 
             #initial_potential = self.potential_curve(self.distance(goal, pstart))
 
         # penelty for existing
         # self.reward -= 1
 
-        # -0.5 at 0 speed, 1.5 at 100 speed
-        self.velocity_reward = (self.velocity / 100) * 2 - 0.5
-        self.reward += self.velocity_reward
 
         # reward for closing distance to sector medians
         #self.reward += self.next_target_rew
 
-        self.reward += self.next_target_rew_act/80
+        self.cont_reward += self.next_target_rew_act / 80
 
         # TODO assign sector and lap based rewards
 
         # if finish lap then truncated
         if self.finish:
             terminated = True
-            self.reward += 1000
+            self.cont_reward += 1000
 
         # if collide with track then terminate
         if self.out_of_track:
             truncated = True
-            self.reward -= 500
+            self.cont_reward -= 500
 
-        step_reward = self.reward
+        step_reward = self.cont_reward + self.onetime_reward
+        self.onetime_reward = 0
 
         return step_reward, terminated, truncated
 
@@ -438,7 +429,7 @@ class KartSim(gym.Env):
         self.ui_manager.add_ui_text("next target", self.next_sector_name, "")
         self.ui_manager.add_ui_text("distance to target", self.distance_to_next_points, ".4f")
         self.ui_manager.add_ui_text("norm dist", self.norm_dist, ".3f")
-        self.ui_manager.add_ui_text("total reward", self.reward, ".3f")
+        self.ui_manager.add_ui_text("total reward", self.cont_reward, ".3f")
         self.ui_manager.add_ui_text("act.rew from target", self.next_target_rew_act, ".3f")
         self.ui_manager.add_ui_text("vel.rew", self.velocity_reward, ".3f")
         self.ui_manager.add_ui_text("angle to target c", self.angle_to_target_cos, ".3f")
@@ -525,7 +516,8 @@ class KartSim(gym.Env):
         self.accel_break_value = 0
         self.steer_value = 0
 
-        self.reward = 0
+        self.cont_reward = 0
+        self.onetime_reward = 0
         self.prev_reward = 0
 
         # self._playerBody.position = self.initial_pos
@@ -690,14 +682,14 @@ class KartSim(gym.Env):
                 self.highest_goal = data["number"]
 
         if self.sector_info.get(name)[0] == 0:
-            print("visited " + name + " for the first time")
+            #print("visited " + name + " for the first time")
             time_diff = self._current_episode_time - self._last_sector_time
             self.sector_info[name][0] = time_diff
             self._last_sector_time = self._current_episode_time
 
             # reward based on sector time
-            #self.reward += self._calculate_reward(time_diff)
-            #print("reward from time :", self._calculate_reward(time_diff))
+            self.onetime_reward += self._calculate_reward(time_diff)
+            print(f"in : {time_diff} received : {self._calculate_reward(time_diff)}")
 
             if data["number"] == self._num_sectors:
                 print("reached goal!")

@@ -1,3 +1,5 @@
+import random
+
 from kartSimulator.sim.maps.map_manager import AbstractMap as abs_map
 import pymunk
 import kartSimulator.sim.utils as utils
@@ -15,8 +17,14 @@ class MapLoader(abs_map):
         self.initial_pos = initial_pos
 
     def reset(self, playerShape):
+
+        pos_variation_x = random.uniform(-20, 20)
+        pos_variation_y = random.uniform(-20, 20)
+
+        random_position = [self.initial_pos[0]+pos_variation_x, self.initial_pos[1]+pos_variation_y]
+
         angle = 0
-        position = self.initial_pos
+        position = random_position
 
         return None, angle, position
 
