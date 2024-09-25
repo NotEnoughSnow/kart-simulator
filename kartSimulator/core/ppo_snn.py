@@ -140,47 +140,6 @@ class PPO_SNN:
             'lr': [],
         }
 
-    def parallel_rollout(self):
-
-        results = Parallel(n_jobs=4)(delayed(self.rollout)() for _ in range(4))
-
-        # Initialize empty lists/tensors for each variable
-        batch_obs = []
-        batch_acts = []
-        batch_log_probs = []
-        batch_rews = []
-        batch_lens = []
-        batch_vals = []
-        batch_dones = []
-        batch_ghosts = []
-
-        # Combine results from all processes
-        for result in results:
-            batch_obs.append(result[0])  # Collect tensors
-            batch_acts.append(result[1])  # Collect tensors
-            batch_log_probs.append(result[2])  # Collect 1D tensors
-            batch_rews.extend(result[3])  # Collect 2D lists
-            batch_lens.extend(result[4])  # Collect 1D lists
-            batch_vals.extend(result[5])  # Collect 2D lists
-            batch_dones.extend(result[6])  # Collect 2D lists
-            batch_ghosts.extend(result[7])  # Collect 2D vectors
-
-        # Concatenate tensors along the first dimension
-        batch_obs = torch.cat(batch_obs, dim=0)
-        batch_acts = torch.cat(batch_acts, dim=0)
-        batch_log_probs = torch.cat(batch_log_probs, dim=0)
-
-        # Now you have combined tensors/lists for batch_obs, batch_acts, etc.
-        # print("Combined batch_obs:", batch_obs)
-        # print("Combined batch_acts:", batch_acts)
-        # print("Combined batch_log_probs:", batch_log_probs)
-        # print("Combined batch_rews:", batch_rews)
-        # print("Combined batch_lens:", batch_lens)
-        # print("Combined batch_vals:", batch_vals)
-        # print("Combined batch_dones:", batch_dones)
-
-        return batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts
-
     def learn(self, total_timesteps):
 
         if self.verbose == 0:
@@ -200,8 +159,14 @@ class PPO_SNN:
 
             batch_obs, batch_obs_st, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout()
 
-            #batch_obs, batch_obs_st, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout()
-            # batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens, batch_ghosts = self.rollout()
+            avg_ep_lens = np.mean(batch_lens)
+            avg_ep_rews = np.mean([np.sum(ep_rews) for ep_rews in batch_rews])
+
+            if self.record_wandb:
+                wandb.log({
+                    "rollout/ep_rew_mean": avg_ep_rews,
+                    "rollout/ep_len_mean": avg_ep_lens,
+                }, step=self.logger['t_so_far'])
 
             self.logger['batch_delta_t'] = time.time_ns()
 
@@ -515,12 +480,6 @@ class PPO_SNN:
 
             ep_rew_mean = np.sum(ep_rews)
             # print(ep_rew_mean)
-
-            if self.record_wandb:
-                wandb.log({
-                    "rollout/ep_rew_mean": ep_rew_mean,
-                    "rollout/ep_len_mean": (ep_t + 1),
-                }, step=self.logger['t_so_far'])
 
         # Reshape data as tensors in the shape specified in function description, before returning
         batch_obs = torch.tensor(np.array(batch_obs), dtype=torch.float)
