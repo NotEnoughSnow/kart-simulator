@@ -108,14 +108,14 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
                 steps += 1
 
         if truncated:
-            # print("hit a wall, ")
-            # print(f"total rewards this ep:{total_reward}")
+            print("hit a wall, ")
+            print(f"total rewards this ep: {total_reward}")
             pass
 
         if terminated:
-            # print("finished, ")
-            # print(f"total rewards this ep:{total_reward}")
-            # TODO times
+            print("finished, ")
+            print(f"total rewards this ep: {total_reward}")
+            #TODO times
             pass
 
         # wrap expert data and steps in expert episode
@@ -429,7 +429,7 @@ def main(args):
     # environment selection
     # simple_env has free movement
     # base_env has car like movement
-    env_fn = simple_env
+    env_fn = base_env
 
     # list of observations:
     # DISTANCE : distance to goal
@@ -444,7 +444,7 @@ def main(args):
     # obs_types.TARGET_ANGLE,
     obs = [obs_types.LIDAR,
            obs_types.VELOCITY,
-           # obs_types.ROTATION,
+           obs_types.ROTATION,
            obs_types.DISTANCE,
            obs_types.TARGET_ANGLE,
            ]
@@ -477,7 +477,7 @@ def main(args):
         "spawn_range": 400,
         "fixed_goal": [200, -200],
 
-        "initial_pos": [300, 450]
+        "initial_pos": [330, 450]
     }
 
     simple_env_player_args = {
@@ -487,10 +487,10 @@ def main(args):
         "bot_weight": 1,
     }
     base_env_player_args = {
-        "player_acc_rate": 2,
-        "player_break_rate": 2,
+        "player_acc_rate": 3,
+        "player_break_rate": 3,
         "max_velocity": 2,
-        "rad_velocity": 2 * 2.84,
+        "rad_velocity": 3 * 2.84,
         "bot_size": 0.192,
         "bot_weight": 1,
     }
@@ -599,6 +599,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, test, graph, replay
 
-    args.mode = "test"
+    args.mode = "play"
 
     main(args)
