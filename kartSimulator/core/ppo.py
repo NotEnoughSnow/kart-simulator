@@ -63,7 +63,7 @@ class PPO:
         if self.record_wandb:
             wandb.init(
                 # set the wandb project where this run will be logged
-                project="PPO-Racing-Env",
+                project="racing-speed",
 
                 # track hyperparameters and run metadata
                 config=train_config
@@ -78,10 +78,12 @@ class PPO:
             sys.stdout = Tee(sys.stdout, self.output_file)
 
         if (record_ghost or record_output or save_model) is True:
+            print(f"Saving to '{self.run_directory}' after training")
+        else:
             if self.verbose == 0:
                 pass
-            else:
-                print(f"Saving to '{self.run_directory}' after training")
+
+
 
 
         self.env = env
@@ -257,9 +259,12 @@ class PPO:
 
                     clip_fraction = torch.mean(clipped.float())
 
+                    # Before the backpropagation step
+                    initial_weights = self.actor.layer1.weight.clone().detach()
+                    initial_biases = self.actor.layer1.bias.clone().detach()
+
                     # Calculate gradients and perform backward propagation for actor network
                     self.actor_optim.zero_grad()
-
                     actor_loss.backward(retain_graph=True)
                     nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
                     self.actor_optim.step()
@@ -269,6 +274,17 @@ class PPO:
                     critic_loss.backward()
                     nn.utils.clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
                     self.critic_optim.step()
+
+                    updated_weights = self.actor.layer1.weight.clone().detach()
+                    updated_biases = self.actor.layer1.bias.clone().detach()
+
+                    # Calculate changes (L2 norm, or other metrics)
+                    weight_change = torch.norm(updated_weights - initial_weights, p=2)
+                    bias_change = torch.norm(updated_biases - initial_biases, p=2)
+
+                    if self.record_wandb:
+                        wandb.log({"snn/weight_change_fc1": weight_change,
+                                   "snn/bias_change_fc1": bias_change}, step=self.logger['t_so_far'])
 
                     # calculating metrics
                     total_loss = actor_loss + critic_loss
@@ -418,6 +434,12 @@ class PPO:
                     if self.record_wandb:
                         wandb.log({
                             "race/highest_score": info["highest"],
+                        }, step=self.logger['t_so_far'])
+
+                if info.get("num_finishes", None) is not None:
+                    if self.record_wandb:
+                        wandb.log({
+                            "race/number_finishes": info["num_finishes"],
                         }, step=self.logger['t_so_far'])
 
                 # TODO simplify batch actions and ghost data

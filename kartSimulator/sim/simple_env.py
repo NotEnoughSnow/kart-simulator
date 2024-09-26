@@ -289,6 +289,7 @@ class KartSim(gym.Env):
         self.info["fps"] = self._clock.get_fps()
         self.info["position"] = self._playerBody.position
         self.info["highest"] = self.highest_goal
+        self.info["num_finishes"] = self.num_finishes
 
 
         return state, step_reward, terminated, truncated, self.info
@@ -612,7 +613,7 @@ class KartSim(gym.Env):
 
             # reward based on sector time
             self.onetime_reward += self._calculate_reward(time_diff)
-            print(f"in : {time_diff} received : {self._calculate_reward(time_diff)}")
+            #print(f"in : {time_diff} received : {self._calculate_reward(time_diff)}")
 
             #self.reward += self._calculate_reward(time_diff)
 

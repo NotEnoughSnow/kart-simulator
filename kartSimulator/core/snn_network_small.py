@@ -8,7 +8,7 @@ import numpy as np
 hidden_size = 64  # Number of hidden neurons
 
 class SNN_small(nn.Module):
-    def __init__(self, input_size, output_size, num_steps):
+    def __init__(self, input_size, output_size, num_steps, add_weight):
         super(SNN_small, self).__init__()
 
         self.num_steps = num_steps
@@ -18,11 +18,11 @@ class SNN_small(nn.Module):
 
         # Define layers
         self.fc1 = nn.Linear(input_size, hidden_size, dtype=torch.float)
-        self.fc1.weight.data += 0.05
+        self.fc1.weight.data += add_weight
         self.lif1 = snn.Leaky(beta=beta1, spike_grad=surrogate.fast_sigmoid())
 
         self.fc2 = nn.Linear(hidden_size, hidden_size, dtype=torch.float)
-        self.fc2.weight.data += 0.05
+        self.fc2.weight.data += add_weight
         self.lif2 = snn.Leaky(beta=beta2, spike_grad=surrogate.fast_sigmoid())
 
         # Linear readout layer
