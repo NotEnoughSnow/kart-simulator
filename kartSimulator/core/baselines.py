@@ -7,8 +7,8 @@ from stable_baselines3 import PPO
 # import supersuit as ss
 from stable_baselines3.ppo import MlpPolicy
 
-import kartSimulator.sim.base_env as base_env
-import kartSimulator.sim.simple_env as simple_env
+import kartSimulator.sim.drive_env as base_env
+import kartSimulator.sim.directional_env as simple_env
 
 import kartSimulator.sim.observation_types as obs_types
 

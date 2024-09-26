@@ -1,5 +1,4 @@
 import os
-
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 import gymnasium as gym
@@ -7,38 +6,29 @@ import yaml
 import sys
 
 import torch
-import csv
-import ast
 import numpy as np
 import h5py
 
 from kartSimulator.core.arguments import get_args
 from kartSimulator.core import eval_policy
+
 from kartSimulator.core.ppo import PPO
-from kartSimulator.core.ppo_gym import PPO_gym
 from kartSimulator.core.ppo_snn import PPO_SNN
-from kartSimulator.core.ppo_one_iter import PPO as PPO_ONE
-from kartSimulator.core.line_policy import L_Policy
-import kartSimulator.evolutionary.core as EO
+
 import kartSimulator.core.make_graphs as graph_generator
 import kartSimulator.sim.observation_types as obs_types
 
 from kartSimulator.core.replay_ghosts import ReplayGhosts
 
-from kartSimulator.core.actor_network import ActorNetwork
 from kartSimulator.core.standard_network import FFNetwork
 
 import kartSimulator.core.baselines as baselines
 
-import kartSimulator.sim.sim2D as kart_sim
-import kartSimulator.sim.empty as empty_sim
-import kartSimulator.sim.base_env as base_env
-import kartSimulator.sim.simple_env as simple_env
+import kartSimulator.sim.drive_env as base_env
+import kartSimulator.sim.directional_env as simple_env
 
 import kartSimulator.sim.utils as utils
 
-import kartSimulator.sim_turtlebot.sim_turtlebot as turtlebot_sim
-import kartSimulator.sim_turtlebot.calibrate as turtlebot_calibrate
 import pygame
 
 
