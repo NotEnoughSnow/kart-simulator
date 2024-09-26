@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from torch.distributions import Categorical
-from kartSimulator.sim.base_env import KartSim
+from kartSimulator.sim.drive_env import KartSim
 import kartSimulator.sim.observation_types as obs_types
 
 def eval_policy(actor, env, n_eval_episodes=5):
