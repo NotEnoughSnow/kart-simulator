@@ -11,6 +11,7 @@ RAY_COUNT = 60
 
 halfwinsize = 5
 torch.manual_seed(0)
+
 conv_layer = torch.nn.Conv1d(in_channels=1,
                              out_channels=1,
                              kernel_size=(2 * halfwinsize + 1),

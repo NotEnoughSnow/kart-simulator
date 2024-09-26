@@ -143,10 +143,10 @@ class KartSim(gym.Env):
                     low.append(-obs_type[2][0])
                     high.append(obs_type[3][0])
 
-        low = np.array(low).astype(np.float32)
-        high = np.array(high).astype(np.float32)
+        self.low = np.array(low).astype(np.float32)
+        self.high = np.array(high).astype(np.float32)
 
-        self.observation_space = spaces.Box(low, high)
+        self.observation_space = spaces.Box(self.low, self.high)
 
         self.action_space = spaces.Discrete(5)
         # do nothing, accelerate, break, steer_left, steer_right
@@ -321,6 +321,7 @@ class KartSim(gym.Env):
         self.info["fps"] = self._clock.get_fps()
         self.info["position"] = self._playerBody.position
         self.info["highest"] = self.highest_goal
+        self.info["num_finishes"] = self.num_finishes
 
         return state, step_reward, terminated, truncated, self.info
 
@@ -689,7 +690,7 @@ class KartSim(gym.Env):
 
             # reward based on sector time
             self.onetime_reward += self._calculate_reward(time_diff)
-            print(f"in : {time_diff} received : {self._calculate_reward(time_diff)}")
+            #print(f"in : {time_diff} received : {self._calculate_reward(time_diff)}")
 
             if data["number"] == self._num_sectors:
                 print("reached goal!")

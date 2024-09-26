@@ -65,7 +65,7 @@ class PPO_SNN:
             wandb.init(
                 # set the wandb project where this run will be logged
                 #project="PPO-SNN-Lunar-Landing",
-                project="PPO-Racing-Env",
+                project="racing-speed",
 
 
                 # track hyperparameters and run metadata
@@ -82,11 +82,10 @@ class PPO_SNN:
             sys.stdout = Tee(sys.stdout, self.output_file)
 
         if (record_ghost or record_output or save_model) is True:
+            print(f"Saving to '{self.run_directory}' after training")
+        else:
             if self.verbose == 0:
                 pass
-            else:
-                print(f"Saving to '{self.run_directory}' after training")
-
 
         self.env = env
         self.obs_dim = env.observation_space.shape[0]
@@ -116,8 +115,8 @@ class PPO_SNN:
         # self.actor = ActorNetwork(self.obs_dim, self.act_dim)
         # self.critic = CriticNetwork(self.obs_dim, 1)
 
-        self.actor = SNN_small(self.obs_dim, self.act_dim, self.num_steps)
-        self.critic = SNN_small(self.obs_dim, 1, self.num_steps)
+        self.actor = SNN_small(self.obs_dim, self.act_dim, self.num_steps, add_weight=self.add_weight)
+        self.critic = SNN_small(self.obs_dim, 1, self.num_steps, add_weight=self.add_weight)
 
         # Initialize optimizers for actor and critic
         self.actor_optim = Adam(self.actor.parameters(), lr=self.lr)
@@ -327,6 +326,7 @@ class PPO_SNN:
             avg_loss = sum(loss_arr) / len(loss_arr)
             self.logger['actor_losses'].append(avg_loss)
 
+
             if self.verbose == 0:
                 pass
             elif self.verbose == 1:
@@ -457,6 +457,18 @@ class PPO_SNN:
 
                 ghost_ep.append(info.get("position", [0, 0]))
 
+                if info.get("highest", None) is not None:
+                    if self.record_wandb:
+                        wandb.log({
+                            "race/highest_score": info["highest"],
+                        }, step=self.logger['t_so_far'])
+
+                if info.get("num_finishes", None) is not None:
+                    if self.record_wandb:
+                        wandb.log({
+                            "race/number_finishes": info["num_finishes"],
+                        }, step=self.logger['t_so_far'])
+
                 # TODO simplify batch actions and ghost data
                 # Track recent reward, action, and action log probability
                 ep_rews.append(rew)
@@ -509,6 +521,8 @@ class PPO_SNN:
         spk_output, spikes = self.actor(obs_st)
 
         avg_spike_time, spike_ratio = SNN_utils.compute_spike_metrics(spikes)
+
+
 
         if self.continuous:
             # For continuous action spaces
@@ -638,6 +652,7 @@ class PPO_SNN:
         self.gae_lambda = 0.95
         self.decode_type = "lrl"
         self.num_steps = 50
+        self.add_weight = 0.01
         self.verbose = 2
 
         # Miscellaneous parameters

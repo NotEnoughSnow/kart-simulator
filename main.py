@@ -143,7 +143,7 @@ def play(env, record, save_dir, player_name="Amin", expert_ep_count=3):
         # write expert runs to file then exit application
         write_file(expert_run, expert_ep_lens, info, run_path)
 
-        print(" num episodes :", len(expert_run))
+        print(" numepisodes :", len(expert_run))
         print(" num timesteps for the first episode :", len(expert_run[0]))
         print(" data of the first timestep :", expert_run[0][0])
 
@@ -423,9 +423,11 @@ def main(args):
         'target_kl': 0.6,
         'num_minibatches': 80,
         'gae_lambda': 0.9642298634023644,
+        'seed': 193,
         'verbose': 2,
     }
-
+    403811097564500
+    403840915984900
     # environment selection
     # simple_env has free movement
     # base_env has car like movement
@@ -517,13 +519,13 @@ def main(args):
         "save_model": True,
         "record_wandb": True,
         "iteration_type": "mul",
-        "alg": "default",
+        "alg": "snn",
     }
 
 
     # Save parameters
     # experiment_name : change to test out different conditions
-    experiment_name = "SNN1"
+    experiment_name = "SNN-S1"
     save_dir = "./saves/"
 
     # Parameters for testing
@@ -599,6 +601,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, test, graph, replay
 
-    args.mode = "play"
+    args.mode = "train"
 
     main(args)
