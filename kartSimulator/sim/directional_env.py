@@ -597,31 +597,35 @@ class KartSim(gym.Env):
 
     def sector_callback(self, arbiter, space, data):
 
+
+
         name = "sector " + str(data["number"])
 
-        # sets the next milestone name, limited by number of sectors
-        if self._num_sectors >= data["number"] + 1:
-            self.next_sector_name = "sector " + str(data["number"] + 1)
-            if data["number"] > self.highest_goal:
-                self.highest_goal = data["number"]
+        if name == self.next_sector_name:
 
-        if self.sector_info.get(name)[0] == 0:
-            #print("visited " + name + " for the first time")
-            time_diff = self._current_episode_time - self._last_sector_time
-            self.sector_info[name][0] = time_diff
-            self._last_sector_time = self._current_episode_time
+            # sets the next milestone name, limited by number of sectors
+            if self._num_sectors >= data["number"] + 1:
+                self.next_sector_name = "sector " + str(data["number"] + 1)
+                if data["number"] > self.highest_goal:
+                    self.highest_goal = data["number"]
 
-            # reward based on sector time
-            self.onetime_reward += self._calculate_reward(time_diff)
-            #print(f"in : {time_diff} received : {self._calculate_reward(time_diff)}")
+            if self.sector_info.get(name)[0] == 0:
+                #print("visited " + name + " for the first time")
+                time_diff = self._current_episode_time - self._last_sector_time
+                self.sector_info[name][0] = time_diff
+                self._last_sector_time = self._current_episode_time
 
-            #self.reward += self._calculate_reward(time_diff)
+                # reward based on sector time
+                self.onetime_reward += self._calculate_reward(time_diff)
+                #print(f"in : {time_diff} received : {self._calculate_reward(time_diff)}")
 
-            if data["number"] == self._num_sectors:
-                print("reached goal!")
-                self.num_finishes += 1
-                self.highest_goal = self._num_sectors
-                self.finish = True
+                #self.reward += self._calculate_reward(time_diff)
+
+                if data["number"] == self._num_sectors:
+                    print("reached goal!")
+                    self.num_finishes += 1
+                    self.highest_goal = self._num_sectors
+                    self.finish = True
 
         return True
 
