@@ -4,7 +4,8 @@ import pymunk
 import numpy as np
 import torch
 
-VISION_LENGTH = 100
+# 100 usually
+VISION_LENGTH = 300
 NO_VISION_CONSTANT = VISION_LENGTH / 6
 VISION_FOV = 360
 RAY_COUNT = 60

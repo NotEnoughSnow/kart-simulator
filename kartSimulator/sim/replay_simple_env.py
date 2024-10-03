@@ -24,6 +24,8 @@ from kartSimulator.sim.ui_manager import UImanager
 
 from kartSimulator.core.agent import Agent, Simple_agent
 
+from kartSimulator.sim.maps.track_factory import TrackFactory
+
 PPM = 100
 
 BOT_SIZE = 0.192
@@ -55,7 +57,15 @@ WORLD_CENTER = [500, 500]
 class KartSim(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 60, "name": "kart2D"}
 
-    def __init__(self, num_agents=[1], colors=[(255,0,0,255)], obs_seq=[], reset_time=300):
+    def __init__(self,
+                 num_agents=[1],
+                 colors=[(255,0,0,255)],
+                 obs_seq=[],
+                 reset_time=300,
+                 track_type="default",
+                 track_args=None,
+                 player_args=None,
+                 ):
 
         print("loaded env:", self.metadata["name"])
 
@@ -63,8 +73,8 @@ class KartSim(gym.Env):
         self.obs_seq = obs_seq
         self.obs_len = 0
 
-        for item in obs_seq:
-            self.obs_len += item[1]
+        #for item in obs_seq:
+        #    self.obs_len += item[1]
 
         speed = 1.0
 
@@ -103,15 +113,15 @@ class KartSim(gym.Env):
         self.distance_to_next_points_vec = [-MAX_TARGET_DISTANCE, -MAX_TARGET_DISTANCE]
 
         # FIXME restore shapes to (-1,1), (-1,1)
-        self.action_space = spaces.Box(
-            low=-1, high=1, shape=(2,), dtype=np.float32
-        )
+        #self.action_space = spaces.Box(
+        #    low=-1, high=1, shape=(2,), dtype=np.float32
+        #)
         # up_down, left_right
 
         # TODO use variables
-        self.observation_space = spaces.Box(
-            low=-1000, high=1000, shape=(self.obs_len,), dtype=np.float32
-        )
+        #self.observation_space = spaces.Box(
+        #    low=-1000, high=1000, shape=(self.obs_len,), dtype=np.float32
+        #)
 
         self.initial_pos = 300, 450
         self.vision_points = []
@@ -139,7 +149,12 @@ class KartSim(gym.Env):
                 self.agent_array.append(Simple_agent(color))
 
 
-        self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
+        self.map = TrackFactory.create_track(track_type,
+                                             self._space,
+                                             WORLD_CENTER,
+                                             **track_args)
+
+        #self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
         #self.map = MapGenerator(self._space, WORLD_CENTER, 50)
         #self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
 

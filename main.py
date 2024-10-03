@@ -249,11 +249,9 @@ def train(env,
         else:
             print(f"Training from scratch.", flush=True)
 
-        if iteration_type == "one":
-            model = PPO_ONE(env=env, **hyperparameters)
-            model.learn(total_timesteps=1)
-        else:
-            model.learn(total_timesteps=total_timesteps)
+
+        model.learn(total_timesteps=total_timesteps)
+
     if alg == "snn":
 
         model = PPO_SNN(env=env,
@@ -278,11 +276,8 @@ def train(env,
         else:
             print(f"Training from scratch.", flush=True)
 
-        if iteration_type == "one":
-            model = PPO_ONE(env=env, **hyperparameters)
-            model.learn(total_timesteps=1)
-        else:
-            model.learn(total_timesteps=total_timesteps)
+
+        model.learn(total_timesteps=total_timesteps)
     if alg == "baselines":
         # TODO fix save_dir not needing experiment name
 
@@ -345,20 +340,14 @@ def test(env, alg, type, deterministic, actor_model):
         baselines.eval(env, type, deterministic)
 
 
-def replay(replay_dir, mode):
+def replay(replay_dir, mode, env_args):
     # replay = ReplayGhosts(replay_dir, replay_ep)
-    replay = ReplayGhosts(replay_dir, mode)
+    replay = ReplayGhosts(replay_dir, mode, env_args)
 
 
 def make_graphs(graph_file):
     # Extract absolute file paths
     graph_generator.graph_data(graph_file)
-
-
-def optimize():
-    # TODO
-    EO.run()
-
 
 def main(args):
     # timesteps_per_batch : n_steps
@@ -406,7 +395,8 @@ def main(args):
         'gamma': 0.9634703441998751,
         'ent_coef': 0.004797586864549939,
         'n_updates_per_iteration': 7,
-        'lr': 0.0017887220926944984,
+        # multiply by 10 for ANN
+        'lr': 0.00017887220926944984,
         'clip': 0.2,
         'max_grad_norm': 0.5,
         'render_every_i': 10,
@@ -416,12 +406,10 @@ def main(args):
         'seed': 193,
         'verbose': 2,
     }
-    403811097564500
-    403840915984900
     # environment selection
     # simple_env has free movement
     # base_env has car like movement
-    env_fn = base_env
+    env_fn = simple_env
 
     # list of observations:
     # DISTANCE : distance to goal
@@ -436,7 +424,7 @@ def main(args):
     # obs_types.TARGET_ANGLE,
     obs = [obs_types.LIDAR,
            obs_types.VELOCITY,
-           obs_types.ROTATION,
+           #obs_types.ROTATION,
            obs_types.DISTANCE,
            obs_types.TARGET_ANGLE,
            ]
@@ -459,17 +447,18 @@ def main(args):
     #   MAX_VELOCITY = 4 * 0.22 * PPM
 
     track_args = {
-        #"boxes_file": "shapes.txt",
-        #"sectors_file": "sectors.txt",
-        "boxes_file": "boxes.txt",
-        "sectors_file": "sectors_box.txt",
+        "boxes_file": "shapes.txt",
+        "sectors_file": "sectors.txt",
+        #"boxes_file": "boxes.txt",
+        #"sectors_file": "sectors_box.txt",
 
         "corridor_size": 50,
 
         "spawn_range": 400,
         "fixed_goal": [200, -200],
 
-        "initial_pos": [330, 450]
+        #"initial_pos": [330, 450]
+        "initial_pos": [180, 100]
     }
 
     simple_env_player_args = {
@@ -489,7 +478,7 @@ def main(args):
 
     env_args = {
         "obs_seq": obs,
-        "reset_time": 5000,
+        "reset_time": 10000,
         "track_type": "boxes",
         "track_args": track_args,
         "player_args": simple_env_player_args if env_fn == simple_env else base_env_player_args,
@@ -503,13 +492,13 @@ def main(args):
     # iteration_type : mul for default mode, one to run a single iteration
     # alg : default, baselines, snn
     train_parameters = {
-        "total_timesteps": 1000000,
+        "total_timesteps": 5000000,
         "record_output": True,
         "record_ghost": True,
         "save_model": True,
         "record_wandb": True,
         "iteration_type": "mul",
-        "alg": "snn",
+        "alg": "default",
     }
 
 
@@ -521,7 +510,7 @@ def main(args):
     # Parameters for testing
     # deterministic : deterministic evaluation value (for stable baselines)
     deterministic = False
-    test_dir = "./saves/default/RE6/ver_2/ppo_actor.pth"
+    test_dir = "./saves/default/SNN-S1/ver_4/ppo_actor.pth"
 
     # Parameters for imitation learning
     # record_expert_data : to record data for imitation learning
@@ -531,7 +520,7 @@ def main(args):
     player_name = "Amin"
 
     # Parameters for replays
-    replay_files = ["saves/default/RE6/ver_1/ghost.hdf5"]
+    replay_files = ["saves/default/SNN-S1/ver_4/ghost.hdf5"]
     mode = "all"
 
     # parameters for making graphs
@@ -574,6 +563,7 @@ def main(args):
     if args.mode == "replay":
         replay(replay_dir=replay_files,
                mode=mode,
+               env_args=env_args,
                )
 
     if args.mode == "graph":
@@ -591,6 +581,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, test, graph, replay
 
-    args.mode = "train"
+    args.mode = "test"
 
     main(args)

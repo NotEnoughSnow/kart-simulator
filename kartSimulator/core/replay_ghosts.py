@@ -22,13 +22,13 @@ class ReplayGhosts:
         self.launch(batches, batch_lengths, info, mode=mode)
     """
 
-    def __init__(self, locations, mode):
+    def __init__(self, locations, mode, env_args):
 
 
 
 
         if mode == "all":
-            self.replay_all_mul(locations)
+            self.replay_all_mul(locations, env_args)
         if mode == "batch":
             self.replay_batch_mul(locations)
 
@@ -201,7 +201,7 @@ class ReplayGhosts:
         return new_episodes
 
 
-    def replay_all_mul(self, file_paths):
+    def replay_all_mul(self, file_paths, env_args):
         batches, batch_episode_lens, batch_lens, all_info = self.load_and_process_hdf5_files(file_paths)
 
         new_episodes = self.process_batches(batches, batch_episode_lens, batch_lens, all_info)
@@ -211,7 +211,7 @@ class ReplayGhosts:
         print("launching")
 
         kwargs = {}
-        env = replay_simple_env.KartSim(num_agents=num_episodes, colors=all_info[0]["colors"], **kwargs)
+        env = replay_simple_env.KartSim(num_agents=num_episodes, colors=all_info[0]["colors"], **env_args)
 
         running = True
         while running:

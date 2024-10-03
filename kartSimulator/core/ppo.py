@@ -156,12 +156,6 @@ class PPO:
             avg_ep_lens = np.mean(batch_lens)
             avg_ep_rews = np.mean([np.sum(ep_rews) for ep_rews in batch_rews])
 
-            if self.record_wandb:
-                wandb.log({
-                    "rollout/ep_rew_mean": avg_ep_rews,
-                    "rollout/ep_len_mean": avg_ep_lens,
-                }, step=self.logger['t_so_far'])
-
             self.logger['batch_delta_t'] = time.time_ns()
 
             total_ghost_ep.append(batch_ghosts)
@@ -463,7 +457,6 @@ class PPO:
             batch_vals.append(ep_vals)
             batch_dones.append(ep_dones)
 
-            '''
             ep_rew_mean = np.sum(ep_rews)
             # print(ep_rew_mean)
 
@@ -471,8 +464,7 @@ class PPO:
                 wandb.log({
                     "rollout/ep_rew_mean": ep_rew_mean,
                     "rollout/ep_len_mean": (ep_t + 1),
-                }, step=self.logger['t_so_far'])'''
-
+                }, step=self.logger['t_so_far'])
 
 
         # Reshape data as tensors in the shape specified in function description, before returning
