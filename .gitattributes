@@ -1,2 +1,5 @@
 saves/** filter=lfs diff=lfs merge=lfs -text
+saves/default/LL3/ver_1/events.out.tfevents.1723797381.DESKTOP-K5B98CG.15328.0 filter=lfs diff=lfs merge=lfs -text
+saves/default/LL3/ver_2/events.out.tfevents.1723845855.DESKTOP-K5B98CG.21668.0 filter=lfs diff=lfs merge=lfs -text
+saves/default/RE6/ver_2/ghost.hdf5 filter=lfs diff=lfs merge=lfs -text
 wandb/** filter=lfs diff=lfs merge=lfs -text
