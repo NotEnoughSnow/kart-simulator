@@ -364,4 +364,9 @@ pyrightconfig.json
 # archives
 archive/
 
+#saves
+saves/
+
+wandb/
+
 # End of https://www.toptal.com/developers/gitignore/api/python,intellij,pycharm
