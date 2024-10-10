@@ -581,6 +581,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, test, graph, replay
 
-    args.mode = "test"
+    args.mode = "train"
 
     main(args)
