@@ -4,14 +4,14 @@ import pymunk
 import numpy as np
 import torch
 
-# 100 usually
-VISION_LENGTH = 300
+#VISION_LENGTH = 300
+VISION_LENGTH = 100
 NO_VISION_CONSTANT = VISION_LENGTH / 6
 VISION_FOV = 360
 RAY_COUNT = 60
 
 halfwinsize = 5
-torch.manual_seed(0)
+#torch.manual_seed(0)
 
 conv_layer = torch.nn.Conv1d(in_channels=1,
                              out_channels=1,

@@ -63,7 +63,7 @@ class PPO:
         if self.record_wandb:
             wandb.init(
                 # set the wandb project where this run will be logged
-                project="racing-speed",
+                project="seed-testing",
 
                 # track hyperparameters and run metadata
                 config=train_config
@@ -584,7 +584,7 @@ class PPO:
         # Miscellaneous parameters
         self.render_every_i = 10  # Only render every n iterations
         self.save_freq = 10  # How often we save in number of iterations
-        self.seed = None  # Sets the seed of our program, used for reproducibility of results
+        #self.seed = None  # Sets the seed of our program, used for reproducibility of results
 
         # Change any default values to custom values for specified hyperparameters
         for param, val in hyperparameters.items():

@@ -191,6 +191,7 @@ class KartSim(gym.Env):
 
         self.continuous = False
 
+
     def reset(
             self,
             *,
@@ -725,10 +726,10 @@ class KartSim(gym.Env):
         self.vision_points, vision_lengths = vision.cast_rays_lengths(self._space,
                                                                       self._playerBody)
         # apply circularity and convolution
-        wraparound_data = vision.apply_circularity(vision_lengths)
+        #wraparound_data = vision.apply_circularity(vision_lengths)
 
         # normalize rays
-        vision_lengths = normalize_vec(wraparound_data, maximum=vision.VISION_LENGTH, minimum=0)
+        vision_lengths = normalize_vec(vision_lengths, maximum=vision.VISION_LENGTH, minimum=0)
 
         self.vision_lengths = vision_lengths
         return self.vision_lengths

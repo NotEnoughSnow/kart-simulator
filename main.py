@@ -1,4 +1,6 @@
 import os
+import random
+
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 import gymnasium as gym
@@ -447,18 +449,18 @@ def main(args):
     #   MAX_VELOCITY = 4 * 0.22 * PPM
 
     track_args = {
-        "boxes_file": "shapes.txt",
-        "sectors_file": "sectors.txt",
-        #"boxes_file": "boxes.txt",
-        #"sectors_file": "sectors_box.txt",
+        #"boxes_file": "shapes.txt",
+        #"sectors_file": "sectors.txt",
+        "boxes_file": "boxes.txt",
+        "sectors_file": "sectors_box.txt",
 
         "corridor_size": 50,
 
         "spawn_range": 400,
         "fixed_goal": [200, -200],
 
-        #"initial_pos": [330, 450]
-        "initial_pos": [180, 100]
+        "initial_pos": [330, 450]
+        #"initial_pos": [180, 100]
     }
 
     simple_env_player_args = {
@@ -492,10 +494,10 @@ def main(args):
     # iteration_type : mul for default mode, one to run a single iteration
     # alg : default, baselines, snn
     train_parameters = {
-        "total_timesteps": 5000000,
-        "record_output": True,
-        "record_ghost": True,
-        "save_model": True,
+        "total_timesteps": 100000,
+        "record_output": False,
+        "record_ghost": False,
+        "save_model": False,
         "record_wandb": True,
         "iteration_type": "mul",
         "alg": "default",
@@ -504,8 +506,18 @@ def main(args):
 
     # Save parameters
     # experiment_name : change to test out different conditions
-    experiment_name = "SNN-S1"
+    experiment_name = "seed"
     save_dir = "./saves/"
+
+
+    seed_value = 42
+
+    random.seed(seed_value)
+    torch.manual_seed(seed_value)
+    np.random.seed(seed_value)
+
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
     # Parameters for testing
     # deterministic : deterministic evaluation value (for stable baselines)
@@ -569,9 +581,6 @@ def main(args):
     if args.mode == "graph":
         make_graphs(graph_file=graph_file)
 
-    if args.mode == "optimize":
-        # TODO implement evolutionary optimization
-        pass
 
 
 if __name__ == "__main__":
@@ -581,6 +590,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, test, graph, replay
 
-    args.mode = "test"
+    args.mode = "train"
 
     main(args)
