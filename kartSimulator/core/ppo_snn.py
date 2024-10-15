@@ -9,14 +9,11 @@ import torch
 from torch import nn
 from torch.distributions import MultivariateNormal, Categorical
 from torch.optim.adam import Adam
-from torch.utils.tensorboard import SummaryWriter
 import kartSimulator.core.snn_utils as SNN_utils
-from stable_baselines3.common.evaluation import evaluate_policy  # For evaluating the model
 
 import h5py
 
 import wandb
-from joblib import Parallel, delayed
 
 from kartSimulator.core.actor_network import ActorNetwork
 from kartSimulator.core.critic_network import CriticNetwork
