@@ -509,16 +509,6 @@ def main(args):
     experiment_name = "seed"
     save_dir = "./saves/"
 
-
-    seed_value = 42
-
-    random.seed(seed_value)
-    torch.manual_seed(seed_value)
-    np.random.seed(seed_value)
-
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
     # Parameters for testing
     # deterministic : deterministic evaluation value (for stable baselines)
     deterministic = False

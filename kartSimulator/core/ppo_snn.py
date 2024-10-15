@@ -1,6 +1,7 @@
 import time
 import sys
 import os
+import random
 
 import gymnasium as gym
 import numpy as np
@@ -21,6 +22,7 @@ from kartSimulator.core.actor_network import ActorNetwork
 from kartSimulator.core.critic_network import CriticNetwork
 from kartSimulator.core.snn_network import SNN
 from kartSimulator.core.snn_network_small import SNN_small
+
 
 
 class PPO_SNN:
@@ -127,6 +129,10 @@ class PPO_SNN:
             # Initialize the covariance matrix used to query the actor for actions
             self.cov_var = torch.full(size=(self.act_dim,), fill_value=0.5)
             self.cov_mat = torch.diag(self.cov_var)
+
+
+        self.highest = 0
+        self.num_finishes = 0
 
         # This logger will help us with printing out summaries of each iteration
         self.logger = {
@@ -457,13 +463,16 @@ class PPO_SNN:
 
                 ghost_ep.append(info.get("position", [0, 0]))
 
-                if info.get("highest", None) is not None:
+                self.highest = info.get("highest", None)
+                self.num_finishes = info.get("num_finishes", None)
+
+                if self.highest is not None:
                     if self.record_wandb:
                         wandb.log({
                             "race/highest_score": info["highest"],
                         }, step=self.logger['t_so_far'])
 
-                if info.get("num_finishes", None) is not None:
+                if self.num_finishes is not None:
                     if self.record_wandb:
                         wandb.log({
                             "race/number_finishes": info["num_finishes"],
@@ -670,8 +679,14 @@ class PPO_SNN:
             assert (type(self.seed) == int)
 
             # Set the seed
-            torch.manual_seed(self.seed)
             print(f"Successfully set seed to {self.seed}")
+
+            random.seed(self.seed)
+            torch.manual_seed(self.seed)
+            np.random.seed(self.seed)
+
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
 
     def _log_summary(self):
         """

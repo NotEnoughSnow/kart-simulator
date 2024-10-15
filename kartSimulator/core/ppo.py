@@ -1,6 +1,7 @@
 import os
 import time
 import sys
+import random
 
 import gymnasium as gym
 import numpy as np
@@ -83,9 +84,6 @@ class PPO:
             if self.verbose == 0:
                 pass
 
-
-
-
         self.env = env
         self.obs_dim = env.observation_space.shape[0]
 
@@ -122,6 +120,8 @@ class PPO:
 
         self.num_processes = 4  # Number of processes to run concurrently
 
+        self.highest = 0
+        self.num_finishes = 0
 
         # This logger will help us with printing out summaries of each iteration
         self.logger = {
@@ -424,13 +424,16 @@ class PPO:
 
                 ghost_ep.append(info.get("position", [0,0]))
 
-                if info.get("highest", None) is not None:
+                self.highest = info.get("highest", None)
+                self.num_finishes = info.get("num_finishes", None)
+
+                if self.highest is not None:
                     if self.record_wandb:
                         wandb.log({
                             "race/highest_score": info["highest"],
                         }, step=self.logger['t_so_far'])
 
-                if info.get("num_finishes", None) is not None:
+                if self.num_finishes is not None:
                     if self.record_wandb:
                         wandb.log({
                             "race/number_finishes": info["num_finishes"],
@@ -584,7 +587,7 @@ class PPO:
         # Miscellaneous parameters
         self.render_every_i = 10  # Only render every n iterations
         self.save_freq = 10  # How often we save in number of iterations
-        #self.seed = None  # Sets the seed of our program, used for reproducibility of results
+        self.seed = None  # Sets the seed of our program, used for reproducibility of results
 
         # Change any default values to custom values for specified hyperparameters
         for param, val in hyperparameters.items():
@@ -594,10 +597,16 @@ class PPO:
         if self.seed != None:
             # Check if our seed is valid first
             assert (type(self.seed) == int)
-
+            
             # Set the seed
-            torch.manual_seed(self.seed)
             print(f"Successfully set seed to {self.seed}")
+
+            random.seed(self.seed)
+            torch.manual_seed(self.seed)
+            np.random.seed(self.seed)
+
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
 
     def _log_summary(self):
         """
