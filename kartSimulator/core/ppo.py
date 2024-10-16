@@ -63,7 +63,7 @@ class PPO:
         if self.record_wandb:
             wandb.init(
                 # set the wandb project where this run will be logged
-                project="seed-testing",
+                project="steer-racing",
 
                 # track hyperparameters and run metadata
                 config=train_config
@@ -121,6 +121,11 @@ class PPO:
 
         self.highest = 0
         self.num_finishes = 0
+
+        # Initialize other PPO hyperparameters
+        self.epsilon = 0.2  # Initial epsilon (full exploration)
+        self.epsilon_decay_factor = 0.05  # Adjust this to control the rate of decay
+        self.min_epsilon = 0.01  # Minimum epsilon value (to avoid 0 exploration)
 
         # This logger will help us with printing out summaries of each iteration
         self.logger = {

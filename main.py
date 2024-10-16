@@ -411,7 +411,7 @@ def main(args):
     # environment selection
     # simple_env has free movement
     # base_env has car like movement
-    env_fn = simple_env
+    env_fn = base_env
 
     # list of observations:
     # DISTANCE : distance to goal
@@ -498,7 +498,7 @@ def main(args):
         "record_output": False,
         "record_ghost": False,
         "save_model": False,
-        "record_wandb": True,
+        "record_wandb": False,
         "iteration_type": "mul",
         "alg": "default",
     }
@@ -580,6 +580,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, test, graph, replay
 
-    args.mode = "train"
+    args.mode = "play"
 
     main(args)

@@ -715,6 +715,11 @@ class KartSim(gym.Env):
     def _calculate_reward(self, time):
         return 1 / 3 * math.exp(1 / 100 * -time + 7)
 
+    def calculate_max_distance_sector2(self):
+        if self.highest_goal == 1:
+            print(self.distance_to_next_points)
+
+
     def observation(self):
         obs_methods = {
             "LIDAR": self.observation_LIDAR,
