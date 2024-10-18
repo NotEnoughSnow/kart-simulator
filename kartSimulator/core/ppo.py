@@ -122,10 +122,7 @@ class PPO:
         self.highest = 0
         self.num_finishes = 0
 
-        # Initialize other PPO hyperparameters
-        self.epsilon = 0.2  # Initial epsilon (full exploration)
-        self.epsilon_decay_factor = 0.05  # Adjust this to control the rate of decay
-        self.min_epsilon = 0.01  # Minimum epsilon value (to avoid 0 exploration)
+        self.epsilon = 0
 
         # This logger will help us with printing out summaries of each iteration
         self.logger = {
@@ -431,6 +428,8 @@ class PPO:
                 self.highest = info.get("highest", None)
                 self.num_finishes = info.get("num_finishes", None)
 
+                self.epsilon = info.get("epsilon", None)
+
                 if self.highest is not None:
                     if self.record_wandb:
                         wandb.log({
@@ -511,11 +510,24 @@ class PPO:
             logits = self.actor(obs)
             dist = Categorical(logits=logits)
 
-        # Sample an action from the distribution
-        action = dist.sample()
+        if np.random.rand() < self.epsilon:
+            # explore
+            if self.continuous:
+                action = np.random.uniform(-1, 1, size=self.act_dim)
+            else:
+                action = np.random.randint(0, self.act_dim)
+
+            action = torch.tensor(action, dtype=torch.int16)
+
+
+        else:
+            # exploit
+            # Sample an action from the distribution
+            action = dist.sample()
 
         # Calculate the log probability for that action
         log_prob = dist.log_prob(action)
+
 
         # Return the sampled action and the log probability of that action in our distribution
         return action.detach().numpy(), log_prob.detach()

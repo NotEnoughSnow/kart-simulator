@@ -402,10 +402,10 @@ def main(args):
         'clip': 0.2,
         'max_grad_norm': 0.5,
         'render_every_i': 10,
-        'target_kl': 0.6,
+        'target_kl': 0.5,
         'num_minibatches': 80,
         'gae_lambda': 0.9642298634023644,
-        'seed': 193,
+        'seed': 4124,
         'verbose': 2,
     }
     # environment selection
@@ -425,8 +425,9 @@ def main(args):
     # obs_types.DISTANCE,
     # obs_types.TARGET_ANGLE,
     obs = [obs_types.LIDAR,
+           obs_types.POSITION,
            obs_types.VELOCITY,
-           #obs_types.ROTATION,
+           obs_types.ROTATION,
            obs_types.DISTANCE,
            obs_types.TARGET_ANGLE,
            ]
@@ -470,8 +471,8 @@ def main(args):
         "bot_weight": 1,
     }
     base_env_player_args = {
-        "player_acc_rate": 3,
-        "player_break_rate": 3,
+        "player_acc_rate": 5,
+        "player_break_rate": 5,
         "max_velocity": 2,
         "rad_velocity": 3 * 2.84,
         "bot_size": 0.192,
@@ -494,11 +495,11 @@ def main(args):
     # iteration_type : mul for default mode, one to run a single iteration
     # alg : default, baselines, snn
     train_parameters = {
-        "total_timesteps": 100000,
+        "total_timesteps": 300000,
         "record_output": False,
-        "record_ghost": False,
+        "record_ghost": True,
         "save_model": False,
-        "record_wandb": False,
+        "record_wandb": True,
         "iteration_type": "mul",
         "alg": "default",
     }
@@ -506,7 +507,7 @@ def main(args):
 
     # Save parameters
     # experiment_name : change to test out different conditions
-    experiment_name = "seed"
+    experiment_name = "steer-racing"
     save_dir = "./saves/"
 
     # Parameters for testing
@@ -522,7 +523,7 @@ def main(args):
     player_name = "Amin"
 
     # Parameters for replays
-    replay_files = ["saves/default/SNN-S1/ver_4/ghost.hdf5"]
+    replay_files = ["saves/default/steer-racing/ver_3/ghost.hdf5"]
     mode = "all"
 
     # parameters for making graphs

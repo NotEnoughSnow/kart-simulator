@@ -199,7 +199,12 @@ class KartSim(gym.Env):
         self.standing_still_timesteps = 0
         self.velocity_reward = 0
 
+
         self.continuous = False
+
+        # epsilon variables
+        self.epsilon = 0.2
+        self.epsilon_lowest_dist = math.inf
 
 
     def reset(
@@ -322,6 +327,16 @@ class KartSim(gym.Env):
         self.info["position"] = self._playerBody.position
         self.info["highest"] = self.highest_goal
         self.info["num_finishes"] = self.num_finishes
+
+
+        if self.highest_goal == 1:
+
+            if self.distance_to_next_points < self.epsilon_lowest_dist:
+                self.epsilon_lowest_dist = self.distance_to_next_points
+
+            self.epsilon = self.epsilon_lowest_dist/180
+
+        self.info["epsilon"] = self.epsilon
 
         return state, step_reward, terminated, truncated, self.info
 
@@ -449,7 +464,8 @@ class KartSim(gym.Env):
 
         self.ui_manager.add_ui_text("standing_still_timesteps", self.standing_still_timesteps, ".0f")
 
-
+        self.ui_manager.add_ui_text("epsilon", self.epsilon, ".4f")
+        self.ui_manager.add_ui_text("epsilon distance", self.epsilon_lowest_dist, ".4f")
 
 
     def close(self):
@@ -509,8 +525,10 @@ class KartSim(gym.Env):
         self._num_sectors = num_sectors
 
     def _init_world(self):
-        self._add_walls()
-        self._add_sectors()
+        if self.map.missing_walls_flag:
+            self._add_walls()
+        if self.map.missing_sectors_flag:
+            self._add_sectors()
         self.out_of_track = False
 
     def _init_player(self, position, angle):
@@ -698,6 +716,25 @@ class KartSim(gym.Env):
                 self.highest_goal = self._num_sectors
                 self.finish = True
 
+        # calculatd in step()
+        #if self.highest_goal == 1:
+        #    self.epsilon = 0.8
+
+        #if self.next_sector_name ==
+
+        # TODO translate this to non ooga booga numbers
+        if self.highest_goal == 2:
+            self.epsilon = 0.1
+
+        if self.highest_goal == 3:
+            self.epsilon = 0.05
+
+        if self.highest_goal == 4:
+            self.epsilon = 0.005
+
+        if self.highest_goal == 5:
+            self.epsilon = 0
+
         return True
 
     def track_callback_begin(self, arbiter, space, data):
@@ -715,9 +752,6 @@ class KartSim(gym.Env):
     def _calculate_reward(self, time):
         return 1 / 3 * math.exp(1 / 100 * -time + 7)
 
-    def calculate_max_distance_sector2(self):
-        if self.highest_goal == 1:
-            print(self.distance_to_next_points)
 
 
     def observation(self):
@@ -808,10 +842,10 @@ class KartSim(gym.Env):
         self.vision_points, vision_lengths = vision.cast_rays_lengths(self._space,
                                                                       self._playerBody)
         # apply circularity and convolution
-        wraparound_data = vision.apply_circularity(vision_lengths)
+        #wraparound_data = vision.apply_circularity(vision_lengths)
 
         # normalize rays
-        vision_lengths = normalize_vec(wraparound_data, maximum=vision.VISION_LENGTH, minimum=0)
+        vision_lengths = normalize_vec(vision_lengths, maximum=vision.VISION_LENGTH, minimum=0)
 
         self.vision_lengths = vision_lengths
         return self.vision_lengths
