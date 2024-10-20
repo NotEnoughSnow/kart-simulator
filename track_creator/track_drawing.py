@@ -32,9 +32,17 @@ points = []
 # Define a boolean variable to indicate if the mouse button is pressed
 drawing = False
 
-mode = "track"
+# track
+# sectors
+mode = "sectors"
 print(("working in %s mode" % mode))
 shapes_arr =[]
+
+if mode == "sectors":
+    with open("map_1/new_track.txt", "r") as f:
+        reader = csv.reader(f, delimiter=",")
+        points = list(reader)
+        shapes_arr = [list(map(ast.literal_eval, shape)) for shape in points]
 
 
 # Define the main loop
@@ -83,12 +91,12 @@ while running:
 
             if event.key == pygame.K_RETURN:
                 if mode == "track":
-                    with open("shapes_test.txt", "w") as f:
+                    with open("new_track.txt", "w") as f:
                         wr = csv.writer(f)
                         wr.writerows(shapes)
                     print(shapes[shape_index])
                 if mode == "sectors":
-                    with open("sectors_box.txt", "w") as f:
+                    with open("new_sectors.txt", "w") as f:
                         wr = csv.writer(f)
                         wr.writerows(shapes)
                     print(shapes[shape_index])
@@ -106,9 +114,10 @@ while running:
         elif len(shapes[i]) > 1:
             pygame.draw.lines(screen, line_color, False, shapes[i], line_width)
 
-    #if mode == "sectors":
-    for shape in shapes_arr:
-        pygame.draw.lines(screen, track_line_color, False, shape, line_width)
+
+    if mode == "sectors":
+        for shape in shapes_arr:
+            pygame.draw.lines(screen, track_line_color, False, shape, line_width)
 
 
     # Update the display
