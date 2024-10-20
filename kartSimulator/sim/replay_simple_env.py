@@ -65,6 +65,7 @@ class KartSim(gym.Env):
                  track_type="default",
                  track_args=None,
                  player_args=None,
+                 rew_adj=None,
                  ):
 
         print("loaded env:", self.metadata["name"])

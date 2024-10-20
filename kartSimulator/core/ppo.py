@@ -124,6 +124,8 @@ class PPO:
 
         self.epsilon = 0
 
+        self.use_epsilon_greedy = False
+
         # This logger will help us with printing out summaries of each iteration
         self.logger = {
             'delta_t': time.time_ns(),
@@ -510,7 +512,7 @@ class PPO:
             logits = self.actor(obs)
             dist = Categorical(logits=logits)
 
-        if np.random.rand() < self.epsilon:
+        if self.use_epsilon_greedy and np.random.rand() < self.epsilon:
             # explore
             if self.continuous:
                 action = np.random.uniform(-1, 1, size=self.act_dim)

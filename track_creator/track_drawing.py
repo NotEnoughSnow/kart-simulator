@@ -36,11 +36,6 @@ mode = "track"
 print(("working in %s mode" % mode))
 shapes_arr =[]
 
-with open("kartSimulator/sim/resources/boxes.txt", "r") as f:
-    reader = csv.reader(f, delimiter=",")
-    points = list(reader)
-    shapes_arr = [list(map(ast.literal_eval, shape)) for shape in points]
-
 
 # Define the main loop
 running = True

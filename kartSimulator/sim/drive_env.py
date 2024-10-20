@@ -56,6 +56,7 @@ class KartSim(gym.Env):
                  track_type="default",
                  track_args=None,
                  player_args=None,
+                 rew_adj=None,
                  ):
 
         print("loaded env: ", self.metadata["name"])
@@ -118,8 +119,8 @@ class KartSim(gym.Env):
         self.velocity = 0
         self.forward_direction = 0
         # FIXME obs returned before calculating the actual distance
-        self.distance_to_next_points = -MAX_TARGET_DISTANCE
-        self.distance_to_next_points_vec = [-MAX_TARGET_DISTANCE, -MAX_TARGET_DISTANCE]
+        self.distance_to_next_goal = -MAX_TARGET_DISTANCE
+        self.distance_to_next_goal_vec = [-MAX_TARGET_DISTANCE, -MAX_TARGET_DISTANCE]
 
         self.norm_dist = 1
         self.norm_dist_vec = [1, 1]
@@ -163,7 +164,7 @@ class KartSim(gym.Env):
         self.next_target_rew = 0
         self.next_target_rew_act = 0
 
-        #self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
+        #self.map = MapLoader(self._space, "boxes.txt", "sectors_1.txt", self.initial_pos)
         #self.map = MapGenerator(self._space, WORLD_CENTER, 50)
         #self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
 
@@ -185,11 +186,13 @@ class KartSim(gym.Env):
         self._init_player(self.initial_pos, 0)
 
 
-        self.goal_pos = [0,0]
-        self.angle_to_target = 0
+        self.next_goal_position = [0, 0]
 
-        self.angle_to_target_sin = 0
-        self.angle_to_target_cos = 0
+        self.angles = {}
+        self.angles["current_angle"] = 0
+        self.angles["angle_to_target"] = 0
+        self.angles["angle_to_target_cos"] = 0
+        self.angles["angle_to_target_sin"] = 0
 
         self.info = {}
 
@@ -203,8 +206,14 @@ class KartSim(gym.Env):
         self.continuous = False
 
         # epsilon variables
-        self.epsilon = 0.2
+        self.epsilon = 0.7
         self.epsilon_lowest_dist = math.inf
+
+        self.resets = 0
+
+        self.steer_reward = 0
+
+        self.rew_adj = rew_adj
 
 
     def reset(
@@ -213,6 +222,9 @@ class KartSim(gym.Env):
             seed: Optional[int] = None,
             options: Optional[dict] = None,
     ):
+
+        self.resets += 1
+
         super().reset()
 
         directions, angle, position = self.map.reset([self._playerShape])
@@ -224,6 +236,8 @@ class KartSim(gym.Env):
         self._init_player(position, angle)
 
         observation = self.observation()
+
+        #print(self.resets)
 
         # return self.step(None)[0], {}
         return observation, {}
@@ -299,7 +313,10 @@ class KartSim(gym.Env):
         self.check_standing_still(20, 200)
 
         if action is not None:
-            step_reward, terminated, truncated = self.reward_function(pstart, pend)
+
+            self.reward_logic(pstart, pend, action)
+
+            step_reward, terminated, truncated = self.reward_function()
 
         self._current_episode_time += 1
 
@@ -313,12 +330,15 @@ class KartSim(gym.Env):
 
         # (shape[0][0] + shape[1][0]) / 2
 
+        self.calculate_angle_to_goal()
+
         # observation
         state = self.observation()
 
         # truncation
         if self._current_episode_time > self.reset_time:
             self.out_of_track = True
+            pass
 
         if self.render_mode == "human":
             self.render(self.render_mode)
@@ -329,16 +349,30 @@ class KartSim(gym.Env):
         self.info["num_finishes"] = self.num_finishes
 
 
-        if self.highest_goal == 1:
+        #if self.highest_goal == 1:
 
-            if self.distance_to_next_points < self.epsilon_lowest_dist:
-                self.epsilon_lowest_dist = self.distance_to_next_points
+        #    if self.distance_to_next_points < self.epsilon_lowest_dist:
+        #        self.epsilon_lowest_dist = self.distance_to_next_points
 
-            self.epsilon = self.epsilon_lowest_dist/180
+        #    self.epsilon = self.epsilon_lowest_dist/180
 
-        self.info["epsilon"] = self.epsilon
+        #self.info["epsilon"] = self.epsilon
+
+        self.epsilon = 0.7 - self.resets / 1400
+
+        self.info["epsilon"] = np.clip(self.epsilon, a_min=0, a_max=1)
 
         return state, step_reward, terminated, truncated, self.info
+
+    def calculate_angle_to_goal(self):
+        x = self.next_goal_position[0] - self._playerBody.position[0]
+        y = self.next_goal_position[1] - self._playerBody.position[1]
+
+        magnitude = math.sqrt(x ** 2 + y ** 2)
+
+        self.angles["angle_to_target_cos"] = x / magnitude
+        self.angles["angle_to_target_sin"] = y / magnitude
+
 
     def check_standing_still(self, threshold=15, max_still_timesteps=200):
         if np.abs(self.velocity) < threshold:  # Velocity close to zero
@@ -355,58 +389,134 @@ class KartSim(gym.Env):
     def distance(self, a, b):
         return np.linalg.norm(a - b)
 
-    def reward_function(self, pstart, pend):
+    def calculate_speed_factor(self, x):
+        return math.exp(x / 100) / 2
+
+    def calculate_distance_rew(self, x, s):
+        return 2000 / (x + 50) - 10
+
+    def calculate_steer_reward(self, direction):
+        return direction*0.1
+
+    def draw_angles(self, screen):
+        # Get player position
+        player_position = self._playerBody.position
+
+        # Length of the lines (in pixels)
+        line_length = 100
+
+        # Calculate the endpoint of the line for the angle to the target (blue line)
+        target_x = player_position[0] + line_length * math.cos(self.angles["angle_to_target"])
+        target_y = player_position[1] + line_length * math.sin(self.angles["angle_to_target"])
+
+        # Draw the blue line representing the angle to the target
+        pygame.draw.line(screen, (0, 0, 255), player_position, (target_x, target_y), 2)
+
+        # Calculate the endpoint of the line for the player's current angle (green line)
+        player_x = player_position[0] + line_length * math.cos(self.angles["current_angle"])
+        player_y = player_position[1] + line_length * math.sin(self.angles["current_angle"])
+
+        # Draw the green line representing the player's current angle
+        pygame.draw.line(screen, (0, 255, 0), player_position, (player_x, player_y), 2)
+    def steer_direction(self, action):
+        # Angle to target using arctan2 to get the angle from sine and cosine
+        self.angles["angle_to_target"] = math.atan2(self.angles["angle_to_target_sin"], self.angles["angle_to_target_cos"])
+
+        # Get the current orientation of the ball
+        self.angles["current_angle"] = self._playerBody.angle - 3*math.pi/2
+
+        # Calculate the angle difference
+        angle_diff = self.angles["angle_to_target"] - self.angles["current_angle"]
+
+        # Normalize the angle to be within -pi to +pi
+        angle_diff = (angle_diff + math.pi) % (2 * math.pi) - math.pi
+
+        # Check if the goal is to the right or left
+        if angle_diff > 0:
+            # Goal is to the left of the player
+            if action == 3:
+                direction = -2
+            elif action == 4:
+                direction = 1
+            else:
+                direction = 0
+        else:
+            # Goal is to the right of the player
+            if action == 4:
+                direction = -2
+            elif action == 3:
+                direction = 1
+            else:
+                direction = 0
+
+        return direction
+
+    def reward_logic(self, pstart, pend, action):
+
+        if self.next_sector_name is not None:
+
+            self.next_goal_position = self.sector_info[self.next_sector_name][1]
+
+            distance_to_next_points_vec = pend - self.next_goal_position
+            self.distance_to_next_goal_vec = [-abs(distance_to_next_points_vec[0]),
+                                              -abs(distance_to_next_points_vec[1])]
+
+            self.distance_to_next_goal = self.distance(pend, self.next_goal_position)
+
+            # distance based reward. the reward is a direct transformation applied to the distance
+            # from the next goal to the agent.
+            # with added bonus, the transformation can be sector dependant.
+            #target_number = int(self.next_sector_name[-1])
+            #self.next_target_rew = self.calculate_distance_rew(self.distance_to_next_points, target_number)
+
+            # calculates a speed factor to be used as part of the dist-act reward
+            speed_factor = self.calculate_speed_factor(self.velocity)
+
+            # dist-act reward
+            # rewards/penalizes the agent if it moves closer/farther in the current timestep, i.e. if the difference in
+            # distance is less/more since the start of the current timestep.
+            initial_distance = -self.distance(self.next_goal_position, pstart)
+            final_distance = -self.distance(self.next_goal_position, pend)
+            self.next_target_rew_act = (final_distance - initial_distance)*speed_factor
+
+            # steer reward
+            if action is not None:
+                self.steer_reward = self.calculate_steer_reward(self.steer_direction(action))
+
+    def reward_function(self):
 
         step_reward = 0
         terminated = False
         truncated = False
 
-
-        if self.next_sector_name is not None:
-
-            self.goal_pos = self.sector_info[self.next_sector_name][1]
-
-            distance_to_next_points_vec = pend - self.goal_pos
-            self.distance_to_next_points_vec = [-abs(distance_to_next_points_vec[0]),
-                                                -abs(distance_to_next_points_vec[1])]
-
-            self.distance_to_next_points = self.distance(pend, self.goal_pos)
-
-            target_number = int(self.next_sector_name[-1])
-            #self.next_target_rew = 2000/(self.distance_to_next_points+50) - 10
-
-            initial_potential = -self.distance(self.goal_pos, pstart)
-            final_potential = -self.distance(self.goal_pos, pend)
-
-            speed_trans = math.exp(self.velocity / 100) / 2
-
-            self.next_target_rew_act = (final_potential - initial_potential)*speed_trans
-
-            #initial_potential = self.potential_curve(self.distance(goal, pstart))
-
         # penelty for existing
-        # self.reward -= 1
+        self.reward -= 1 * self.rew_adj["passive"]
 
+        # distance reward
+        self.reward += self.next_target_rew * self.rew_adj["dist"]
 
-        # reward for closing distance to sector medians
-        #self.reward += self.next_target_rew
+        # action-distance based reward
+        self.reward += (self.next_target_rew_act / 80) * self.rew_adj["act_dist"]
 
-        self.cont_reward += self.next_target_rew_act / 80
+        # reward for crossing sectors. reset the value after.
+        self.reward += self.sector_time_reward * self.rew_adj["sector_time"]
+        self.sector_time_reward = 0
 
-        # TODO assign sector and lap based rewards
+        # TODO aligning reward
+        self.reward += self.steer_reward * self.rew_adj["steer"]
+        self.steer_reward = 0
 
         # if finish lap then truncated
         if self.finish:
             terminated = True
-            self.cont_reward += 1000
+            self.reward += 1000
 
         # if collide with track then terminate
         if self.out_of_track:
             truncated = True
-            self.cont_reward -= 500
+            self.reward -= 500
 
-        step_reward = self.cont_reward + self.onetime_reward
-        self.onetime_reward = 0
+        step_reward = self.reward
 
         return step_reward, terminated, truncated
 
@@ -432,6 +542,10 @@ class KartSim(gym.Env):
         # updating events
         self._process_events()
 
+        # draw angles of agent, and direction of goal
+        self.draw_angles(self._window_surface)
+
+
 
     def update_ui(self, time_delta):
         self.ui_manager.update(time_delta, self._background)
@@ -443,13 +557,13 @@ class KartSim(gym.Env):
                                       self.steer_value,)
 
         self.ui_manager.add_ui_text("next target", self.next_sector_name, "")
-        self.ui_manager.add_ui_text("distance to target", self.distance_to_next_points, ".4f")
+        self.ui_manager.add_ui_text("distance to target", self.distance_to_next_goal, ".4f")
         self.ui_manager.add_ui_text("norm dist", self.norm_dist, ".3f")
-        self.ui_manager.add_ui_text("total reward", self.cont_reward, ".3f")
+        self.ui_manager.add_ui_text("total reward", self.reward, ".3f")
         self.ui_manager.add_ui_text("act.rew from target", self.next_target_rew_act, ".3f")
         self.ui_manager.add_ui_text("vel.rew", self.velocity_reward, ".3f")
-        self.ui_manager.add_ui_text("angle to target c", self.angle_to_target_cos, ".3f")
-        self.ui_manager.add_ui_text("angle to target s", self.angle_to_target_sin, ".3f")
+        self.ui_manager.add_ui_text("current angle", self.angles["current_angle"], ".4f")
+        self.ui_manager.add_ui_text("angle to target", self.angles["angle_to_target"], ".4f")
 
         self.ui_manager.add_ui_text("time in sec", (pygame.time.get_ticks() / 1000), ".2f")
         self.ui_manager.add_ui_text("fps", self._clock.get_fps(), ".2f")
@@ -535,8 +649,8 @@ class KartSim(gym.Env):
         self.accel_break_value = 0
         self.steer_value = 0
 
-        self.cont_reward = 0
-        self.onetime_reward = 0
+        self.reward = 0
+        self.sector_time_reward = 0
         self.prev_reward = 0
 
         # self._playerBody.position = self.initial_pos
@@ -707,7 +821,7 @@ class KartSim(gym.Env):
             self._last_sector_time = self._current_episode_time
 
             # reward based on sector time
-            self.onetime_reward += self._calculate_reward(time_diff)
+            self.sector_time_reward += self._calculate_sector_time_reward(time_diff)
             #print(f"in : {time_diff} received : {self._calculate_reward(time_diff)}")
 
             if data["number"] == self._num_sectors:
@@ -720,20 +834,21 @@ class KartSim(gym.Env):
         #if self.highest_goal == 1:
         #    self.epsilon = 0.8
 
-        #if self.next_sector_name ==
+        #if self.next_sector_name == "sector 2":
+        #    print("huh")
 
         # TODO translate this to non ooga booga numbers
-        if self.highest_goal == 2:
-            self.epsilon = 0.1
+        #if self.highest_goal == 2:
+        #    self.epsilon = 0.1
 
-        if self.highest_goal == 3:
-            self.epsilon = 0.05
+        #if self.highest_goal == 3:
+        #    self.epsilon = 0.05
 
-        if self.highest_goal == 4:
-            self.epsilon = 0.005
+        #if self.highest_goal == 4:
+        #    self.epsilon = 0.005
 
-        if self.highest_goal == 5:
-            self.epsilon = 0
+        #if self.highest_goal == 5:
+        #    self.epsilon = 0
 
         return True
 
@@ -749,7 +864,7 @@ class KartSim(gym.Env):
         # print(self.touch_track_counter)
         return True
 
-    def _calculate_reward(self, time):
+    def _calculate_sector_time_reward(self, time):
         return 1 / 3 * math.exp(1 / 100 * -time + 7)
 
 
@@ -804,16 +919,8 @@ class KartSim(gym.Env):
 
     def observation_target_angle(self):
 
-        x = self._playerBody.position[0] - self.goal_pos[0]
-        y = self._playerBody.position[1] - self.goal_pos[1]
-
-        magnitude = math.sqrt(x ** 2 + y ** 2)
-
-        self.angle_to_target_cos = x / magnitude
-        self.angle_to_target_sin = - y / magnitude
-
         # assign rotations
-        rotation = [self.angle_to_target_cos, self.angle_to_target_sin]
+        rotation = [self.angles["angle_to_target_cos"], self.angles["angle_to_target_sin"]]
 
         return rotation
 
@@ -826,13 +933,13 @@ class KartSim(gym.Env):
         return position
 
     def observation_distance(self):
-        distance = [utils.normalize_vec([self.distance_to_next_points], maximum=0, minimum=-MAX_TARGET_DISTANCE)[0]]
+        distance = [utils.normalize_vec([self.distance_to_next_goal], maximum=0, minimum=-MAX_TARGET_DISTANCE)[0]]
 
         return distance
 
     def observation_distance_vec(self):
 
-        distance = utils.normalize_vec(self.distance_to_next_points_vec, maximum=0, minimum=-MAX_TARGET_DISTANCE)
+        distance = utils.normalize_vec(self.distance_to_next_goal_vec, maximum=0, minimum=-MAX_TARGET_DISTANCE)
 
         return distance
 
