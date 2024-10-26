@@ -64,6 +64,7 @@ class KartSim(gym.Env):
                  reset_time=300,
                  track_type="default",
                  track_args=None,
+                 track=None,
                  player_args=None,
                  rew_adj=None,
                  ):
@@ -150,10 +151,8 @@ class KartSim(gym.Env):
                 self.agent_array.append(Simple_agent(color))
 
 
-        self.map = TrackFactory.create_track(track_type,
-                                             self._space,
-                                             WORLD_CENTER,
-                                             **track_args)
+        self.map = track
+        track.init_track(self._space, WORLD_CENTER)
 
         #self.map = MapLoader(self._space, "boxes.txt", "sectors_box.txt", self.initial_pos)
         #self.map = MapGenerator(self._space, WORLD_CENTER, 50)

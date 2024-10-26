@@ -7,12 +7,13 @@ import optuna
 from kartSimulator.core.ppo import PPO
 import numpy as np
 
-from kartSimulator.sim.directional_env import KartSim
+from kartSimulator.sim.drive_env import KartSim
 import kartSimulator.sim.observation_types as obs_types
 
 from torch.distributions import Categorical
 
-STUDY_NAME = "racing_simple"
+STUDY_NAME = "racing_steer"
+
 
 def eval_policy(actor, env, n_eval_episodes=5):
     """
@@ -69,6 +70,7 @@ def objective(trial):
     }
 
     obs = [obs_types.LIDAR,
+           obs_types.POSITION,
            obs_types.VELOCITY,
            obs_types.DISTANCE,
            obs_types.TARGET_ANGLE,
@@ -86,12 +88,6 @@ def objective(trial):
         "initial_pos": [300, 450]
     }
 
-    simple_env_player_args = {
-        "player_acc_rate": 15,
-        "max_velocity": 2,
-        "bot_size": 0.192,
-        "bot_weight": 1,
-    }
     base_env_player_args = {
         "player_acc_rate": 1,
         "player_break_rate": 2,
@@ -114,15 +110,14 @@ def objective(trial):
         "reset_time": 2000,
         "track_type": "boxes",
         "track_args": track_args,
-        #"player_args": simple_env_player_args if env_fn == simple_env else base_env_player_args,
-        "player_args": simple_env_player_args,
+        "player_args": base_env_player_args,
         "rew_adj": rew_adj,
 
     }
 
     env = KartSim(render_mode=None, train=False, **env_args)
 
-    total_timesteps = 100000
+    total_timesteps = 300000
 
     model = PPO(env=env,
                     save_model=False,

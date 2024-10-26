@@ -15,10 +15,7 @@ import h5py
 
 import wandb
 
-from kartSimulator.core.actor_network import ActorNetwork
-from kartSimulator.core.critic_network import CriticNetwork
-from kartSimulator.core.snn_network import SNN
-from kartSimulator.core.snn_network_small import SNN_small
+from kartSimulator.core.networks.snn_network_small import SNN_small
 
 
 

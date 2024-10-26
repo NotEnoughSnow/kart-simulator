@@ -92,21 +92,22 @@ class Cube:
 class MapGenerator(abs_map):
     cubes = []
 
-    def __init__(self, space, world_center, corr_size):
+    def __init__(self, corr_size):
 
         self.missing_walls_flag = True
         self.missing_sectors_flag = True
 
-
         self.corridor_size = corr_size
-        self.space = space
-
-        self.wc = world_center.copy()
         self.initial_pos = self.wc
 
         self.create_cubes()
 
         self.directions = ["UP", "DOWN"]
+
+    def init_track(self, space, world_center):
+        self.space = space
+        self.wc = world_center.copy()
+
 
     def create_cubes(self):
         self.cubes.append(Cube("CENTER", self.wc, self.corridor_size))

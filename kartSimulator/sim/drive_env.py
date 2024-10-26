@@ -53,8 +53,7 @@ class KartSim(gym.Env):
                  train=False,
                  obs_seq=[],
                  reset_time=2000,
-                 track_type="default",
-                 track_args=None,
+                 track=None,
                  player_args=None,
                  rew_adj=None,
                  ):
@@ -168,10 +167,9 @@ class KartSim(gym.Env):
         #self.map = MapGenerator(self._space, WORLD_CENTER, 50)
         #self.map = RandomPoint(self._space, spawn_range=400, wc=WORLD_CENTER)
 
-        self.map = TrackFactory.create_track(track_type,
-                                             self._space,
-                                             WORLD_CENTER,
-                                             **track_args)
+        self.map = track
+        track.init_track(self._space, WORLD_CENTER)
+
 
         self.initial_pos = self.map.initial_pos
 

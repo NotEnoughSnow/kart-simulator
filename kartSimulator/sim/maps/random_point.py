@@ -7,8 +7,7 @@ from kartSimulator.sim.maps.map_manager import AbstractMap as abs_map
 
 class RandomPoint(abs_map):
 
-    def __init__(self, space, spawn_range, fixed_goal, wc):
-        self.space = space
+    def __init__(self, spawn_range, fixed_goal):
         self.spawn_range = spawn_range
 
         if fixed_goal is not None:
@@ -16,11 +15,15 @@ class RandomPoint(abs_map):
             self.fixed_point_spawn = fixed_goal
         else:
             self.random = False
-        self.wc = wc.copy()
 
         self.initial_pos = self.wc
         self.missing_walls_flag = True
         self.missing_sectors_flag = True
+
+    def init_track(self, space, world_center):
+        self.space = space
+        self.wc = world_center.copy()
+
 
 
     def reset(self, playerShapes):

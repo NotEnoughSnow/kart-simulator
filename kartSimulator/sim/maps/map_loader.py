@@ -7,16 +7,20 @@ import kartSimulator.sim.utils as utils
 
 class MapLoader(abs_map):
 
-    def __init__(self, space,  track_file, sector_file, initial_pos):
+    def __init__(self, track_file, sector_file, initial_pos, r_goal):
         self.missing_walls_flag = True
         self.missing_sectors_flag = True
 
-        self.space = space
         self.sector_name = sector_file
         self.track_name = track_file
         self.initial_pos = initial_pos
 
-    def reset(self, playerShape):
+        self.r_goal = r_goal
+
+    def init_track(self, space, world_center):
+        self.space = space
+
+    def reset(self, playerShapes):
 
         pos_variation_x = random.uniform(-20, 20)
         pos_variation_y = random.uniform(-20, 20)
@@ -25,6 +29,16 @@ class MapLoader(abs_map):
 
         angle = 0
         position = random_position
+
+        if self.r_goal is not None:
+
+            for item in self.space.shapes:
+                if item not in playerShapes:
+                    self.space.remove(item)
+
+            self.missing_sectors_flag = True
+            self.missing_walls_flag = True
+
 
         return None, angle, position
 
@@ -59,10 +73,25 @@ class MapLoader(abs_map):
         static_sector_lines = []
         sector_midpoints = []
 
-        for shape in sectors_arr:
-            static_sector_lines.append(pymunk.Segment(sensor_bodies, shape[0], shape[1], 0.0))
-            # FIXME use np.average ?
-            sector_midpoints.append([(shape[0][0] + shape[1][0]) / 2, (shape[0][1] + shape[1][1]) / 2])
+        if self.r_goal is None:
+            for shape in sectors_arr:
+                static_sector_lines.append(pymunk.Segment(sensor_bodies, shape[0], shape[1], 0.0))
+                # FIXME use np.average ?
+                sector_midpoints.append([(shape[0][0] + shape[1][0]) / 2, (shape[0][1] + shape[1][1]) / 2])
+
+        else:
+
+            var_x = random.uniform(self.r_goal[0][0], self.r_goal[0][1])
+            var_y = random.uniform(self.r_goal[1][0], self.r_goal[1][1])
+
+            for shape in sectors_arr:
+
+                new_p1 = [shape[0][0] + var_x, shape[0][1] + var_y]
+                new_p2 = [shape[1][0] + var_x, shape[1][1] + var_y]
+
+                static_sector_lines.append(pymunk.Segment(sensor_bodies, new_p1, new_p2, 0.0))
+                sector_midpoints.append([(new_p1[0] + new_p2[0]) / 2, (new_p1[1] + new_p2[1]) / 2])
+
 
         for i in range(len(static_sector_lines)):
             static_sector_lines[i].elasticity = 0

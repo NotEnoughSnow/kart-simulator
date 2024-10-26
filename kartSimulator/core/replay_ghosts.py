@@ -4,6 +4,8 @@ import numpy as np
 import h5py
 import pygame
 import kartSimulator.sim.replay_simple_env as replay_simple_env
+from kartSimulator.sim.maps.track_factory import TrackFactory
+
 
 class ReplayGhosts:
 
@@ -22,13 +24,16 @@ class ReplayGhosts:
         self.launch(batches, batch_lengths, info, mode=mode)
     """
 
-    def __init__(self, locations, mode, env_args):
+    def __init__(self, locations, mode, track_type, track_name, env_factory):
 
 
 
 
         if mode == "all":
-            self.replay_all_mul(locations, env_args)
+            self.replay_all_mul(file_paths=locations,
+                                track_type=track_type,
+                                track_name=track_name,
+                                env_factory=env_factory)
         if mode == "batch":
             self.replay_batch_mul(locations)
 
@@ -201,7 +206,7 @@ class ReplayGhosts:
         return new_episodes
 
 
-    def replay_all_mul(self, file_paths, env_args):
+    def replay_all_mul(self, file_paths, track_type, track_name, env_factory):
         batches, batch_episode_lens, batch_lens, all_info = self.load_and_process_hdf5_files(file_paths)
 
         new_episodes = self.process_batches(batches, batch_episode_lens, batch_lens, all_info)
@@ -211,6 +216,12 @@ class ReplayGhosts:
         print("launching")
 
         kwargs = {}
+
+
+        env_factory.updateFactory(track_type, track_name)
+
+        env_args = env_factory.env_args
+
         env = replay_simple_env.KartSim(num_agents=num_episodes, colors=all_info[0]["colors"], **env_args)
 
         running = True

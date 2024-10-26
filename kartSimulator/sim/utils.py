@@ -15,6 +15,19 @@ def get_next_run_directory(base_dir, experiment_type):
             return run_path, run_number
         run_number += 1
 
+def get_next_run_directory_mod(base_dir, experiment_type):
+    """
+    Returns the next run directory path for the given experiment type
+    by incrementing the run number.
+    """
+    run_number = 1
+    while True:
+        run_path = os.path.join(base_dir, f"{experiment_type}-{run_number}")
+        if not os.path.exists(run_path):
+            os.makedirs(run_path)
+            return run_path, run_number
+        run_number += 1
+
 
 def readTrackFile(name):
     with open(name, "r") as f:

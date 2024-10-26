@@ -3,6 +3,10 @@ from abc import ABC, abstractmethod
 class AbstractMap(ABC):
 
     @abstractmethod
+    def init_track(self, space, world_center):
+        pass
+
+    @abstractmethod
     def reset(self, player_shape):
         pass
 

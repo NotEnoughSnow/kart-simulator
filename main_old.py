@@ -1,5 +1,4 @@
 import os
-import random
 
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
@@ -22,7 +21,7 @@ import kartSimulator.sim.observation_types as obs_types
 
 from kartSimulator.core.replay_ghosts import ReplayGhosts
 
-from kartSimulator.core.standard_network import FFNetwork
+from kartSimulator.core.networks.standard_network import FFNetwork
 
 import kartSimulator.core.baselines as baselines
 

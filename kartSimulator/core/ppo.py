@@ -9,16 +9,12 @@ import torch
 from torch import nn
 from torch.distributions import MultivariateNormal, Categorical
 from torch.optim.adam import Adam
-import kartSimulator.core.snn_utils as SNN_utils
 
 import h5py
 
 import wandb
 
-from kartSimulator.core.actor_network import ActorNetwork
-from kartSimulator.core.critic_network import CriticNetwork
-from kartSimulator.core.standard_network import FFNetwork
-import pickle
+from kartSimulator.core.networks.standard_network import FFNetwork
 
 
 class PPO:
@@ -63,7 +59,7 @@ class PPO:
         if self.record_wandb:
             wandb.init(
                 # set the wandb project where this run will be logged
-                project="steer-racing",
+                project="curriculum-project",
 
                 # track hyperparameters and run metadata
                 config=train_config
@@ -684,8 +680,10 @@ class PPO:
 
 
     def get_actor(self):
-
         return self.actor, self.actor.state_dict()
+
+    def get_critic(self):
+        return self.critic, self.critic.state_dict()
 
     def save_ghost(self, env, batches, batch_lengths):
         # Saving data to HDF5
