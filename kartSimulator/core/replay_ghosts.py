@@ -35,7 +35,10 @@ class ReplayGhosts:
                                 track_name=track_name,
                                 env_factory=env_factory)
         if mode == "batch":
-            self.replay_batch_mul(locations)
+            self.replay_batch_mul(file_paths=locations,
+                                track_type=track_type,
+                                track_name=track_name,
+                                env_factory=env_factory)
 
     """
     def launch(self, batches, batch_lengths, info, mode="all"):
@@ -265,7 +268,7 @@ class ReplayGhosts:
 
         return padded_batches, combined_max_ep_lens
 
-    def replay_batch_mul(self, file_paths):
+    def replay_batch_mul(self, file_paths, track_type, track_name, env_factory):
         all_batches, batch_episode_lens, batch_lens, all_info = self.load_and_process_hdf5_files(file_paths)
 
         new_batches, max_num_batches = self.process_batches_batch(all_batches, batch_episode_lens, batch_lens, all_info)
@@ -284,7 +287,12 @@ class ReplayGhosts:
 
 
         kwargs = {}
-        env = replay_simple_env.KartSim(num_agents=num_agents_per_training, colors=colors, **kwargs)
+
+        env_factory.updateFactory(track_type, track_name)
+
+        env_args = env_factory.env_args
+
+        env = replay_simple_env.KartSim(num_agents=num_agents_per_training, colors=colors, **env_args)
 
         running = True
 

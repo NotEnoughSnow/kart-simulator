@@ -25,14 +25,14 @@ def main(args):
 
 
     save_config = {
-        "project_name": "curriculum-project",
-        "run_name": "zaza",
+        "project_name": "steer-final",
+        "run_name": "SNN",
         "save_dir": ".\\saves\\",
     }
 
     env_name = base_env
     track_type = "boxes"
-    track_name = "boxes"
+    track_name = "big_S"
 
     env_factory = EnvFactory(env_name)
 
@@ -57,6 +57,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, eval, replay
 
-    args.mode = "play"
+    args.mode = "train"
 
     main(args)

@@ -198,8 +198,6 @@ class KartSim(gym.Env):
         self.num_finishes = 0
 
         self.standing_still_timesteps = 0
-        self.velocity_reward = 0
-
 
         self.continuous = False
 
@@ -225,20 +223,30 @@ class KartSim(gym.Env):
 
         super().reset()
 
+        import_position = options.get("initial pos", None)
+
         directions, angle, position = self.map.reset([self._playerShape])
 
         self._current_episode_time = 0
 
         self._init_world()
         self._init_sectors(self._sector_midpoints)
+
+        if import_position is None:
+            pass
+        else:
+            position = import_position
+
         self._init_player(position, angle)
 
         observation = self.observation()
 
         #print(self.resets)
 
+        info = {"player pos": position}
+
         # return self.step(None)[0], {}
-        return observation, {}
+        return observation, info
 
 
     def step(self, action: Union[np.ndarray, int]):
@@ -246,6 +254,9 @@ class KartSim(gym.Env):
         if not self.continuous:
             action_array = np.zeros(self.action_space.n)
             action_array[action] = 1
+
+        #print(action)
+        #print(action_array)
 
 
         pstart = self._playerBody.position
@@ -308,7 +319,9 @@ class KartSim(gym.Env):
         terminated = False
         truncated = False
 
-        self.check_standing_still(20, 200)
+        self.check_standing_still(25, 120)
+        self.check_deserting(30)
+
 
         if action is not None:
 
@@ -383,6 +396,19 @@ class KartSim(gym.Env):
             #print("cut")
             self.out_of_track = True
             self.standing_still_timesteps = 0
+
+    def check_deserting(self, max_deserting_timesteps=200):
+
+        if self.next_target_rew_act < 0:  # going opposite of target
+            self.deserting_timesteps += 1
+        else:
+            self.deserting_timesteps = 0  # Reset if moving
+
+        # If agent has been still for too long, truncate the episode
+        if self.deserting_timesteps >= max_deserting_timesteps:
+            #print("cut")
+            self.out_of_track = True
+            self.deserting_timesteps = 0
 
     def distance(self, a, b):
         return np.linalg.norm(a - b)
@@ -465,7 +491,7 @@ class KartSim(gym.Env):
             # from the next goal to the agent.
             # with added bonus, the transformation can be sector dependant.
             #target_number = int(self.next_sector_name[-1])
-            #self.next_target_rew = self.calculate_distance_rew(self.distance_to_next_points, target_number)
+            self.next_target_rew = self.calculate_distance_rew(self.distance_to_next_goal, 0)
 
             # calculates a speed factor to be used as part of the dist-act reward
             speed_factor = self.calculate_speed_factor(self.velocity)
@@ -559,7 +585,6 @@ class KartSim(gym.Env):
         self.ui_manager.add_ui_text("norm dist", self.norm_dist, ".3f")
         self.ui_manager.add_ui_text("total reward", self.reward, ".3f")
         self.ui_manager.add_ui_text("act.rew from target", self.next_target_rew_act, ".3f")
-        self.ui_manager.add_ui_text("vel.rew", self.velocity_reward, ".3f")
         self.ui_manager.add_ui_text("current angle", self.angles["current_angle"], ".4f")
         self.ui_manager.add_ui_text("angle to target", self.angles["angle_to_target"], ".4f")
 

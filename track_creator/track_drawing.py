@@ -39,7 +39,7 @@ print(("working in %s mode" % mode))
 shapes_arr =[]
 
 if mode == "sectors":
-    with open("map_4/track.txt", "r") as f:
+    with open("new_track.txt", "r") as f:
         reader = csv.reader(f, delimiter=",")
         points = list(reader)
         shapes_arr = [list(map(ast.literal_eval, shape)) for shape in points]

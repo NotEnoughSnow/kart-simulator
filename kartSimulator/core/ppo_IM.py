@@ -9,17 +9,15 @@ import torch
 from torch import nn
 from torch.distributions import MultivariateNormal, Categorical
 from torch.optim.adam import Adam
-import kartSimulator.core.snn_utils as SNN_utils
 
 import h5py
 
 import wandb
 
-from kartSimulator.core.networks.snn_network_small import SNN_small
+from kartSimulator.core.networks.standard_network import FFNetwork
 
 
-
-class PPO_SNN:
+class PPO_IM:
 
     def __init__(self,
                  env,
@@ -29,12 +27,12 @@ class PPO_SNN:
                  save_dir,
                  record_wandb,
                  train_config,
+                 expert_data,
                  **hyperparameters):
 
         self.pid = os.getpid()
         # Initialize hyperparameters for training with PPO
         self._init_hyperparameters(hyperparameters)
-
 
         # Make sure the environment is compatible with our code
         assert (type(env.observation_space) == gym.spaces.Box)
@@ -51,23 +49,19 @@ class PPO_SNN:
         else:
             raise NotImplementedError("The action space type is not supported.")
 
-        self.record_wandb = record_wandb
-        self.record_output = record_output
         self.record_ghost = record_ghost
         self.save_model = save_model
+        self.record_wandb = record_wandb
+        self.record_output = record_output
 
         if self.record_wandb:
-            # start a new wandb run to track this script
             wandb.init(
                 # set the wandb project where this run will be logged
-                #project="PPO-SNN-Lunar-Landing",
-                project="steer-final",
-
+                project="steer-big-imitation",
 
                 # track hyperparameters and run metadata
                 config=train_config
             )
-
 
         self.run_directory = save_dir
 
@@ -91,31 +85,20 @@ class PPO_SNN:
         else:
             self.act_dim = env.action_space.n
 
-        # TODO automate
-        #self.threshold = torch.tensor([1.5, 1.5, 5, 5, 3.14, 5, 1, 1])
-        #self.shift = np.array([1.5, 1.5, 5, 5, 3.14, 5, 0, 0])
-
-        self.threshold = torch.tensor(env.high)
-        self.shift = np.abs(env.low)
-
-
         if self.verbose == 0:
             pass
         elif self.verbose == 1:
             pass
         elif self.verbose == 2:
             print(f"obs shape :{self.obs_dim} \n"
-                  f"action shape :{self.act_dim} \n"
-                  f"using num steps: {self.num_steps} \n"
-                  f"adding weight: {self.add_weight} \n")
-
+                  f"action shape :{self.act_dim}")
 
         # Initialize actor and critic networks
-        # self.actor = ActorNetwork(self.obs_dim, self.act_dim)
+        # self.actor = ActorNetwork(self.obs_dim, self.act_dim)  # ALG STEP 1
         # self.critic = CriticNetwork(self.obs_dim, 1)
 
-        self.actor = SNN_small(self.obs_dim, self.act_dim, self.num_steps, add_weight=self.add_weight)
-        self.critic = SNN_small(self.obs_dim, 1, self.num_steps, add_weight=self.add_weight)
+        self.actor = FFNetwork(self.obs_dim, self.act_dim)
+        self.critic = FFNetwork(self.obs_dim, 1)
 
         # Initialize optimizers for actor and critic
         self.actor_optim = Adam(self.actor.parameters(), lr=self.lr)
@@ -127,9 +110,14 @@ class PPO_SNN:
             self.cov_var = torch.full(size=(self.act_dim,), fill_value=0.5)
             self.cov_mat = torch.diag(self.cov_var)
 
+        self.num_processes = 4  # Number of processes to run concurrently
 
         self.highest = 0
         self.num_finishes = 0
+
+        self.epsilon = 0
+
+        self.use_epsilon_greedy = False
 
         # This logger will help us with printing out summaries of each iteration
         self.logger = {
@@ -142,6 +130,14 @@ class PPO_SNN:
             'lr': [],
         }
 
+        self.expert_data = expert_data
+        self.expert_prob = 1
+
+        self.ep_n = 0
+        self.expert_ep_index = 0
+
+
+
     def learn(self, total_timesteps):
 
         if self.verbose == 0:
@@ -149,7 +145,8 @@ class PPO_SNN:
         elif self.verbose == 1:
             print(f"{self.pid} started")
         elif self.verbose == 2:
-            print(f"Learning... Running {self.timesteps_per_batch} timesteps per batch for a total of {total_timesteps} timesteps")
+            print(
+                f"Learning... Running {self.timesteps_per_batch} timesteps per batch for a total of {total_timesteps} timesteps")
 
         t_so_far = 0  # Timesteps simulated so far
         i_so_far = 0  # Iterations ran so far
@@ -159,7 +156,7 @@ class PPO_SNN:
 
         while t_so_far < total_timesteps:
 
-            batch_obs, batch_obs_st, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout()
+            batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts = self.rollout(total_timesteps)
 
             avg_ep_lens = np.mean(batch_lens)
             avg_ep_rews = np.mean([np.sum(ep_rews) for ep_rews in batch_rews])
@@ -171,16 +168,7 @@ class PPO_SNN:
 
             # Calculate advantage at k-th iteration
             A_k = self.calculate_gae(batch_rews, batch_vals, batch_dones)
-
-            # TODO entry
-            V_st, _ = self.critic(batch_obs_st)
-            if self.decode_type == "first":
-                V = SNN_utils.decode_first_spike_batched(V_st).squeeze()
-            if self.decode_type == "count":
-                V = SNN_utils.get_spike_counts_batched(V_st).squeeze()
-            if self.decode_type == "lrl":
-                V = V_st.squeeze()
-
+            V = self.critic(batch_obs).squeeze()
             batch_rtgs = A_k + V.detach()
 
             # Calculate how many timesteps we collected this batch
@@ -232,14 +220,13 @@ class PPO_SNN:
                     end = start + minibatch_size
                     idx = inds[start:end]
                     mini_obs = batch_obs[idx]
-                    mini_obs_st = batch_obs_st[idx]
                     mini_acts = batch_acts[idx]
                     mini_log_prob = batch_log_probs[idx]
                     mini_advantage = A_k[idx]
                     mini_rtgs = batch_rtgs[idx]
 
                     # Calculate V_phi and pi_theta(a_t | s_t)
-                    V, curr_log_probs, dist, entropy_loss = self.evaluate(mini_obs_st, mini_acts)
+                    V, curr_log_probs, dist, entropy_loss = self.evaluate(mini_obs, mini_acts)
 
                     # Calculate the ratio pi_theta(a_t | s_t) / pi_theta_k(a_t | s_t)
                     # NOTE: we just subtract the logs, which is the same as
@@ -263,6 +250,7 @@ class PPO_SNN:
                     # performance function maximizes it.
 
                     actor_loss = (-torch.min(surr1, surr2)).mean()
+
                     actor_loss = actor_loss + self.ent_coef * entropy_loss
                     critic_loss = nn.MSELoss()(V, mini_rtgs)
 
@@ -271,8 +259,8 @@ class PPO_SNN:
                     clip_fraction = torch.mean(clipped.float())
 
                     # Before the backpropagation step
-                    initial_weights = self.actor.fc1.weight.clone().detach()
-                    initial_biases = self.actor.fc1.bias.clone().detach()
+                    initial_weights = self.actor.layer1.weight.clone().detach()
+                    initial_biases = self.actor.layer1.bias.clone().detach()
 
                     # Calculate gradients and perform backward propagation for actor network
                     self.actor_optim.zero_grad()
@@ -286,8 +274,8 @@ class PPO_SNN:
                     nn.utils.clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
                     self.critic_optim.step()
 
-                    updated_weights = self.actor.fc1.weight.clone().detach()
-                    updated_biases = self.actor.fc1.bias.clone().detach()
+                    updated_weights = self.actor.layer1.weight.clone().detach()
+                    updated_biases = self.actor.layer1.bias.clone().detach()
 
                     # Calculate changes (L2 norm, or other metrics)
                     weight_change = torch.norm(updated_weights - initial_weights, p=2)
@@ -322,7 +310,6 @@ class PPO_SNN:
             # Log actor loss
             avg_loss = sum(loss_arr) / len(loss_arr)
             self.logger['actor_losses'].append(avg_loss)
-
 
             if self.verbose == 0:
                 pass
@@ -366,6 +353,8 @@ class PPO_SNN:
         if self.record_output:
             self.output_file.close()
 
+        return self.env.num_finishes, self.env.highest_goal
+
     def calculate_gae(self, rewards, values, dones):
         batch_advantages = []
         for ep_rews, ep_vals, ep_dones in zip(rewards, values, dones):
@@ -386,9 +375,8 @@ class PPO_SNN:
 
         return torch.tensor(batch_advantages, dtype=torch.float)
 
-    def rollout(self):
+    def rollout(self, total_timesteps):
         batch_obs = []
-        batch_obs_st = []
         batch_acts = []
         batch_log_probs = []
         batch_rews = []
@@ -412,12 +400,41 @@ class PPO_SNN:
             ep_vals = []
             ghost_ep = []
 
-            obs = self.env.reset(options={})[0]
+            #self.expert_prob = np.max([0, 0.5 - 0.75*(self.logger['t_so_far']/total_timesteps)])
+            #if self.logger['t_so_far'] > 200000:
+            #    self.expert_prob = 0
+
+            options = {"randomize pos": True}
+
+            r = np.random.rand()
+
+            #print(f"random is {r}, ex prob is{self.expert_prob}")
+
+            if r < self.expert_prob:
+                use_expert_episode = True
+                self.expert_ep_index += 1
+
+                if self.expert_data is not None:
+                    if self.expert_ep_index > len(self.expert_data[0]):
+                        self.expert_ep_index = 1
+            else:
+                use_expert_episode = False
+
+            if use_expert_episode:
+                #print("using expert")
+                init_pos = self.expert_data[1][self.expert_ep_index-1].tolist()
+                options["initial pos"] = init_pos
+            else:
+                pass
+
+            obs, _ = self.env.reset(options=options)
             truncated = False
             terminated = False
             done = False
 
             ep_t = 0
+
+            self.ep_n += 1
 
             while not done:
 
@@ -425,26 +442,32 @@ class PPO_SNN:
 
                 t += 1  # Increment timesteps ran this batch so far
 
-                obs_st = SNN_utils.generate_spike_trains(obs,
-                                                         num_steps=self.num_steps,
-                                                         threshold=self.threshold,
-                                                         shift=self.shift)
-                batch_obs_st.append(obs_st)
                 batch_obs.append(obs)
 
                 # Calculate action and make a step in the env.
                 # Note that rew is short for reward.
-                action, log_prob = self.get_action(obs_st)
+                # FIXME actions are not in range(-1,1)
 
-                # TODO entry
-                val_st, _ = self.critic(obs_st)
-                if self.decode_type == "first":
-                    val = SNN_utils.decode_first_spike(val_st)
-                if self.decode_type == "count":
-                    val = SNN_utils.get_spike_counts(val_st)
-                if self.decode_type == "lrl":
-                    val = val_st
+                if use_expert_episode:
+                    #print("episode num ", self.ep_n)
+                    #print("episode timestep ", ep_t)
 
+                    # first indices for the actual data, second for the run/episode, third for the each
+                    # episode timestep, 4th to pick the action
+                    if ep_t > len(self.expert_data[0][self.expert_ep_index-1]) - 1:
+                        print("goody list ", len(self.expert_data[0][self.expert_ep_index-1]))
+                        print("goofy index ", ep_t)
+
+                        ep_t = 0
+
+                    ex_act = int(self.expert_data[0][self.expert_ep_index-1][ep_t][2])
+
+                    action, log_prob = self.get_action(obs, ex_act)
+
+                else:
+                    action, log_prob = self.get_action(obs, None)
+
+                val = self.critic(obs)
                 obs, rew, terminated, truncated, info = self.env.step(action)
 
                 done = terminated or truncated
@@ -456,6 +479,8 @@ class PPO_SNN:
 
                 self.highest = info.get("highest", None)
                 self.num_finishes = info.get("num_finishes", None)
+
+                self.epsilon = info.get("epsilon", None)
 
                 if self.highest is not None:
                     if self.record_wandb:
@@ -501,7 +526,6 @@ class PPO_SNN:
 
         # Reshape data as tensors in the shape specified in function description, before returning
         batch_obs = torch.tensor(np.array(batch_obs), dtype=torch.float)
-        batch_obs_st = torch.tensor(np.array(batch_obs_st), dtype=torch.float)
         batch_acts = torch.tensor(np.array(batch_acts), dtype=torch.float)
         batch_log_probs = torch.tensor(np.array(batch_log_probs), dtype=torch.float)
         # batch_rtgs = self.compute_rtgs(batch_rews)
@@ -510,9 +534,12 @@ class PPO_SNN:
         self.logger['batch_rews'] = batch_rews
         self.logger['batch_lens'] = batch_lens
 
-        return batch_obs, batch_obs_st, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts
+        # Put results in the queue to collect them in the main process
+        # print(f"Process {os.getpid()} put data in the queue")
 
-    def get_action(self, obs_st):
+        return batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts
+
+    def get_action_epsilon(self, obs):
         """
         Queries an action from the actor network, should be called from rollout.
 
@@ -524,50 +551,74 @@ class PPO_SNN:
             log_prob - the log probability of the selected action in the distribution
         """
 
-        spk_output, spikes = self.actor(obs_st)
-
-        avg_spike_time, spike_ratio = SNN_utils.compute_spike_metrics(spikes)
-
-
-
         if self.continuous:
             # For continuous action spaces
-            # TODO entry
-            if self.decode_type == "first":
-                mean = SNN_utils.decode_first_spike(spk_output)
-            if self.decode_type == "count":
-                mean = SNN_utils.get_spike_counts(spk_output)
-            if self.decode_type == "lrl":
-                mean = spk_output
-
+            mean = self.actor(obs)
             dist = MultivariateNormal(mean, self.cov_mat)
         else:
             # For discrete action spaces
-            # TODO entry
-            if self.decode_type == "first":
-                logits = SNN_utils.decode_first_spike(spk_output)
-            if self.decode_type == "count":
-                logits = SNN_utils.get_spike_counts(spk_output)
-            if self.decode_type == "lrl":
-                logits = spk_output
-
+            logits = self.actor(obs)
             dist = Categorical(logits=logits)
 
-        # Sample an action from the distribution
-        action = dist.sample()
+        if self.use_epsilon_greedy and np.random.rand() < self.epsilon:
+            # explore
+            if self.continuous:
+                action = np.random.uniform(-1, 1, size=self.act_dim)
+            else:
+                action = np.random.randint(0, self.act_dim)
+
+            action = torch.tensor(action, dtype=torch.int16)
+
+
+        else:
+            # exploit
+            # Sample an action from the distribution
+            action = dist.sample()
 
         # Calculate the log probability for that action
         log_prob = dist.log_prob(action)
 
-        if self.record_wandb:
-            wandb.log({
-                "snn/avg_spike_time": avg_spike_time.item(),
-                "snn/spike_ratio": spike_ratio.item()}, step=self.logger['t_so_far'])
+        # Return the sampled action and the log probability of that action in our distribution
+        return action.detach().numpy(), log_prob.detach()
+
+    def get_action(self, obs, expert_act):
+        """
+        Queries an action from the actor network, should be called from rollout.
+
+        Parameters:
+            obs - the observation at the current timestep
+
+        Return:
+            action - the action to take, as a numpy array
+            log_prob - the log probability of the selected action in the distribution
+        """
+
+        if self.continuous:
+            # For continuous action spaces
+            mean = self.actor(obs)
+            dist = MultivariateNormal(mean, self.cov_mat)
+        else:
+            # For discrete action spaces
+            logits = self.actor(obs)
+            dist = Categorical(logits=logits)
+
+        # exploit
+        # Sample an action from the distribution
+        if expert_act is not None:
+            action = torch.tensor(expert_act)
+        else:
+            action = dist.sample()
+
+        # Calculate the log probability for that action
+        log_prob = dist.log_prob(action)
 
         # Return the sampled action and the log probability of that action in our distribution
         return action.detach().numpy(), log_prob.detach()
 
-    def evaluate(self, batch_obs_st, batch_acts):
+    def get_log_prob(self):
+        pass
+
+    def evaluate(self, batch_obs, batch_acts):
         """
         Estimate the values of each observation, and the log probs of
         each action in the most recent batch with the most recent
@@ -585,39 +636,15 @@ class PPO_SNN:
         """
 
         # Query critic network for a value V for each batch_obs
-        # TODO entry
-        V_st, _ = self.critic(batch_obs_st)
-        if self.decode_type == "first":
-            V = SNN_utils.decode_first_spike_batched(V_st).squeeze()
-        if self.decode_type == "count":
-            V = SNN_utils.get_spike_counts_batched(V_st).squeeze()
-        if self.decode_type == "lrl":
-            V = V_st.squeeze()
-
-        spk_output, _ = self.actor(batch_obs_st)
+        V = self.critic(batch_obs).squeeze()
 
         # Calculate the log probabilities of batch actions using most recent actor network
         if self.continuous:
-            # TODO entry
-            if self.decode_type == "first":
-                mean = SNN_utils.decode_first_spike_batched(spk_output)
-            if self.decode_type == "count":
-                mean = SNN_utils.get_spike_counts_batched(spk_output)
-            if self.decode_type == "lrl":
-                mean = spk_output
-
+            mean = self.actor(batch_obs)
             dist = MultivariateNormal(mean, self.cov_mat)
         else:
-            # TODO entry
-            if self.decode_type == "first":
-                logits = SNN_utils.decode_first_spike_batched(spk_output)
-            if self.decode_type == "count":
-                logits = SNN_utils.get_spike_counts_batched(spk_output)
-            if self.decode_type == "lrl":
-                logits = spk_output
-
+            logits = self.actor(batch_obs)
             dist = Categorical(logits=logits)
-
 
         # Calculate entropy loss for regularization
         entropy_loss = -dist.entropy().mean()
@@ -656,9 +683,6 @@ class PPO_SNN:
         self.target_kl = None
         self.num_minibatches = 8
         self.gae_lambda = 0.95
-        self.decode_type = "lrl"
-        self.num_steps = 32
-        self.add_weight = 0.01
         self.verbose = 2
 
         # Miscellaneous parameters
@@ -732,6 +756,7 @@ class PPO_SNN:
         print(f"Processing took: {process_time} secs", flush=True)
         print(f"Iteration took: {delta_t} secs", flush=True)
         print(f"Learning rate: {lr}", flush=True)
+        print(f"expert prob: {self.expert_prob}", flush=True)
         print(f"------------------------------------------------------", flush=True)
         print(flush=True)
 
@@ -771,6 +796,16 @@ class PPO_SNN:
 
                     # Create dataset for actions within the episode
                     ep_group.create_dataset('actions', data=ep_data)
+
+
+class expert_data_class:
+
+    def __init__(self, expert_data):
+        self.i = expert_data[0]
+        self.obs = expert_data[1]
+        self.act = expert_data[2]
+        self.reward = expert_data[3]
+        self.done = expert_data[4] or expert_data[5]
 
 
 class Tee(object):

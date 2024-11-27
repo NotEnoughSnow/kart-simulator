@@ -13,11 +13,13 @@ class Eval:
         env = env_factory.createEnv(track_type, track_name, "human")
         #env = gym.make('LunarLander-v2', render_mode="human")
 
-        actor_state = ".\\saves\\projects\\curriculum-project\\zaza-1\\ppo_actor.pth"
+        actor_state = ".\\saves\\projects\\imitation-project\\converged\\ppo_actor.pth"
 
-        evaluator = Evaluator(env, actor_state)
+        NType = "ANN"
 
-        ep_len, ep_ret = evaluator.eval()
+        evaluator = Evaluator(env, actor_state, NType=NType)
+
+        mean_rew = evaluator.eval_policy_ANN(n_eval_episodes=5)
 
         #evaluator.eval_sb3(env)
 

@@ -15,6 +15,10 @@ class EnvFactory:
                       "sectors_file": "sectors_box.txt",
                       "initial_pos": [330, 450],
                       "rand goal": None, },
+            "big_S": {"boxes_file": "big_S_track.txt",
+                      "sectors_file": "big_S_sectors.txt",
+                      "initial_pos": [150, 200],
+                      "rand goal": None, },
             "full_track": {"boxes_file": "shapes.txt",
                       "sectors_file": "sectors.txt",
                       "initial_pos": [180, 100],
@@ -53,13 +57,28 @@ class EnvFactory:
             "bot_weight": 1,
         }
         base_env_player_args = {
+            "player_acc_rate": 6,
+            "player_break_rate": 8,
+            "max_velocity": 4,
+            "rad_velocity": 5 * 2.84,
+            "bot_size": 0.192,
+            "bot_weight": 1,
+        }
+
+        '''        simple_env_player_args = {
+            "player_acc_rate": 15,
+            "max_velocity": 2,
+            "bot_size": 0.192,
+            "bot_weight": 1,
+        }
+        base_env_player_args = {
             "player_acc_rate": 5,
             "player_break_rate": 5,
             "max_velocity": 2,
             "rad_velocity": 3 * 2.84,
             "bot_size": 0.192,
             "bot_weight": 1,
-        }
+        }'''
 
         self.track_args = {
             # "boxes_file": "shapes.txt",

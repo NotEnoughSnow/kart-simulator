@@ -49,11 +49,11 @@ class PPO:
         else:
             raise NotImplementedError("The action space type is not supported.")
 
-
-        self.record_ghost = record_ghost
-        self.save_model = save_model
         self.record_wandb = record_wandb
         self.record_output = record_output
+        self.record_ghost = record_ghost
+        self.save_model = save_model
+
 
 
         if self.record_wandb:
@@ -100,7 +100,7 @@ class PPO:
         # self.actor = ActorNetwork(self.obs_dim, self.act_dim)  # ALG STEP 1
         # self.critic = CriticNetwork(self.obs_dim, 1)
 
-        self.actor = FFNetwork(self.obs_dim, self.act_dim)  # ALG STEP 1
+        self.actor = FFNetwork(self.obs_dim, self.act_dim)
         self.critic = FFNetwork(self.obs_dim, 1)
 
         # Initialize optimizers for actor and critic
@@ -113,13 +113,10 @@ class PPO:
             self.cov_var = torch.full(size=(self.act_dim,), fill_value=0.5)
             self.cov_mat = torch.diag(self.cov_var)
 
-        self.num_processes = 4  # Number of processes to run concurrently
-
         self.highest = 0
         self.num_finishes = 0
 
         self.epsilon = 0
-
         self.use_epsilon_greedy = False
 
         # This logger will help us with printing out summaries of each iteration
@@ -394,7 +391,7 @@ class PPO:
             ep_vals = []
             ghost_ep = []
 
-            obs = self.env.reset()[0]
+            obs = self.env.reset(options={})[0]
             truncated = False
             terminated = False
             done = False

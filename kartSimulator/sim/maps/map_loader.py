@@ -22,8 +22,8 @@ class MapLoader(abs_map):
 
     def reset(self, playerShapes):
 
-        pos_variation_x = random.uniform(-20, 20)
-        pos_variation_y = random.uniform(-20, 20)
+        pos_variation_x = random.uniform(-50, 50)
+        pos_variation_y = random.uniform(-50, 50)
 
         random_position = [self.initial_pos[0]+pos_variation_x, self.initial_pos[1]+pos_variation_y]
 

@@ -6,6 +6,7 @@ import torch
 import yaml
 
 from kartSimulator.core import baselines
+from kartSimulator.core.ppo_IM import PPO_IM
 from kartSimulator.core.ppo import PPO
 from kartSimulator.core.ppo_snn import PPO_SNN
 from kartSimulator.sim import utils
@@ -15,8 +16,10 @@ class Trainer():
 
     def __init__(self, save_config, expert_file_name):
 
+        self.expert_data = None
+
         if expert_file_name is not None:
-            self.load_expert_data(expert_file_name=expert_file_name)
+            self.expert_data = self.load_expert_data(expert_file_name=expert_file_name)
 
         self.hyperparameters = {
             'timesteps_per_batch': 4024,
@@ -68,12 +71,9 @@ class Trainer():
 
         base_dir = self.save_dir + f"{self.project_name}\\"
 
-
         if (self.saving["wandb"] or self.saving["ghost"] or self.saving["models"]) is True:
 
-
             save_path, ver_number = utils.get_next_run_directory_mod(base_dir, self.run_name)
-
 
             train_config = self.save_train_data(env,
                                                 save_path,
@@ -103,7 +103,6 @@ class Trainer():
 
         return actor_state, critic_state
 
-
     def train_ANN(self,
                   env,
                   total_timesteps,
@@ -112,15 +111,16 @@ class Trainer():
                   actor_model,
                   critic_model,
                   ):
-
+        # TODO change this back
         model = PPO(env=env,
-                    save_model=self.saving["models"],
-                    record_ghost=self.saving["ghost"],
-                    record_output=False,
-                    save_dir=save_path,
-                    record_wandb=self.saving["wandb"],
-                    train_config=train_config,
-                    **self.hyperparameters)
+                       save_model=self.saving["models"],
+                       record_ghost=self.saving["ghost"],
+                       record_output=False,
+                       save_dir=save_path,
+                       record_wandb=self.saving["wandb"],
+                       train_config=train_config,
+                       expert_data=self.expert_data ,
+                       **self.hyperparameters)
 
         if actor_model != None and critic_model != None:
             print(f"Loading in {actor_model} and {critic_model}...", flush=True)
@@ -141,7 +141,6 @@ class Trainer():
 
         return actor_state, critic_state
 
-
     def train_SNN(self,
                   env,
                   total_timesteps,
@@ -158,6 +157,7 @@ class Trainer():
                         save_dir=save_path,
                         record_wandb=self.saving["wandb"],
                         train_config=train_config,
+                        expert_data=self.expert_data,
                         **self.hyperparameters)
 
         if actor_model != None and critic_model != None:
@@ -218,8 +218,9 @@ class Trainer():
 
     def load_expert_data(self, expert_file_name):
         """
-        R = [ E1, E2, E3, ..]
-        E = [time, obs, actions, terminated, truncated]
+        = [ R1, R2, R2, ..]
+        R = [ E_T1, E_T2, E_T3, ..]
+        E_T = [time, obs, actions, terminated, truncated]
 
         :param expert_file_name:
         :return:
@@ -252,9 +253,9 @@ class Trainer():
                     truncated = timestep_group['truncated'][()]
                     episode_data.append([time, observations, actions, reward, terminated, truncated])
 
-                print(episode_data[0])
-
                 expert_run.append(episode_data)
                 expert_ep_lens.append(total_steps)
+
+        print("successfully loaded expert data")
 
         return expert_run, expert_ep_lens, expert_info

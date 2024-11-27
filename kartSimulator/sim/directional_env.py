@@ -283,7 +283,6 @@ class KartSim(gym.Env):
         if self._current_episode_time > self.reset_time:
             self.out_of_track = True
 
-
         if self.render_mode == "human":
             self.render(self.render_mode)
 

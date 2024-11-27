@@ -9,41 +9,74 @@ class Train():
 
         save_config["save_dir"] = save_config["save_dir"] + "projects\\"
 
-        expert_file_name = ".\\saves\\expert_data\\ExpertData_Amin_1.hdf5"
+        #expert_file_name = ".\\saves\\expert_data\\ExpertData_Amin_1.hdf5"
+        expert_file_name = None
 
         trainer = Trainer(save_config=save_config, expert_file_name=expert_file_name)
 
 
-        hyperparameters = {
+        hyperparameters_SMRE_SNN = {
             'timesteps_per_batch': 4096,
             'gamma': 0.9634703441998751,
             'ent_coef': 0.004797586864549939,
             'n_updates_per_iteration': 7,
-            # multiply by 10 for ANN
-            'lr': 0.00017887220926944984,
+            'lr': 0.0017887220926944984,
             'clip': 0.2,
             'max_grad_norm': 0.5,
             'render_every_i': 10,
             'target_kl': 0.5,
             'num_minibatches': 80,
             'gae_lambda': 0.9642298634023644,
-            'seed': 928,
+            'verbose': 2,
+            'num_steps': 32,
+            'add_weight': 0.02
+        }
+
+        hyperparameters_SMRE_ANN = {
+            'timesteps_per_batch': 4096,
+            'gamma': 0.963,
+            'ent_coef': 0.00479,
+            'n_updates_per_iteration': 7,
+            'lr': 0.000178,
+            'clip': 0.2,
+            'max_grad_norm': 0.5,
+            'render_every_i': 10,
+            'target_kl': 0.5,
+            'num_minibatches': 80,
+            'gae_lambda': 0.9644,
             'verbose': 2,
         }
 
-        seed = 1234
 
-        saving = {
-            "ghost": False,
-            "models": False,
-            "wandb": False,
+        hyperparameters_GMRE_ANN = {
+            'timesteps_per_batch': 4096,
+            'gamma': 0.97,
+            'ent_coef': 0.0099,
+            'n_updates_per_iteration': 9,
+            # multiply by 10 for ANN
+            'lr': 0.00174,
+            'clip': 0.2,
+            'max_grad_norm': 0.5,
+            'render_every_i': 10,
+            'target_kl': 0.5,
+            'num_minibatches': 110,
+            'gae_lambda': 0.966,
+            'verbose': 2,
         }
 
-        network_type = "ANN"
+        seed = 1294921
+
+        saving = {
+            "ghost": True,
+            "models": True,
+            "wandb": True,
+        }
+
+        network_type = "SNN"
 
         # create agent : kart
 
-        trainer.set_hyperparameters(hyperparameters)
+        trainer.set_hyperparameters(hyperparameters_SMRE_SNN)
         trainer.set_saving(saving)
         trainer.set_seed(seed)
         trainer.set_network(network_type)
@@ -51,9 +84,15 @@ class Train():
         # env = gym.make('LunarLander-v2')
         env = env_factory.createEnv(track_type, track_name, None)
 
-        total_timesteps = 10000
+        total_timesteps = 3000000
 
-        trainer.train(env, total_timesteps, None, None)
+        #actor_state = "saves\\projects\\imitation-project\\yeezy-1\\ppo_actor.pth"
+        #critic_state = "saves\\projects\\imitation-project\\yeezy-1\\ppo_critic.pth"
+
+        actor_state = None
+        critic_state = None
+
+        trainer.train(env, total_timesteps, actor_state, critic_state)
 
 
 

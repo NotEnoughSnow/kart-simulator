@@ -7,18 +7,25 @@ import pygame
 
 class Launcher():
 
-    def __init__(self, env, record, save_dir, player_name, expert_ep_count):
+    def __init__(self,
+                 env,
+                 record,
+                 save_dir,
+                 player_name,
+                 expert_ep_count,
+                 expert_steps_count):
         self.env = env
 
         self.record = record
         self.save_dir = save_dir
         self.player_name = player_name
-        self.expert_ep_count = expert_ep_count
+        self.expert_ep_count = False if expert_ep_count is None else expert_ep_count
+        self.steps_needed = False if expert_steps_count is None else expert_steps_count
 
     def launch(self, env):
         running = True
         expert_run = []
-        expert_ep_lens = []
+        expert_ep_pos = []
         i = 0
 
         info = {
@@ -26,8 +33,10 @@ class Launcher():
             "num_episodes": self.expert_ep_count,
         }
 
-        while running and i < self.expert_ep_count:
-            env.reset()
+        total_steps = 0
+
+        while running and ( i < self.expert_ep_count or total_steps < self.steps_needed) :
+            _, reset_info = env.reset(options={})
             total_reward = 0.0
             steps = 0
             terminated = False
@@ -80,6 +89,8 @@ class Launcher():
                     expert_episode.append([steps, obs, action, reward, terminated, truncated])
                     steps += 1
 
+                    total_steps += 1
+
             if truncated:
                 print("hit a wall, ")
                 print(f"total rewards this ep: {total_reward}")
@@ -91,8 +102,10 @@ class Launcher():
                 # TODO times
                 pass
 
+            print("timesteps so far ", total_steps)
+
             # wrap expert data and steps in expert episode
-            expert_ep_lens.append(steps)
+            expert_ep_pos.append(reset_info["player pos"])
 
             # build expert run
             expert_run.append(expert_episode)
@@ -114,13 +127,13 @@ class Launcher():
             print("saving expert data to ", run_path)
 
             # write expert runs to file then exit application
-            self.write_file(expert_run, expert_ep_lens, info, run_path)
+            self.write_file(expert_run, expert_ep_pos, info, run_path)
 
             print(" numepisodes :", len(expert_run))
             print(" num timesteps for the first episode :", len(expert_run[0]))
             print(" data of the first timestep :", expert_run[0][0])
 
-            print(" ep lens :", expert_ep_lens)
+            print(" ep lens :", expert_ep_pos)
 
             env.close()
             exit()
