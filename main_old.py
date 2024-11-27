@@ -25,8 +25,8 @@ from kartSimulator.core.networks.standard_network import FFNetwork
 
 import kartSimulator.core.baselines as baselines
 
-import kartSimulator.sim.drive_env as base_env
-import kartSimulator.sim.directional_env as simple_env
+import kartSimulator.sim.env.steer_env as base_env
+import kartSimulator.sim.env.grid_env as simple_env
 
 import kartSimulator.sim.utils as utils
 

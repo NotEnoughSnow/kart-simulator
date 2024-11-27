@@ -2,9 +2,7 @@ import random
 
 import numpy as np
 import h5py
-import pygame
-import kartSimulator.sim.replay_simple_env as replay_simple_env
-from kartSimulator.sim.maps.track_factory import TrackFactory
+import kartSimulator.sim.env.replay_simple_env as replay_simple_env
 
 
 class ReplayGhosts:
@@ -453,7 +451,7 @@ class ReplayGhosts:
 
         # Initialize your environment
         kwargs = {}
-        env = replay_simple_env.KartSim(num_agents=[10], colors=[(255,0,0,255)], **kwargs)
+        env = replay_simple_env.KartSim(num_agents=[10], colors=[(255, 0, 0, 255)], **kwargs)
 
         running = True
 

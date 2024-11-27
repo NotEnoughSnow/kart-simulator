@@ -8,10 +8,10 @@ from pymunk import Vec2d
 ui_start_x = 1000
 
 
-accelerate_image = pygame.image.load(os.path.join('kartSimulator\\resources', 'accelerate.png'))
-not_accelerate_image = pygame.image.load(os.path.join('kartSimulator\\resources', 'not_accelerate.png'))
-break_image = pygame.image.load(os.path.join('kartSimulator\\resources', 'break.png'))
-not_break_image = pygame.image.load(os.path.join('kartSimulator\\resources', 'not_break.png'))
+accelerate_image = pygame.image.load(os.path.join('kartSimulator/resources', 'accelerate.png'))
+not_accelerate_image = pygame.image.load(os.path.join('kartSimulator/resources', 'not_accelerate.png'))
+break_image = pygame.image.load(os.path.join('kartSimulator/resources', 'break.png'))
+not_break_image = pygame.image.load(os.path.join('kartSimulator/resources', 'not_break.png'))
 
 
 class UImanager:

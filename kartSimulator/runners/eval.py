@@ -8,12 +8,12 @@ class Eval:
     def __init__(self, track_type, track_name, env_factory, save_config):
 
 
-        save_config["save_dir"] = save_config["save_dir"] + "projects\\"
+        save_config["save_dir"] = save_config["save_dir"] + "projects/"
 
         env = env_factory.createEnv(track_type, track_name, "human")
         #env = gym.make('LunarLander-v2', render_mode="human")
 
-        actor_state = ".\\saves\\projects\\imitation-project\\converged\\ppo_actor.pth"
+        actor_state = "./saves/projects/imitation-project/converged/ppo_actor.pth"
 
         NType = "ANN"
 

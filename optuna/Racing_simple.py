@@ -1,10 +1,8 @@
-import gymnasium as gym
 from kartSimulator.core.ppo import PPO
 import numpy as np
-import torch
 
 from torch.distributions import Categorical
-from kartSimulator.sim.directional_env import KartSim
+from kartSimulator.sim.env.grid_env import KartSim
 import kartSimulator.sim.observation_types as obs_types
 
 def eval_policy(actor, env, n_eval_episodes=5):

@@ -1,6 +1,4 @@
 import os
-import random
-
 
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
@@ -12,7 +10,8 @@ from kartSimulator.runners.play import Play
 
 from kartSimulator.core.arguments import get_args
 
-import kartSimulator.sim.drive_env as base_env
+
+import kartSimulator.sim.env.grid_env as grid_env
 from kartSimulator.core.modules.env_factory import EnvFactory
 
 def main(args):
@@ -25,14 +24,14 @@ def main(args):
 
 
     save_config = {
-        "project_name": "steer-final",
+        "project_name": "grid-final",
         "run_name": "SNN",
-        "save_dir": ".\\saves\\",
+        "save_dir": "./saves/",
     }
 
-    env_name = base_env
-    track_type = "boxes"
-    track_name = "big_S"
+    env_name = grid_env
+    track_type = "loader"
+    track_name = "small_S"
 
     env_factory = EnvFactory(env_name)
 

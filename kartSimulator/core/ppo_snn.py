@@ -61,7 +61,7 @@ class PPO_SNN:
             wandb.init(
                 # set the wandb project where this run will be logged
                 #project="PPO-SNN-Lunar-Landing",
-                project="steer-final",
+                project="grid-final",
 
 
                 # track hyperparameters and run metadata

@@ -69,7 +69,7 @@ class Trainer():
               critic_state,
               ):
 
-        base_dir = self.save_dir + f"{self.project_name}\\"
+        base_dir = self.save_dir + f"{self.project_name}/"
 
         if (self.saving["wandb"] or self.saving["ghost"] or self.saving["models"]) is True:
 
@@ -206,7 +206,7 @@ class Trainer():
         }
 
         save_dir = save_dir
-        yaml_file_path = save_dir + "\\parameters.yaml"
+        yaml_file_path = save_dir + "/parameters.yaml"
 
         if not os.path.exists(yaml_file_path):
             with open(yaml_file_path, 'w') as file:

@@ -1,8 +1,8 @@
 
 from kartSimulator.sim.maps.track_factory import TrackFactory
 import kartSimulator.sim.observation_types as obs_types
-import kartSimulator.sim.directional_env as simple_env
-import kartSimulator.sim.drive_env as base_env
+import kartSimulator.sim.env.grid_env as simple_env
+
 
 class EnvFactory:
 
@@ -11,41 +11,48 @@ class EnvFactory:
         self.env_name = env_name
 
         self.track_list = {
-            "boxes": {"boxes_file": "boxes.txt",
+            "small_S": {"track_file": "boxes.txt",
                       "sectors_file": "sectors_box.txt",
                       "initial_pos": [330, 450],
                       "rand goal": None, },
-            "big_S": {"boxes_file": "big_S_track.txt",
+            "big_S": {"track_file": "big_S_track.txt",
                       "sectors_file": "big_S_sectors.txt",
                       "initial_pos": [150, 200],
                       "rand goal": None, },
-            "full_track": {"boxes_file": "shapes.txt",
+            "full_track": {"track_file": "shapes.txt",
                       "sectors_file": "sectors.txt",
                       "initial_pos": [180, 100],
                       "rand goal": None, },
-            "map_1": {"boxes_file": "curr_maps\\map_1\\track.txt",
-                      "sectors_file": "curr_maps\\map_1\\sectors.txt",
+            "map_1": {"track_file": "curr_maps/map_1/track.txt",
+                      "sectors_file": "curr_maps/map_1/sectors.txt",
                       "initial_pos": [170, 550],
                       "rand goal": None, },
-            "map_2": {"boxes_file": "curr_maps\\map_2\\track.txt",
-                      "sectors_file": "curr_maps\\map_2\\sectors.txt",
+            "map_2": {"track_file": "curr_maps/map_2/track.txt",
+                      "sectors_file": "curr_maps/map_2/sectors.txt",
                       "initial_pos": [200, 450],
                       "rand goal": ([0, 0], [-500, 500])},
-            "map_3": {"boxes_file": "curr_maps\\map_3\\track.txt",
-                      "sectors_file": "curr_maps\\map_3\\sectors.txt",
+            "map_3": {"track_file": "curr_maps/map_3/track.txt",
+                      "sectors_file": "curr_maps/map_3/sectors.txt",
                       "initial_pos": [190, 390],
                       "rand goal": None, },
-            "map_4": {"boxes_file": "curr_maps\\map_4\\track.txt",
-                      "sectors_file": "curr_maps\\map_4\\sectors.txt",
+            "map_4": {"track_file": "curr_maps/map_4/track.txt",
+                      "sectors_file": "curr_maps/map_4/sectors.txt",
                       "initial_pos": [190, 250],
                       "rand goal": None, },
 
         }
 
-        self.obs = [obs_types.LIDAR,
+        self.obs_base = [obs_types.LIDAR,
                obs_types.POSITION,
                obs_types.VELOCITY,
                obs_types.ROTATION,
+               obs_types.DISTANCE,
+               obs_types.TARGET_ANGLE,
+               ]
+
+        self.obs_simple = [obs_types.LIDAR,
+               obs_types.POSITION,
+               obs_types.VELOCITY,
                obs_types.DISTANCE,
                obs_types.TARGET_ANGLE,
                ]
@@ -81,9 +88,9 @@ class EnvFactory:
         }'''
 
         self.track_args = {
-            # "boxes_file": "shapes.txt",
+            # "track_file": "shapes.txt",
             # "sectors_file": "sectors.txt",
-            "boxes_file": "boxes.txt",
+            "track_file": "boxes.txt",
             "sectors_file": "sectors_box.txt",
             "rand goal": None,
 
@@ -96,7 +103,14 @@ class EnvFactory:
             # "initial_pos": [180, 100]
         }
 
-        self.rew_adj = {
+        self.rew_adj_simple = {
+            "passive": 0,
+            "dist": 0,
+            "act_dist": 1,
+            "sector_time": 1,
+        }
+
+        self.rew_adj_base = {
             "passive": 0,
             "dist": 0,
             "act_dist": 0.5,
@@ -105,11 +119,11 @@ class EnvFactory:
         }
 
         self.env_args = {
-            "obs_seq": self.obs,
+            "obs_seq": self.obs_simple if env_name == simple_env else self.obs_base,
             "reset_time": 10000,
             "track": None,
             "player_args": simple_env_player_args if env_name == simple_env else base_env_player_args,
-            "rew_adj": self.rew_adj,
+            "rew_adj": self.rew_adj_simple if env_name == simple_env else self.rew_adj_base,
         }
 
     def set_rew_adj(self, rew_adj):
@@ -124,7 +138,7 @@ class EnvFactory:
     def createEnv(self, track_type, track_name, render):
 
         self.track_args.update({
-            "boxes_file": self.track_list[track_name]["boxes_file"],
+            "track_file": self.track_list[track_name]["track_file"],
             "sectors_file": self.track_list[track_name]["sectors_file"],
             "initial_pos": self.track_list[track_name]["initial_pos"],
             "rand goal": self.track_list[track_name]["rand goal"],
@@ -143,7 +157,7 @@ class EnvFactory:
     def updateFactory(self, track_type, track_name):
 
         self.track_args.update({
-            "boxes_file": self.track_list[track_name]["boxes_file"],
+            "track_file": self.track_list[track_name]["track_file"],
             "sectors_file": self.track_list[track_name]["sectors_file"],
             "initial_pos": self.track_list[track_name]["initial_pos"],
             "rand goal": self.track_list[track_name]["rand goal"],

@@ -8,7 +8,7 @@ class Train_curr():
 
     def __init__(self, track_type, env_factory, save_config):
 
-        save_config["save_dir"] = save_config["save_dir"] + "projects\\"
+        save_config["save_dir"] = save_config["save_dir"] + "projects/"
 
         # yeet setup
         trainer = Trainer(save_config)
@@ -92,8 +92,8 @@ class Train_curr():
 
         trainer.train(env=env,
                       total_timesteps=total_timesteps,
-                      actor_state="saves\\projects\\curriculum-project\\zaza-1\\ppo_actor.pth",
-                      critic_state="saves\\projects\\curriculum-project\\zaza-1\\ppo_critic.pth",
+                      actor_state="saves/projects/curriculum-project/zaza-1/ppo_actor.pth",
+                      critic_state="saves/projects/curriculum-project/zaza-1/ppo_critic.pth",
                       )
 
 
@@ -122,8 +122,8 @@ class Train_curr():
 
         trainer.train(env=env,
                       total_timesteps=total_timesteps,
-                      actor_state="saves\\projects\\curriculum-project\\zaza-2\\ppo_actor.pth",
-                      critic_state="saves\\projects\\curriculum-project\\zaza-2\\ppo_critic.pth",
+                      actor_state="saves/projects/curriculum-project/zaza-2/ppo_actor.pth",
+                      critic_state="saves/projects/curriculum-project/zaza-2/ppo_critic.pth",
                       )
 
         # yeet train 4
@@ -150,8 +150,8 @@ class Train_curr():
 
         trainer.train(env=env,
                       total_timesteps=total_timesteps,
-                      actor_state="saves\\projects\\curriculum-project\\zaza-3\\ppo_actor.pth",
-                      critic_state="saves\\projects\\curriculum-project\\zaza-3\\ppo_critic.pth",
+                      actor_state="saves/projects/curriculum-project/zaza-3/ppo_actor.pth",
+                      critic_state="saves/projects/curriculum-project/zaza-3/ppo_critic.pth",
                       )
 
         # yeet train 5
@@ -179,8 +179,8 @@ class Train_curr():
 
         trainer.train(env=env,
                       total_timesteps=total_timesteps,
-                      actor_state="saves\\projects\\curriculum-project\\zaza-4\\ppo_actor.pth",
-                      critic_state="saves\\projects\\curriculum-project\\zaza-4\\ppo_critic.pth",
+                      actor_state="saves/projects/curriculum-project/zaza-4/ppo_actor.pth",
+                      critic_state="saves/projects/curriculum-project/zaza-4/ppo_critic.pth",
                       )
 
         # yeet train 6
@@ -205,8 +205,8 @@ class Train_curr():
 
         trainer.train(env=env,
                       total_timesteps=total_timesteps,
-                      actor_state="saves\\projects\\curriculum-project\\zaza-5\\ppo_actor.pth",
-                      critic_state="saves\\projects\\curriculum-project\\zaza-5\\ppo_critic.pth",
+                      actor_state="saves/projects/curriculum-project/zaza-5/ppo_actor.pth",
+                      critic_state="saves/projects/curriculum-project/zaza-5/ppo_critic.pth",
                       )
 
 

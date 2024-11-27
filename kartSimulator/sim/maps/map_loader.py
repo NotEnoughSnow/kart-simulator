@@ -45,7 +45,7 @@ class MapLoader(abs_map):
     def create_walls(self):
         static_body = self.space.static_body
 
-        shapes_arr = utils.readTrackFile("kartSimulator\\sim\\resources\\"+self.track_name)
+        shapes_arr = utils.readTrackFile("kartSimulator/sim/resources/"+self.track_name)
 
         static_lines = []
 
@@ -65,7 +65,7 @@ class MapLoader(abs_map):
         return static_lines
 
     def create_goals(self, mode):
-        sectors_arr = utils.readTrackFile("kartSimulator\\sim\\resources\\" + self.sector_name)
+        sectors_arr = utils.readTrackFile("kartSimulator/sim/resources/" + self.sector_name)
 
         # sectors
         sensor_bodies = self.space.static_body

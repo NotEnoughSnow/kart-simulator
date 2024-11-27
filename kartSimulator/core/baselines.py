@@ -1,16 +1,10 @@
 import glob
 import os
-import time
 
-import numpy as np
 from stable_baselines3 import PPO
 # import supersuit as ss
 from stable_baselines3.ppo import MlpPolicy
 
-import kartSimulator.sim.drive_env as base_env
-import kartSimulator.sim.directional_env as simple_env
-
-import kartSimulator.sim.observation_types as obs_types
 
 # Create a function to generate a unique directory name
 def create_unique_log_dir(base_log_dir, name_prefix):
