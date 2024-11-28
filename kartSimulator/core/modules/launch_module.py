@@ -48,11 +48,15 @@ class Launcher():
             # print("---------------------------------------------")
 
             while not terminated and not truncated:
-                action = 0
+                if env.metadata["name"] == "kart2D grid_env":
+                    action = [0, 0]
+                else:
+                    action = 0
 
                 keys = pygame.key.get_pressed()
 
-                if env.metadata["name"] == "kart2D simple_env":
+                if env.metadata["name"] == "kart2D grid_env":
+                    '''
                     if keys[pygame.K_w]:
                         action = 1
                     if keys[pygame.K_s]:
@@ -61,6 +65,15 @@ class Launcher():
                         action = 3
                     if keys[pygame.K_d]:
                         action = 4
+                        '''
+                    if keys[pygame.K_w]:
+                        action = [-1, 0]
+                    if keys[pygame.K_s]:
+                        action = [1, 0]
+                    if keys[pygame.K_a]:
+                        action = [0, -1]
+                    if keys[pygame.K_d]:
+                        action = [0, 1]
                 else:
                     if keys[pygame.K_w]:
                         action = 1

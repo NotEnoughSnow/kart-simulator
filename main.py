@@ -12,6 +12,9 @@ from kartSimulator.core.arguments import get_args
 
 import kartSimulator.sim.steer_env as steer_env
 import kartSimulator.sim.grid_env as grid_env
+
+import kartSimulator.sim.old.old_steer_env as old_steer_env
+import kartSimulator.sim.old.old_grid_env as old_grid_env
 from kartSimulator.core.modules.env_factory import EnvFactory
 
 def main(args):
@@ -29,9 +32,9 @@ def main(args):
         "save_dir": "./saves/",
     }
 
-    env_name = grid_env
+    env_name = old_steer_env
     track_type = "loader"
-    track_name = "small_S"
+    track_name = "big_S"
 
     env_factory = EnvFactory(env_name)
 
@@ -56,6 +59,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, eval, replay
 
-    args.mode = "train"
+    args.mode = "play"
 
     main(args)

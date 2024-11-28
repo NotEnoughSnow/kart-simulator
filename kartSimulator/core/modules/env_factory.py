@@ -2,7 +2,7 @@
 from kartSimulator.sim.maps.track_factory import TrackFactory
 import kartSimulator.sim.observation_types as obs_types
 import kartSimulator.sim.grid_env as simple_env
-
+import kartSimulator.sim.old.old_grid_env as old_simple_env
 
 class EnvFactory:
 
@@ -103,27 +103,28 @@ class EnvFactory:
             # "initial_pos": [180, 100]
         }
 
+        # TODO do not use to train newer versions
         self.rew_adj_simple = {
             "passive": 0,
-            "dist": 0,
-            "act_dist": 1,
+            "dist": 1,
+            "act_dist": 0,
             "sector_time": 1,
         }
 
         self.rew_adj_base = {
             "passive": 0,
-            "dist": 0,
-            "act_dist": 0.5,
+            "dist": 1,
+            "act_dist": 0,
             "sector_time": 1,
-            "steer": 0.7,
+            "steer": 0,
         }
 
         self.env_args = {
-            "obs_seq": self.obs_simple if env_name == simple_env else self.obs_base,
+            "obs_seq": self.obs_simple if (env_name == simple_env or env_name == old_simple_env) else self.obs_base,
             "reset_time": 10000,
             "track": None,
-            "player_args": simple_env_player_args if env_name == simple_env else base_env_player_args,
-            "rew_adj": self.rew_adj_simple if env_name == simple_env else self.rew_adj_base,
+            "player_args": simple_env_player_args if (env_name == simple_env or env_name == old_simple_env) else base_env_player_args,
+            "rew_adj": self.rew_adj_simple if (env_name == simple_env or env_name == simple_env) else self.rew_adj_base,
         }
 
     def set_rew_adj(self, rew_adj):
