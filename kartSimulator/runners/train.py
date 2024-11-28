@@ -99,7 +99,7 @@ class Train():
         # env = gym.make('LunarLander-v2')
         env = env_factory.createEnv(track_type, track_name, None)
 
-        total_timesteps = 1000000
+        total_timesteps = 10000
 
         #actor_state = "saves/projects/imitation-project/yeezy-1/ppo_actor.pth"
         #critic_state = "saves/projects/imitation-project/yeezy-1/ppo_critic.pth"
@@ -107,7 +107,7 @@ class Train():
         actor_state = None
         critic_state = None
 
-        trainer.train(env, total_timesteps, actor_state, critic_state)
+        trainer.train(env, total_timesteps, actor_state, critic_state, use_old=True)
 
 
 

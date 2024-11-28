@@ -8,6 +8,7 @@ import yaml
 from kartSimulator.core import baselines
 from kartSimulator.core.ppo_IM import PPO_IM
 from kartSimulator.core.ppo import PPO
+from kartSimulator.core.ppo_old import PPO_OLD
 from kartSimulator.core.ppo_snn import PPO_SNN
 from kartSimulator.sim import utils
 
@@ -67,6 +68,7 @@ class Trainer():
               total_timesteps,
               actor_state,
               critic_state,
+              use_old,
               ):
 
         base_dir = self.save_dir + f"{self.project_name}/"
@@ -86,20 +88,29 @@ class Trainer():
             train_config = None
             save_path = None
 
-        if self.Ntype == "ANN":
-            actor_state, critic_state = self.train_ANN(env,
-                                                       total_timesteps,
-                                                       save_path,
-                                                       train_config,
-                                                       actor_state,
-                                                       critic_state)
-        if self.Ntype == "SNN":
-            actor_state, critic_state = self.train_SNN(env,
-                                                       total_timesteps,
-                                                       save_path,
-                                                       train_config,
-                                                       actor_state,
-                                                       critic_state)
+        if use_old:
+            self.train_old(env,
+                           total_timesteps,
+                           save_path,
+                           train_config,
+                           actor_state,
+                           critic_state)
+        else:
+
+            if self.Ntype == "ANN":
+                actor_state, critic_state = self.train_ANN(env,
+                                                           total_timesteps,
+                                                           save_path,
+                                                           train_config,
+                                                           actor_state,
+                                                           critic_state)
+            if self.Ntype == "SNN":
+                actor_state, critic_state = self.train_SNN(env,
+                                                           total_timesteps,
+                                                           save_path,
+                                                           train_config,
+                                                           actor_state,
+                                                           critic_state)
 
         return actor_state, critic_state
 
@@ -140,6 +151,38 @@ class Trainer():
         _, critic_state = model.get_actor()
 
         return actor_state, critic_state
+
+    def train_old(self,
+                  env,
+                  total_timesteps,
+                  save_path,
+                  train_config,
+                  actor_model,
+                  critic_model,
+                  ):
+        model = PPO_OLD(env=env,
+                       save_model=self.saving["models"],
+                       record_ghost=self.saving["ghost"],
+                       save_dir=save_path,
+                       record_wandb=self.saving["wandb"],
+                       train_config=train_config,
+                       expert_data=self.expert_data ,
+                       **self.hyperparameters)
+
+        if actor_model != None and critic_model != None:
+            print(f"Loading in {actor_model} and {critic_model}...", flush=True)
+            model.actor.load_state_dict(torch.load(actor_model))
+            model.critic.load_state_dict(torch.load(critic_model))
+            print(f"Successfully loaded.", flush=True)
+        elif actor_model != None or critic_model != None:  # Don't train from scratch if user accidentally forgets actor/critic model
+            print(
+                f"Error: Either specify both actor/critic models or none at all. We don't want to accidentally override anything!")
+            sys.exit(0)
+        else:
+            print(f"Training from scratch.", flush=True)
+
+        model.learn(total_timesteps=total_timesteps)
+
 
     def train_SNN(self,
                   env,
