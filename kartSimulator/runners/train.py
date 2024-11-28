@@ -82,12 +82,12 @@ class Train():
         seed = 224551
 
         saving = {
-            "ghost": True,
-            "models": True,
-            "wandb": True,
+            "ghost": False,
+            "models": False,
+            "wandb": False,
         }
 
-        network_type = "SNN"
+        network_type = "ANN"
 
         # create agent : kart
 

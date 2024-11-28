@@ -1,7 +1,7 @@
 
 from kartSimulator.sim.maps.track_factory import TrackFactory
 import kartSimulator.sim.observation_types as obs_types
-import kartSimulator.sim.env.grid_env as simple_env
+import kartSimulator.sim.grid_env as simple_env
 
 
 class EnvFactory:

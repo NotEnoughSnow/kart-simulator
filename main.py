@@ -10,8 +10,8 @@ from kartSimulator.runners.play import Play
 
 from kartSimulator.core.arguments import get_args
 
-
-import kartSimulator.sim.env.grid_env as grid_env
+import kartSimulator.sim.steer_env as steer_env
+import kartSimulator.sim.grid_env as grid_env
 from kartSimulator.core.modules.env_factory import EnvFactory
 
 def main(args):

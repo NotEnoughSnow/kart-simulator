@@ -2,7 +2,7 @@ import random
 
 import numpy as np
 import h5py
-import kartSimulator.sim.env.replay_simple_env as replay_simple_env
+import kartSimulator.sim.replay_simple_env as replay_simple_env
 
 
 class ReplayGhosts:
