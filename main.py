@@ -25,7 +25,7 @@ def main(args):
 
     save_config = {
         "project_name": "steer-gazebo",
-        "run_name": "ANN",
+        "run_name": "SNN",
         "save_dir": "./saves/",
     }
 
@@ -56,6 +56,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, eval, replay
 
-    args.mode = "play"
+    args.mode = "train"
 
     main(args)

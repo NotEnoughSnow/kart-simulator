@@ -13,8 +13,8 @@ class SNN_small(nn.Module):
 
         self.num_steps = num_steps
         beta1 = 0.9
-        #beta2 = torch.rand((output_size), dtype=torch.float)  # Independent decay rate for each output neuron
         beta2 = 0.9
+        #beta2 = torch.rand((output_size), dtype=torch.float)  # Independent decay rate for each output neuron
 
         # Define layers
         self.fc1 = nn.Linear(input_size, hidden_size, dtype=torch.float)

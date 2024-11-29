@@ -25,7 +25,6 @@ class MapLoader(abs_map):
         if self.track_name == "big_S_track.txt":
             pos_variation_x = random.uniform(-50, 50)
             pos_variation_y = random.uniform(-50, 50)
-            print("here")
         else:
             pos_variation_x = random.uniform(-15, 15)
             pos_variation_y = random.uniform(-15, 15)

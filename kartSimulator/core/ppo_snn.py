@@ -14,9 +14,8 @@ import kartSimulator.core.snn_utils as SNN_utils
 import h5py
 
 import wandb
-
-from kartSimulator.core.networks.snn_network_small import SNN_small
-
+#from kartSimulator.core.networks.snn_network_small import SNN_small
+from kartSimulator.core.networks.snn_network import SNN
 
 
 class PPO_SNN:
@@ -114,8 +113,8 @@ class PPO_SNN:
         # self.actor = ActorNetwork(self.obs_dim, self.act_dim)
         # self.critic = CriticNetwork(self.obs_dim, 1)
 
-        self.actor = SNN_small(self.obs_dim, self.act_dim, self.num_steps, add_weight=self.add_weight)
-        self.critic = SNN_small(self.obs_dim, 1, self.num_steps, add_weight=self.add_weight)
+        self.actor = SNN(self.obs_dim, self.act_dim, self.num_steps, add_weight=self.add_weight)
+        self.critic = SNN(self.obs_dim, 1, self.num_steps, add_weight=self.add_weight)
 
         # Initialize optimizers for actor and critic
         self.actor_optim = Adam(self.actor.parameters(), lr=self.lr)
@@ -333,11 +332,18 @@ class PPO_SNN:
                 self._log_summary()
 
             # Save our model if it's time
-            if self.save_model:
-                if i_so_far % self.save_freq == 0:
+            if i_so_far % self.save_freq == 0:
+
+                if self.save_model:
                     print("Quick-saving models")
                     torch.save(self.actor.state_dict(), f'{self.run_directory}/ppo_actor.pth')
                     torch.save(self.critic.state_dict(), f'{self.run_directory}/ppo_critic.pth')
+
+                if self.record_ghost:
+                    print("Saving ghost data")
+                    self.save_ghost(self.env,
+                                    batches=total_ghost_ep,
+                                    batch_lengths=total_ghost_ts, )
 
         # model_save_directory = utils.get_next_run_directory(f'./saved_models_base/',self.experiment_type)
 

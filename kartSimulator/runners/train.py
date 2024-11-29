@@ -20,16 +20,16 @@ class Train():
             'gamma': 0.9634703441998751,
             'ent_coef': 0.004797586864549939,
             'n_updates_per_iteration': 7,
-            'lr': 0.0017887220926944984,
+            'lr': 0.00017887220926944984,
             'clip': 0.2,
             'max_grad_norm': 0.5,
             'render_every_i': 10,
-            'target_kl': 0.5,
+            'target_kl': None,
             'num_minibatches': 80,
             'gae_lambda': 0.9642298634023644,
             'verbose': 2,
             'num_steps': 32,
-            'add_weight': 0.02,
+            'add_weight': 0.05,
         }
 
         hyperparameters_GMRE_SNN = {
@@ -41,7 +41,7 @@ class Train():
             'clip': 0.2,
             'max_grad_norm': 0.5,
             'render_every_i': 10,
-            'target_kl': 0.5,
+            'target_kl': None,
             'num_minibatches': 112,
             'gae_lambda': 0.9665,
             'verbose': 2,
@@ -58,7 +58,7 @@ class Train():
             'clip': 0.2,
             'max_grad_norm': 0.5,
             'render_every_i': 10,
-            'target_kl': 0.5,
+            'target_kl': None,
             'num_minibatches': 80,
             'gae_lambda': 0.9644,
             'verbose': 2,
@@ -73,13 +73,13 @@ class Train():
             'clip': 0.2,
             'max_grad_norm': 0.5,
             'render_every_i': 10,
-            'target_kl': 0.5,
+            'target_kl': None,
             'num_minibatches': 112,
             'gae_lambda': 0.9665,
             'verbose': 2,
         }
 
-        seed = 745673
+        seed = 7746312
 
         saving = {
             "ghost": True,
@@ -87,11 +87,11 @@ class Train():
             "wandb": True,
         }
 
-        network_type = "ANN"
+        network_type = "SNN"
 
         # create agent : kart
 
-        trainer.set_hyperparameters(hyperparameters_SMRE_ANN)
+        trainer.set_hyperparameters(hyperparameters_SMRE_SNN)
         trainer.set_saving(saving)
         trainer.set_seed(seed)
         trainer.set_network(network_type)
@@ -99,7 +99,7 @@ class Train():
         # env = gym.make('LunarLander-v2')
         env = env_factory.createEnv(track_type, track_name, None)
 
-        total_timesteps = 5000000
+        total_timesteps = 1200000
 
         #actor_state = "saves/projects/imitation-project/yeezy-1/ppo_actor.pth"
         #critic_state = "saves/projects/imitation-project/yeezy-1/ppo_critic.pth"
