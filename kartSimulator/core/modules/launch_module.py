@@ -52,7 +52,7 @@ class Launcher():
 
                 keys = pygame.key.get_pressed()
 
-                if env.metadata["name"] == "kart2D simple_env":
+                if env.metadata["name"] == "kart2D grid_env":
                     if keys[pygame.K_w]:
                         action = 1
                     if keys[pygame.K_s]:

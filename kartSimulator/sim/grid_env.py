@@ -210,10 +210,12 @@ class KartSim(gym.Env):
 
         observation = self.observation()
 
+        info = {"player pos": position}
+
         #print("huh ", len(self._space.shapes))
 
         # return self.step(None)[0], {}
-        return observation, {}
+        return observation, info
 
     def step(self, action: Union[np.ndarray, int]):
 

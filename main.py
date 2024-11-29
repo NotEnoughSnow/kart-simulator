@@ -24,8 +24,8 @@ def main(args):
 
 
     save_config = {
-        "project_name": "grid-final",
-        "run_name": "SNN",
+        "project_name": "testing-project",
+        "run_name": "ANN",
         "save_dir": "./saves/",
     }
 

@@ -59,7 +59,7 @@ class PPO:
         if self.record_wandb:
             wandb.init(
                 # set the wandb project where this run will be logged
-                project="grid-final",
+                project="testing-project",
 
                 # track hyperparameters and run metadata
                 config=train_config
@@ -310,12 +310,19 @@ class PPO:
                 # Print a summary of our training so far
                 self._log_summary()
 
+
+            if i_so_far % self.save_freq == 0:
             # Save our model if it's time
-            if self.save_model:
-                if i_so_far % self.save_freq == 0:
+                if self.save_model:
                     print("Quick-saving models")
                     torch.save(self.actor.state_dict(), f'{self.run_directory}/ppo_actor.pth')
                     torch.save(self.critic.state_dict(), f'{self.run_directory}/ppo_critic.pth')
+
+                if self.record_ghost:
+                    print("Saving ghost data")
+                    self.save_ghost(self.env,
+                                    batches=total_ghost_ep,
+                                    batch_lengths=total_ghost_ts, )
 
         # model_save_directory = utils.get_next_run_directory(f'./saved_models_base/',self.experiment_type)
 

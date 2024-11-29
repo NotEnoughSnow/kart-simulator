@@ -22,8 +22,12 @@ class MapLoader(abs_map):
 
     def reset(self, playerShapes):
 
-        pos_variation_x = random.uniform(-50, 50)
-        pos_variation_y = random.uniform(-50, 50)
+        if self.track_name == "big_S_track.txt":
+            pos_variation_x = random.uniform(-50, 50)
+            pos_variation_y = random.uniform(-50, 50)
+        else:
+            pos_variation_x = random.uniform(-15, 15)
+            pos_variation_y = random.uniform(-15, 15)
 
         random_position = [self.initial_pos[0]+pos_variation_x, self.initial_pos[1]+pos_variation_y]
 
