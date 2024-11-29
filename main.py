@@ -24,14 +24,14 @@ def main(args):
 
 
     save_config = {
-        "project_name": "grid-final",
-        "run_name": "SNN",
+        "project_name": "steer-gazebo",
+        "run_name": "ANN",
         "save_dir": "./saves/",
     }
 
-    env_name = grid_env
+    env_name = steer_env
     track_type = "loader"
-    track_name = "small_S"
+    track_name = "big_S"
 
     env_factory = EnvFactory(env_name)
 
@@ -56,6 +56,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, eval, replay
 
-    args.mode = "train"
+    args.mode = "play"
 
     main(args)

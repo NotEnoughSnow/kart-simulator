@@ -936,7 +936,7 @@ class KartSim(gym.Env):
         player_angle_sin = math.sin(player_angle)
 
         # assign rotations
-        rotation = [player_angle_cos, player_angle_sin, steer_angle[0]]
+        rotation = [player_angle_cos, player_angle_sin]
 
         return rotation
 

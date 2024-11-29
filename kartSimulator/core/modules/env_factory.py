@@ -46,8 +46,6 @@ class EnvFactory:
                obs_types.POSITION,
                obs_types.VELOCITY,
                obs_types.ROTATION,
-               obs_types.DISTANCE,
-               obs_types.TARGET_ANGLE,
                ]
 
         self.obs_simple = [obs_types.LIDAR,

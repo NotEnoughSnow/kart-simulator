@@ -59,7 +59,7 @@ class PPO:
         if self.record_wandb:
             wandb.init(
                 # set the wandb project where this run will be logged
-                project="grid-final",
+                project="steer-gazebo",
 
                 # track hyperparameters and run metadata
                 config=train_config

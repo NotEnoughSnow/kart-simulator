@@ -79,19 +79,19 @@ class Train():
             'verbose': 2,
         }
 
-        seed = 224551
+        seed = 745673
 
         saving = {
-            "ghost": False,
-            "models": False,
-            "wandb": False,
+            "ghost": True,
+            "models": True,
+            "wandb": True,
         }
 
         network_type = "ANN"
 
         # create agent : kart
 
-        trainer.set_hyperparameters(hyperparameters_GMRE_SNN)
+        trainer.set_hyperparameters(hyperparameters_SMRE_ANN)
         trainer.set_saving(saving)
         trainer.set_seed(seed)
         trainer.set_network(network_type)
@@ -99,7 +99,7 @@ class Train():
         # env = gym.make('LunarLander-v2')
         env = env_factory.createEnv(track_type, track_name, None)
 
-        total_timesteps = 1000000
+        total_timesteps = 5000000
 
         #actor_state = "saves/projects/imitation-project/yeezy-1/ppo_actor.pth"
         #critic_state = "saves/projects/imitation-project/yeezy-1/ppo_critic.pth"
