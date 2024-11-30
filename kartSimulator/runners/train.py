@@ -29,7 +29,7 @@ class Train():
             'gae_lambda': 0.9642298634023644,
             'verbose': 2,
             'num_steps': 32,
-            'add_weight': 0.05,
+            'add_weight': 0.06,
         }
 
         hyperparameters_GMRE_SNN = {

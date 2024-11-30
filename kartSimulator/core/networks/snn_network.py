@@ -26,9 +26,9 @@ class SNN(nn.Module):
         self.fc2.weight.data += add_weight
         self.lif2 = snn.Leaky(beta=beta2, spike_grad=surrogate.fast_sigmoid())
 
-        self.fc3 = nn.Linear(hidden_size, output_size, dtype=torch.float)
+        self.fc3 = nn.Linear(hidden_size, hidden_size, dtype=torch.float)
         self.fc3.weight.data += add_weight
-        self.lif3 = snn.Leaky(beta=beta3, learn_beta=True, spike_grad=surrogate.fast_sigmoid())
+        self.lif3 = snn.Leaky(beta=beta3, spike_grad=surrogate.fast_sigmoid())
 
         # Linear readout layer
         self.readout = nn.Linear(hidden_size, output_size)

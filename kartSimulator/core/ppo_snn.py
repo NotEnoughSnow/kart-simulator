@@ -14,8 +14,8 @@ import kartSimulator.core.snn_utils as SNN_utils
 import h5py
 
 import wandb
-#from kartSimulator.core.networks.snn_network_small import SNN_small
-from kartSimulator.core.networks.snn_network import SNN
+from kartSimulator.core.networks.snn_network_small import SNN_small
+#from kartSimulator.core.networks.snn_network import SNN
 
 
 class PPO_SNN:
@@ -60,7 +60,7 @@ class PPO_SNN:
             wandb.init(
                 # set the wandb project where this run will be logged
                 #project="PPO-SNN-Lunar-Landing",
-                project="grid-final",
+                project="steer-gazebo",
 
 
                 # track hyperparameters and run metadata
@@ -113,8 +113,8 @@ class PPO_SNN:
         # self.actor = ActorNetwork(self.obs_dim, self.act_dim)
         # self.critic = CriticNetwork(self.obs_dim, 1)
 
-        self.actor = SNN(self.obs_dim, self.act_dim, self.num_steps, add_weight=self.add_weight)
-        self.critic = SNN(self.obs_dim, 1, self.num_steps, add_weight=self.add_weight)
+        self.actor = SNN_small(self.obs_dim, self.act_dim, self.num_steps, add_weight=self.add_weight)
+        self.critic = SNN_small(self.obs_dim, 1, self.num_steps, add_weight=self.add_weight)
 
         # Initialize optimizers for actor and critic
         self.actor_optim = Adam(self.actor.parameters(), lr=self.lr)
