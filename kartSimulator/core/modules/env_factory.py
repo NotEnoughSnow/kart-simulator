@@ -113,10 +113,10 @@ class EnvFactory:
 
         self.rew_adj_base = {
             "passive": 0,
-            "dist": 1,
-            "act_dist": 0,
+            "dist": 0,
+            "act_dist": 0.5,
             "sector_time": 1,
-            "steer": 0,
+            "steer": 0.7,
         }
 
         self.env_args = {

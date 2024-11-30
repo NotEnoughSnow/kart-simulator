@@ -94,7 +94,8 @@ class Trainer():
                            save_path,
                            train_config,
                            actor_state,
-                           critic_state)
+                           critic_state,
+                           self.project_name,)
         else:
 
             if self.Ntype == "ANN":
@@ -103,14 +104,16 @@ class Trainer():
                                                            save_path,
                                                            train_config,
                                                            actor_state,
-                                                           critic_state)
+                                                           critic_state,
+                                                           self.project_name,)
             if self.Ntype == "SNN":
                 actor_state, critic_state = self.train_SNN(env,
                                                            total_timesteps,
                                                            save_path,
                                                            train_config,
                                                            actor_state,
-                                                           critic_state)
+                                                           critic_state,
+                                                           self.project_name,)
 
         return actor_state, critic_state
 
@@ -121,6 +124,7 @@ class Trainer():
                   train_config,
                   actor_model,
                   critic_model,
+                  project_name,
                   ):
         # TODO change this back
         model = PPO(env=env,
@@ -131,7 +135,8 @@ class Trainer():
                        record_wandb=self.saving["wandb"],
                        train_config=train_config,
                        expert_data=self.expert_data ,
-                       **self.hyperparameters)
+                        project_name=project_name,
+                    **self.hyperparameters)
 
         if actor_model != None and critic_model != None:
             print(f"Loading in {actor_model} and {critic_model}...", flush=True)
@@ -159,6 +164,7 @@ class Trainer():
                   train_config,
                   actor_model,
                   critic_model,
+                  project_name,
                   ):
         model = PPO_OLD(env=env,
                        save_model=self.saving["models"],
@@ -166,7 +172,8 @@ class Trainer():
                        save_dir=save_path,
                        record_wandb=self.saving["wandb"],
                        train_config=train_config,
-                       expert_data=self.expert_data ,
+                       expert_data=self.expert_data,
+                        project_name=project_name,
                        **self.hyperparameters)
 
         if actor_model != None and critic_model != None:
@@ -191,6 +198,7 @@ class Trainer():
                   train_config,
                   actor_model,
                   critic_model,
+                  project_name,
                   ):
 
         model = PPO_SNN(env=env,
@@ -201,6 +209,7 @@ class Trainer():
                         record_wandb=self.saving["wandb"],
                         train_config=train_config,
                         expert_data=self.expert_data,
+                        project_name=project_name,
                         **self.hyperparameters)
 
         if actor_model != None and critic_model != None:

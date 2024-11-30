@@ -1,5 +1,7 @@
 
 from kartSimulator.core.modules.train_module import Trainer
+import gymnasium as gym
+import ale_py
 
 
 
@@ -24,7 +26,7 @@ class Train():
             'clip': 0.2,
             'max_grad_norm': 0.5,
             'render_every_i': 10,
-            'target_kl': 0.5,
+            'target_kl': None,
             'num_minibatches': 80,
             'gae_lambda': 0.9642298634023644,
             'verbose': 2,
@@ -41,7 +43,7 @@ class Train():
             'clip': 0.2,
             'max_grad_norm': 0.5,
             'render_every_i': 10,
-            'target_kl': 0.5,
+            'target_kl': None,
             'num_minibatches': 112,
             'gae_lambda': 0.9665,
             'verbose': 2,
@@ -58,7 +60,7 @@ class Train():
             'clip': 0.2,
             'max_grad_norm': 0.5,
             'render_every_i': 10,
-            'target_kl': 0.5,
+            'target_kl': None,
             'num_minibatches': 80,
             'gae_lambda': 0.9644,
             'verbose': 2,
@@ -73,33 +75,65 @@ class Train():
             'clip': 0.2,
             'max_grad_norm': 0.5,
             'render_every_i': 10,
-            'target_kl': 0.5,
+            'target_kl': None,
             'num_minibatches': 112,
             'gae_lambda': 0.9665,
             'verbose': 2,
         }
 
-        seed = 224551
+        hyperparameters_lunar = {
+            'timesteps_per_batch': 1024,
+            'gamma': 0.999,
+            'ent_coef': 0.01,
+            'n_updates_per_iteration': 4,
+            'lr': 3e-4,
+            'clip': 0.2,
+            'max_grad_norm': 0.5,
+            'render_every_i': 10,
+            'target_kl': None,
+            'num_minibatches': 64,
+            'gae_lambda': 0.98,
+            'verbose': 2,
+        }
+
+        hyperparameters_breakout = {
+            'timesteps_per_batch': 128,
+            'gamma': 0.99,
+            'ent_coef': 0.01,
+            'n_updates_per_iteration': 4,
+            'lr': 3e-4,
+            'clip': 0.2,
+            'max_grad_norm': 0.5,
+            'render_every_i': 10,
+            'target_kl': None,
+            'num_minibatches': 256,
+            'gae_lambda': 0.95,
+            'verbose': 2,
+        }
+
+        seed = 44354
 
         saving = {
-            "ghost": False,
-            "models": False,
-            "wandb": False,
+            "ghost": True,
+            "models": True,
+            "wandb": True,
         }
 
         network_type = "ANN"
 
         # create agent : kart
 
-        trainer.set_hyperparameters(hyperparameters_GMRE_SNN)
+        trainer.set_hyperparameters(hyperparameters_SMRE_ANN)
         trainer.set_saving(saving)
         trainer.set_seed(seed)
         trainer.set_network(network_type)
 
-        # env = gym.make('LunarLander-v2')
+        #gym.register_envs(ale_py)
+        #env = gym.make('ALE/Breakout-v5')
+        #env = gym.make('LunarLander-v2')
         env = env_factory.createEnv(track_type, track_name, None)
 
-        total_timesteps = 10000
+        total_timesteps = 1000000
 
         #actor_state = "saves/projects/imitation-project/yeezy-1/ppo_actor.pth"
         #critic_state = "saves/projects/imitation-project/yeezy-1/ppo_critic.pth"

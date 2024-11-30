@@ -29,6 +29,7 @@ class PPO_SNN:
                  save_dir,
                  record_wandb,
                  train_config,
+                 project_name,
                  **hyperparameters):
 
         self.pid = os.getpid()
@@ -61,7 +62,7 @@ class PPO_SNN:
             wandb.init(
                 # set the wandb project where this run will be logged
                 #project="PPO-SNN-Lunar-Landing",
-                project="grid-final",
+                project=project_name,
 
 
                 # track hyperparameters and run metadata

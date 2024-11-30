@@ -22,6 +22,7 @@ class PPO_OLD:
                  record_wandb,
                  save_dir,
                  train_config,
+                 project_name,
                  **hyperparameters):
 
         print("USING OLD VERSION OF PPO")
@@ -50,7 +51,7 @@ class PPO_OLD:
         if self.record_wandb:
             wandb.init(
                 # set the wandb project where this run will be logged
-                project="PPO-base-v-upgrade",
+                project=project_name,
 
                 # track hyperparameters and run metadata
                 config=train_config

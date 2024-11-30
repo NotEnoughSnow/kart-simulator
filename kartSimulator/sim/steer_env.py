@@ -223,7 +223,7 @@ class KartSim(gym.Env):
 
         super().reset()
 
-        import_position = options.get("initial pos", None)
+        import_position = None
 
         directions, angle, position = self.map.reset([self._playerShape])
 

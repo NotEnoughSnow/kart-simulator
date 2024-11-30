@@ -27,12 +27,12 @@ def main(args):
 
 
     save_config = {
-        "project_name": "grid-final",
-        "run_name": "SNN",
+        "project_name": "old_v_new",
+        "run_name": "new-SMRE-v-PPO",
         "save_dir": "./saves/",
     }
 
-    env_name = old_steer_env
+    env_name = steer_env
     track_type = "loader"
     track_name = "big_S"
 
@@ -59,6 +59,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, eval, replay
 
-    args.mode = "play"
+    args.mode = "train"
 
     main(args)

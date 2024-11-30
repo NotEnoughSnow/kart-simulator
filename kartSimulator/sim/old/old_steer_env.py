@@ -225,7 +225,7 @@ class KartSim(gym.Env):
 
         super().reset()
 
-        import_position = options.get("initial pos", None)
+        import_position = None
 
         directions, angle, position = self.map.reset([self._playerShape])
 
@@ -282,8 +282,6 @@ class KartSim(gym.Env):
 
         if action_array is not None:
             # [0] does nothing
-            print(action_array)
-
             accel_value = self._accelerate(action_array[1])
             break_value = self._break(action_array[2])
             steer_left_value = self._steer_left(action_array[3])
@@ -514,7 +512,8 @@ class KartSim(gym.Env):
 
             # steer reward
             if action is not None:
-                self.steer_reward = self.calculate_steer_reward(self.steer_direction(action))
+                #self.steer_reward = self.calculate_steer_reward(self.steer_direction(action))
+                pass
 
     def reward_function(self):
 
