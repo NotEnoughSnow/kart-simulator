@@ -29,6 +29,8 @@ def main(args):
         "save_dir": "./saves/",
     }
 
+    # grid_env
+    # steer_env
     env_name = grid_env
     track_type = "loader"
     track_name = "small_S"
@@ -56,6 +58,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, eval, replay
 
-    args.mode = "train"
+    args.mode = "replay"
 
     main(args)
