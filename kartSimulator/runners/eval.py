@@ -13,7 +13,7 @@ class Eval:
         env = env_factory.createEnv(track_type, track_name, "human")
         #env = gym.make('LunarLander-v2', render_mode="human")
 
-        actor_state = "./saves/projects/imitation-project/converged/ppo_actor.pth"
+        actor_state = "./saves/projects/steer-gazebo/ANN-350-2/ppo_actor.pth"
 
         NType = "ANN"
 

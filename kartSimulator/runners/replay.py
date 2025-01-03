@@ -10,7 +10,7 @@ class Replay:
     def __init__(self, track_type, track_name, env_factory):
 
         # Parameters for replays
-        replay_files = [f"./saves/projects/grid-final/ANN-1/ghost.hdf5"]
+        replay_files = [f"./saves/projects/steer-gazebo/ANN-350-2/ghost.hdf5"]
         mode = "all"
 
         ReplayGhosts(locations=replay_files,

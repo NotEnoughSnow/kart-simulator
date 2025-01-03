@@ -24,9 +24,6 @@ class ReplayGhosts:
 
     def __init__(self, locations, mode, track_type, track_name, env_factory):
 
-
-
-
         if mode == "all":
             self.replay_all_mul(file_paths=locations,
                                 track_type=track_type,

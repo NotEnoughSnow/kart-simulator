@@ -97,7 +97,7 @@ class PPO:
                   f"action shape :{self.act_dim}")
 
         # Initialize actor and critic networks
-        # self.actor = ActorNetwork(self.obs_dim, self.act_dim)  # ALG STEP 1
+        # self.actor = ActorNetwork(self.obs_dim, self.act_dim)
         # self.critic = CriticNetwork(self.obs_dim, 1)
 
         self.actor = FFNetwork(self.obs_dim, self.act_dim)
@@ -172,10 +172,6 @@ class PPO:
             self.logger['t_so_far'] = t_so_far
             self.logger['i_so_far'] = i_so_far
 
-            # One of the only tricks I use that isn't in the pseudocode. Normalizing advantages
-            # isn't theoretically necessary, but in practice it decreases the variance of
-            # our advantages and makes convergence much more stable and faster. I added this because
-            # solving some environments was too unstable without it.
             A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
 
             step = batch_obs.size(0)
@@ -219,13 +215,7 @@ class PPO:
                     # Calculate V_phi and pi_theta(a_t | s_t)
                     V, curr_log_probs, dist, entropy_loss = self.evaluate(mini_obs, mini_acts)
 
-                    # Calculate the ratio pi_theta(a_t | s_t) / pi_theta_k(a_t | s_t)
-                    # NOTE: we just subtract the logs, which is the same as
-                    # dividing the values and then canceling the log with e^log.
-                    # For why we use log probabilities instead of actual probabilities,
-                    # here's a great explanation:
-                    # https://cs.stackexchange.com/questions/70518/why-do-we-use-the-log-in-gradient-based-reinforcement-algorithms
-                    # TL;DR makes gradient ascent easier behind the scenes.
+
                     logratios = curr_log_probs - mini_log_prob
                     ratios = torch.exp(logratios)
 
@@ -234,11 +224,6 @@ class PPO:
                     # Calculate surrogate losses.
                     surr1 = ratios * mini_advantage
                     surr2 = torch.clamp(ratios, 1 - self.clip, 1 + self.clip) * mini_advantage
-
-                    # Calculate actor and critic losses.
-                    # NOTE: we take the negative min of the surrogate losses because we're trying to maximize
-                    # the performance function, but Adam minimizes the loss. So minimizing the negative
-                    # performance function maximizes it.
 
                     actor_loss = (-torch.min(surr1, surr2)).mean()
 
@@ -484,9 +469,6 @@ class PPO:
         # Log the episodic returns and episodic lengths in this batch.
         self.logger['batch_rews'] = batch_rews
         self.logger['batch_lens'] = batch_lens
-
-        # Put results in the queue to collect them in the main process
-        #print(f"Process {os.getpid()} put data in the queue")
 
         return batch_obs, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts
 
