@@ -24,7 +24,7 @@ def main(args):
 
 
     save_config = {
-        "project_name": "testing-project",
+        "project_name": "steer-gazebo",
         "run_name": "ANN",
         "save_dir": "./saves/",
     }
