@@ -6,11 +6,14 @@ from kartSimulator.core.replay_ghosts import ReplayGhosts
 
 class Replay:
 
+    def __init__(self, track_type, track_name, env_factory, save_config):
 
-    def __init__(self, track_type, track_name, env_factory):
+        # extract information from save config
+        project_name = save_config["project_name"]
+        run_name = "ANN-1"
 
         # Parameters for replays
-        replay_files = [f"./saves/projects/testing-project/ANN-1/ghost.hdf5"]
+        replay_files = [f"./saves/projects/{project_name}/{run_name}/ghost.hdf5"]
         mode = "all"
 
         ReplayGhosts(locations=replay_files,

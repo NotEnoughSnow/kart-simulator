@@ -31,7 +31,7 @@ def main(args):
 
     # grid_env
     # steer_env
-    env_name = grid_env
+    env_name = steer_env
     track_type = "loader"
     track_name = "small_S"
 
@@ -47,7 +47,7 @@ def main(args):
     if args.mode == "eval":
         Eval(track_type=track_type, track_name=track_name, env_factory=env_factory, save_config=save_config)
     if args.mode == "replay":
-        Replay(track_type=track_type, track_name=track_name, env_factory=env_factory)
+        Replay(track_type=track_type, track_name=track_name, env_factory=env_factory, save_config=save_config)
 
 
 
