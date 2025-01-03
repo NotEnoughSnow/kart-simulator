@@ -27,6 +27,7 @@ class PPO:
                  save_dir,
                  record_wandb,
                  train_config,
+                 project_name,
                  **hyperparameters):
 
 
@@ -59,7 +60,7 @@ class PPO:
         if self.record_wandb:
             wandb.init(
                 # set the wandb project where this run will be logged
-                project="testing-project",
+                project=project_name,
 
                 # track hyperparameters and run metadata
                 config=train_config

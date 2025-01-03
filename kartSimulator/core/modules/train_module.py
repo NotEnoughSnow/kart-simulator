@@ -120,6 +120,7 @@ class Trainer():
                        record_wandb=self.saving["wandb"],
                        train_config=train_config,
                        expert_data=self.expert_data ,
+                    project_name = self.project_name,
                        **self.hyperparameters)
 
         if actor_model != None and critic_model != None:
@@ -158,6 +159,7 @@ class Trainer():
                         record_wandb=self.saving["wandb"],
                         train_config=train_config,
                         expert_data=self.expert_data,
+                        project_name = self.project_name,
                         **self.hyperparameters)
 
         if actor_model != None and critic_model != None:

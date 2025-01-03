@@ -42,28 +42,29 @@ class EnvFactory:
 
         }
 
-        self.obs_base = [obs_types.LIDAR,
-               obs_types.POSITION,
-               obs_types.VELOCITY,
-               obs_types.ROTATION,
-               #obs_types.DISTANCE,
-               #obs_types.TARGET_ANGLE,
-               ]
 
-        self.obs_simple = [obs_types.LIDAR,
-               obs_types.POSITION,
-               obs_types.VELOCITY,
-               obs_types.DISTANCE,
-               obs_types.TARGET_ANGLE,
-               ]
+        self.obs_steer = [obs_types.LIDAR,
+                          obs_types.POSITION,
+                          obs_types.VELOCITY,
+                          obs_types.ROTATION,
+                          obs_types.DISTANCE,
+                          obs_types.TARGET_ANGLE,
+                          ]
 
-        simple_env_player_args = {
+        self.obs_grid = [obs_types.LIDAR,
+                         obs_types.POSITION,
+                         obs_types.VELOCITY,
+                         obs_types.DISTANCE,
+                         obs_types.TARGET_ANGLE,
+                         ]
+
+        grid_env_player_args = {
             "player_acc_rate": 15,
             "max_velocity": 2,
             "bot_size": 0.192,
             "bot_weight": 1,
         }
-        base_env_player_args = {
+        steer_env_player_args = {
             "player_acc_rate": 6,
             "player_break_rate": 8,
             "max_velocity": 4,
@@ -119,10 +120,10 @@ class EnvFactory:
         }
 
         self.env_args = {
-            "obs_seq": self.obs_simple if env_name == simple_env else self.obs_base,
+            "obs_seq": self.obs_grid if env_name == simple_env else self.obs_steer,
             "reset_time": 10000,
             "track": None,
-            "player_args": simple_env_player_args if env_name == simple_env else base_env_player_args,
+            "player_args": grid_env_player_args if env_name == simple_env else steer_env_player_args,
             "rew_adj": self.rew_adj_simple if env_name == simple_env else self.rew_adj_base,
         }
 
