@@ -5,29 +5,33 @@ from snntorch import surrogate
 
 import numpy as np
 
-hidden_size = 64  # Number of hidden neurons
+hidden_size = 128  # Number of hidden neurons
 
 class SNN(nn.Module):
-    def __init__(self, input_size, output_size, num_steps):
+    def __init__(self, input_size, output_size, num_steps, add_weight):
         super(SNN, self).__init__()
 
         self.num_steps = num_steps
         beta1 = 0.9
         beta2 = 0.9
-        beta3 = torch.rand((output_size), dtype=torch.float)  # Independent decay rate for each output neuron
+        #beta3 = torch.rand((output_size), dtype=torch.float)  # Independent decay rate for each output neuron
+        beta3 = 0.9
 
         # Define layers
         self.fc1 = nn.Linear(input_size, hidden_size, dtype=torch.float)
-        self.fc1.weight.data += 0.0075
+        self.fc1.weight.data += add_weight
         self.lif1 = snn.Leaky(beta=beta1, spike_grad=surrogate.fast_sigmoid())
 
         self.fc2 = nn.Linear(hidden_size, hidden_size, dtype=torch.float)
-        self.fc2.weight.data += 0.0075
+        self.fc2.weight.data += add_weight
         self.lif2 = snn.Leaky(beta=beta2, spike_grad=surrogate.fast_sigmoid())
 
-        self.fc3 = nn.Linear(hidden_size, output_size, dtype=torch.float)
-        self.fc3.weight.data += 0.0075
-        self.lif3 = snn.Leaky(beta=beta3, learn_beta=True, spike_grad=surrogate.fast_sigmoid())
+        self.fc3 = nn.Linear(hidden_size, hidden_size, dtype=torch.float)
+        self.fc3.weight.data += add_weight
+        self.lif3 = snn.Leaky(beta=beta3, spike_grad=surrogate.fast_sigmoid())
+
+        # Linear readout layer
+        self.readout = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
 
@@ -65,15 +69,27 @@ class SNN(nn.Module):
             spk3_rec.append(spk3)
             mem3_rec.append(mem3)
 
+        # Shape: [batch_size, num_steps, output_size]
+        spk3_stacked = torch.stack(spk3_rec, dim=1)
+        mem3_stacked = torch.stack(mem3_rec, dim=1)
 
-        output_spk = torch.stack(spk3_rec, dim=1)  # Shape: [batch_size, num_steps, output_size]
-        output_mem = torch.stack(mem3_rec, dim=1)  # Shape: [batch_size, num_steps, output_size]
+        # Take the average membrane potential across time (summarize spikes)
+        # Shape: [batch_size, output_size]
+        avg_spk3 = torch.mean(spk3_stacked, dim=1)
+        avg_mem3 = torch.mean(mem3_stacked, dim=1)
+
+        # Apply the linear readout layer to the average membrane potential
+        # Shape: [batch_size, output_size]
+        readout_output_spk = self.readout(avg_spk3)
+        readout_output_mem = self.readout(avg_mem3)
 
         if not is_batched:
             # Remove the batch dimension if it was added
-            output_spk = output_spk.squeeze(0)  # Shape becomes [num_steps, output_size]
-            output_mem = output_mem.squeeze(0)  # Shape becomes [num_steps, output_size]
+            readout_output_spk = readout_output_spk.squeeze(0)  # Shape becomes [output_size]
+            readout_output_mem = readout_output_mem.squeeze(0)  # Shape becomes [output_size]
 
-        #print("should not be none :", output_spk.grad_fn)  # This should not be None
+            spk3_stacked = spk3_stacked.squeeze(0)  # Shape becomes [num_steps, output_size]
 
-        return output_spk, output_mem
+
+
+        return readout_output_spk, spk3_stacked

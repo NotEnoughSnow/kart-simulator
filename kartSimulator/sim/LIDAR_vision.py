@@ -4,6 +4,11 @@ import pymunk
 import numpy as np
 import torch
 
+#VISION_LENGTH = 300
+VISION_LENGTH = 600
+NO_VISION_CONSTANT = VISION_LENGTH / 6
+VISION_FOV = 360
+RAY_COUNT = 60
 
 class LIDAR_vision():
 

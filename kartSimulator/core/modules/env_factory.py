@@ -42,14 +42,11 @@ class EnvFactory:
 
         }
 
-
         self.obs_steer = [obs_types.LIDAR,
-                          obs_types.POSITION,
-                          obs_types.VELOCITY,
-                          obs_types.ROTATION,
-                          obs_types.DISTANCE,
-                          obs_types.TARGET_ANGLE,
-                          ]
+               obs_types.POSITION,
+               obs_types.VELOCITY,
+               obs_types.ROTATION,
+               ]
 
         self.obs_grid = [obs_types.LIDAR,
                          obs_types.POSITION,

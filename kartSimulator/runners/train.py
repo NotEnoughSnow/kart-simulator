@@ -20,7 +20,7 @@ class Train():
             'gamma': 0.9634703441998751,
             'ent_coef': 0.004797586864549939,
             'n_updates_per_iteration': 7,
-            'lr': 0.0017887220926944984,
+            'lr': 0.00017887220926944984,
             'clip': 0.2,
             'max_grad_norm': 0.5,
             'render_every_i': 10,
@@ -29,7 +29,7 @@ class Train():
             'gae_lambda': 0.9642298634023644,
             'verbose': 2,
             'num_steps': 32,
-            'add_weight': 0.02,
+            'add_weight': 0.06,
         }
 
         hyperparameters_GMRE_SNN = {
@@ -79,7 +79,7 @@ class Train():
             'verbose': 2,
         }
 
-        seed = 485832
+        seed = 7746312
 
         saving = {
             "ghost": True,
@@ -87,7 +87,7 @@ class Train():
             "wandb": False,
         }
 
-        network_type = "ANN"
+        network_type = "SNN"
 
         # create agent : kart
 
@@ -100,7 +100,6 @@ class Train():
         env = env_factory.createEnv(track_type, track_name, None)
 
         total_timesteps = 300000
-
         #actor_state = "saves/projects/imitation-project/yeezy-1/ppo_actor.pth"
         #critic_state = "saves/projects/imitation-project/yeezy-1/ppo_critic.pth"
 
