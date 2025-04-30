@@ -60,6 +60,9 @@ class EnvFactory:
             "max_velocity": 2,
             "bot_size": 0.192,
             "bot_weight": 1,
+            "vision_length": 600,
+            "vision_fov": 360,
+            "vision_ray_count": 60,
         }
         steer_env_player_args = {
             "player_acc_rate": 6,
@@ -68,6 +71,9 @@ class EnvFactory:
             "rad_velocity": 5 * 2.84,
             "bot_size": 0.192,
             "bot_weight": 1,
+            "vision_length": 600,
+            "vision_fov": 360,
+            "vision_ray_count": 60,
         }
 
         '''        simple_env_player_args = {

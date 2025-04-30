@@ -10,7 +10,7 @@ from gymnasium import spaces
 import gymnasium as gym
 
 import kartSimulator.sim.utils as utils
-import kartSimulator.sim.LIDAR_vision as vision
+from kartSimulator.sim.LIDAR_vision import LIDAR_vision
 
 import pygame
 
@@ -86,12 +86,14 @@ class KartSim(gym.Env):
 
         print("game speed:", speed)
 
+        self.vision = LIDAR_vision(vision_length=player_args["vision_length"], vision_fov=player_args["vision_fov"], ray_count=player_args["vision_ray_count"])
+
         if render_mode == "human":
             pygame.init()
             pygame.display.init()
             self._window_surface = pygame.display.set_mode((window_width, window_length))
 
-            self.ui_manager = UImanager(self._window_surface, window_width, window_length)
+            self.ui_manager = UImanager(self._window_surface, window_width, window_length, self.vision)
 
             self._draw_options = pymunk.pygame_util.DrawOptions(self._window_surface)
 
@@ -210,7 +212,6 @@ class KartSim(gym.Env):
         self.steer_reward = 0
 
         self.rew_adj = rew_adj
-
 
     def reset(
             self,
@@ -969,13 +970,12 @@ class KartSim(gym.Env):
     def observation_LIDAR(self):
         # LIDAR vision
         # collect vision rays
-        self.vision_points, vision_lengths = vision.cast_rays_lengths(self._space,
-                                                                      self._playerBody)
+        self.vision_points, vision_lengths = self.vision.cast_rays_lengths(self._space, self._playerBody)
         # apply circularity and convolution
-        #wraparound_data = vision.apply_circularity(vision_lengths)
+        #wraparound_data = self.vision.apply_circularity(vision_lengths)
 
         # normalize rays
-        vision_lengths = normalize_vec(vision_lengths, maximum=vision.VISION_LENGTH, minimum=0)
+        vision_lengths = normalize_vec(vision_lengths, maximum=self.vision.vision_length, minimum=0)
 
         self.vision_lengths = vision_lengths
         return self.vision_lengths
@@ -983,15 +983,15 @@ class KartSim(gym.Env):
     def observation_LIDAR_CONV(self):
         # LIDAR vision
         # collect vision rays
-        self.vision_points, vision_lengths = vision.cast_rays_lengths(self._space,
+        self.vision_points, vision_lengths = self.vision.cast_rays_lengths(self._space,
                                                                       self._playerBody)
         # apply circularity and convolution
-        wraparound_data = vision.apply_circularity(vision_lengths)
+        wraparound_data = self.vision.apply_circularity(vision_lengths)
 
-        vision_lengths = vision.apply_convolution(wraparound_data)
+        vision_lengths = self.vision.apply_convolution(wraparound_data)
 
         # normalize rays
-        vision_lengths = normalize_vec(vision_lengths, maximum=vision.maximum, minimum=vision.minimum)
+        vision_lengths = normalize_vec(vision_lengths, maximum=self.vision.maximum, minimum=self.vision.minimum)
 
         self.vision_lengths = vision_lengths
 

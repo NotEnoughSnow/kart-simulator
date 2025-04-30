@@ -58,6 +58,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, eval, replay
 
-    args.mode = "replay"
+    args.mode = "play"
 
     main(args)

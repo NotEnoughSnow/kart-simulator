@@ -65,7 +65,7 @@ class LIDAR_vision():
             if draw_lines and contact_point != (0, 0):
                 pygame.draw.line(window_surface, (255, 255, 255), anchor, point + anchor, 1)
     '''
-    def draw_rays(window_surface, anchor, contact_point, scalar, draw_contact, draw_lines):
+    def draw_rays(self, window_surface, anchor, contact_point, scalar, draw_contact, draw_lines):
 
         for i in range(len(contact_point)):
             point = contact_point[i][0] * scalar, contact_point[i][1] * scalar

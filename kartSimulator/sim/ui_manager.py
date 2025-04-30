@@ -1,7 +1,6 @@
 import pygame_gui
 import pygame
 import os
-import kartSimulator.sim.LIDAR_vision as vision
 from pymunk import Vec2d
 
 
@@ -16,9 +15,11 @@ not_break_image = pygame.image.load(os.path.join('kartSimulator/resources', 'not
 
 class UImanager:
 
-    def __init__(self,window_surface, window_width, window_length):
+    def __init__(self,window_surface, window_width, window_length, vision):
 
         self.window_surface = window_surface
+
+        self.vision = vision
 
         # UI
         self._guiManager = pygame_gui.UIManager((window_width, window_length))
@@ -61,10 +62,10 @@ class UImanager:
                                                              manager=self._guiManager))
 
     def draw_vision_points(self, vision_points):
-        vision.draw_rays(self.window_surface, Vec2d(ui_start_x + 250, 850), vision_points, 0.3, True, True)
+        self.vision.draw_rays(self.window_surface, Vec2d(ui_start_x + 250, 850), vision_points, 0.3, True, True)
 
     def draw_vision_cone(self, player_body):
-        vision.draw_cone(self.window_surface, player_body)
+        self.vision.draw_cone(self.window_surface, player_body)
 
 
     def draw_UI_icons(self, acc_break_value, steer_value):
