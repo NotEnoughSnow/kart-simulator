@@ -5,10 +5,12 @@ import numpy as np
 import torch
 
 #VISION_LENGTH = 300
-VISION_LENGTH = 600
-NO_VISION_CONSTANT = VISION_LENGTH / 6
-VISION_FOV = 360
-RAY_COUNT = 60
+#VISION_LENGTH = 600
+#NO_VISION_CONSTANT = VISION_LENGTH / 6
+#VISION_FOV = 360
+#RAY_COUNT = 60
+
+PPM = 100
 
 class LIDAR_vision():
 
@@ -18,11 +20,13 @@ class LIDAR_vision():
         self.vision_lengths = []
         self.vision_data = []
 
-        self.vision_length = vision_length
+        self.vision_length = vision_length * PPM
         self.ray_count = ray_count
         self.vision_fov = vision_fov
 
         self.no_vision_constant = vision_length / 6
+
+        self.vision_upper_limit = self.no_vision_constant + self.vision_length
 
         self.halfwinsize = 5
         # torch.manual_seed(0)

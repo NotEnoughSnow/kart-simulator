@@ -50,3 +50,9 @@ def normalize_vec(vec, maximum=None, minimum=None):
     minimum = -max_val
 
     return [2 * ((x - minimum) / (maximum - minimum)) - 1 for x in vec]
+
+def normalize_vec_unsymmetric(vec, maximum=None, minimum=None):
+    if maximum is None or minimum is None:
+        maximum = max(vec)
+        minimum = min(vec)
+    return [2 * ((x - minimum) / (maximum - minimum)) - 1 for x in vec]

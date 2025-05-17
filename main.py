@@ -1,5 +1,7 @@
 import os
 
+from kartSimulator.sim import calibrate_new
+
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 from kartSimulator.runners.train import Train
@@ -24,13 +26,14 @@ def main(args):
 
 
     save_config = {
-        "project_name": "steer-gazebo",
+        "project_name": "new-gazebo",
         "run_name": "ANN",
         "save_dir": "./saves/",
     }
 
     # grid_env
     # steer_env
+    # calibrate_new
     env_name = steer_env
     track_type = "loader"
     track_name = "big_S"
@@ -58,6 +61,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, eval, replay
 
-    args.mode = "play"
+    args.mode = "train"
 
     main(args)

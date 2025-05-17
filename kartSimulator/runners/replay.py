@@ -10,7 +10,7 @@ class Replay:
 
         # extract information from save config
         project_name = save_config["project_name"]
-        run_name = "ANN-2"
+        run_name = "ANN-1"
 
         # Parameters for replays
         replay_files = [f"./saves/projects/{project_name}/{run_name}/ghost.hdf5"]

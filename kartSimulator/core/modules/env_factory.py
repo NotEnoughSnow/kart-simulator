@@ -51,8 +51,6 @@ class EnvFactory:
         self.obs_grid = [obs_types.LIDAR,
                          obs_types.POSITION,
                          obs_types.VELOCITY,
-                         obs_types.DISTANCE,
-                         obs_types.TARGET_ANGLE,
                          ]
 
         grid_env_player_args = {
@@ -60,18 +58,25 @@ class EnvFactory:
             "max_velocity": 2,
             "bot_size": 0.192,
             "bot_weight": 1,
-            "vision_length": 600,
+            "vision_length": 6,
             "vision_fov": 360,
             "vision_ray_count": 60,
         }
+        #max_vel = 0.22
+        max_vel = 3.5
+        #rad_vel = 2.84
+        rad_vel = 0.86 * 2.84
         steer_env_player_args = {
-            "player_acc_rate": 6,
-            "player_break_rate": 8,
-            "max_velocity": 4,
-            "rad_velocity": 5 * 2.84,
+            "player_acc_rate": max_vel / 0.66, # arbitrary
+            "player_break_rate": max_vel / 0.5, # arbitrary
+            #"max_velocity": 4, # based on max bot speed, multiplied for convenience
+            "max_velocity": max_vel, # based on max bot speed, multiplied for convenience
+            #"rad_velocity": 5 * 2.84, # based on max bot rad speed, multiplied for convenience
+            "rad_velocity": rad_vel, # based on max bot rad speed, multiplied for convenience
+
             "bot_size": 0.192,
             "bot_weight": 1,
-            "vision_length": 600,
+            "vision_length": 6,
             "vision_fov": 360,
             "vision_ray_count": 60,
         }

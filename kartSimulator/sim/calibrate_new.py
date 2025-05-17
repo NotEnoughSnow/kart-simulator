@@ -76,9 +76,6 @@ class KartSim(gym.Env):
         self.obs_seq = obs_seq
         self.obs_len = 0
 
-
-        print(self.obs_len)
-
         speed = 1.0
 
         if not train:
@@ -188,7 +185,7 @@ class KartSim(gym.Env):
         # sector initiation
         # TODO part of the world class
         self._init_world()
-        self._init_sectors(self._sector_midpoints)
+        #self._init_sectors(self._sector_midpoints)
         self._init_player(self.initial_pos, 0)
 
 
@@ -219,6 +216,9 @@ class KartSim(gym.Env):
 
         self.rew_adj = rew_adj
 
+        self.steer_test_start = None
+        self.steer_flag = False
+
     def reset(
             self,
             *,
@@ -236,8 +236,7 @@ class KartSim(gym.Env):
 
         self._current_episode_time = 0
 
-        self._init_world()
-        self._init_sectors(self._sector_midpoints)
+        #self._init_sectors(self._sector_midpoints)
 
         if import_position is None:
             pass
@@ -287,6 +286,9 @@ class KartSim(gym.Env):
             steer_left_value = self._steer_left(action_array[3])
             steer_right_value = self._steer_right(action_array[4])
 
+        if self.steer_test_start is not None:
+            self._steer_right(1)
+
         self.accel_value = accel_value
         self.break_value = break_value
 
@@ -326,29 +328,11 @@ class KartSim(gym.Env):
         terminated = False
         truncated = False
 
-        self.check_standing_still(25, 120)
-        self.check_deserting(30)
-
-
-        if action is not None:
-
-            self.reward_logic(pstart, pend, action)
-
-            step_reward, terminated, truncated = self.reward_function()
-
         self._current_episode_time += 1
-
-        # fix angle observation, limit it in 0 - 2pi range
-        if (self._playerBody.angle - ANGLE_DIFF) > (2 * math.pi):
-            self._playerBody.angle = 0 + ANGLE_DIFF
-        if (self._playerBody.angle - ANGLE_DIFF) < -(2 * math.pi):
-            self._playerBody.angle = 0 + ANGLE_DIFF
 
         # print( self._playerBody.position)
 
         # (shape[0][0] + shape[1][0]) / 2
-
-        self.calculate_angle_to_goal()
 
         # observation
         state = self.observation()
@@ -357,6 +341,20 @@ class KartSim(gym.Env):
         if self._current_episode_time > self.reset_time:
             self.out_of_track = True
             pass
+
+        if self.steer_test_start is not None and not self.steer_flag:
+            self.steer_test_start = pygame.time.get_ticks() / 1000
+            print(f"enter angle {self._playerBody.angle}")
+            print(f"enter time {self.steer_test_start}")
+            self.steer_flag = True
+
+
+        if self._playerBody.angle > (math.pi + 1/2*math.pi) and self.steer_flag:
+            print(f"exit angle {self._playerBody.angle}")
+            print(f"exit time {pygame.time.get_ticks() / 1000}")
+            print(f"diff {pygame.time.get_ticks() / 1000 - self.steer_test_start}")
+            self.steer_flag = False
+            self.steer_test_start = None
 
         if self.render_mode == "human":
             self.render(self.render_mode)
@@ -382,53 +380,6 @@ class KartSim(gym.Env):
 
         return state, step_reward, terminated, truncated, self.info
 
-    def calculate_angle_to_goal(self):
-        x = self.next_goal_position[0] - self._playerBody.position[0]
-        y = self.next_goal_position[1] - self._playerBody.position[1]
-
-        magnitude = math.sqrt(x ** 2 + y ** 2)
-
-        self.angles["angle_to_target_cos"] = x / magnitude
-        self.angles["angle_to_target_sin"] = y / magnitude
-
-
-    def check_standing_still(self, threshold=15, max_still_timesteps=200):
-        if np.abs(self.velocity) < threshold:  # Velocity close to zero
-            self.standing_still_timesteps += 1
-        else:
-            self.standing_still_timesteps = 0  # Reset if moving
-
-        # If agent has been still for too long, truncate the episode
-        if self.standing_still_timesteps >= max_still_timesteps:
-            #print("cut")
-            self.out_of_track = True
-            self.standing_still_timesteps = 0
-
-    def check_deserting(self, max_deserting_timesteps=200):
-
-        if self.next_target_rew_act < 0:  # going opposite of target
-            self.deserting_timesteps += 1
-        else:
-            self.deserting_timesteps = 0  # Reset if moving
-
-        # If agent has been still for too long, truncate the episode
-        if self.deserting_timesteps >= max_deserting_timesteps:
-            #print("cut")
-            self.out_of_track = True
-            self.deserting_timesteps = 0
-
-    def distance(self, a, b):
-        return np.linalg.norm(a - b)
-
-    def calculate_speed_factor(self, x):
-        return math.exp(x / 100) / 2
-
-    def calculate_distance_rew(self, x, s):
-        return 2000 / (x + 50) - 10
-
-    def calculate_steer_reward(self, direction):
-        return direction*0.1
-
     def draw_angles(self, screen):
         # Get player position
         player_position = self._playerBody.position
@@ -449,6 +400,7 @@ class KartSim(gym.Env):
 
         # Draw the green line representing the player's current angle
         pygame.draw.line(screen, (0, 255, 0), player_position, (player_x, player_y), 2)
+
     def steer_direction(self, action):
         # Angle to target using arctan2 to get the angle from sine and cosine
         self.angles["angle_to_target"] = math.atan2(self.angles["angle_to_target_sin"], self.angles["angle_to_target_cos"])
@@ -481,75 +433,6 @@ class KartSim(gym.Env):
                 direction = 0
 
         return direction
-
-    def reward_logic(self, pstart, pend, action):
-
-        if self.next_sector_name is not None:
-
-            self.next_goal_position = self.sector_info[self.next_sector_name][1]
-
-            distance_to_next_points_vec = pend - self.next_goal_position
-            self.distance_to_next_goal_vec = [-abs(distance_to_next_points_vec[0]),
-                                              -abs(distance_to_next_points_vec[1])]
-
-            self.distance_to_next_goal = self.distance(pend, self.next_goal_position)
-
-            # distance based reward. the reward is a direct transformation applied to the distance
-            # from the next goal to the agent.
-            # with added bonus, the transformation can be sector dependant.
-            #target_number = int(self.next_sector_name[-1])
-            self.next_target_rew = self.calculate_distance_rew(self.distance_to_next_goal, 0)
-
-            # calculates a speed factor to be used as part of the dist-act reward
-            speed_factor = self.calculate_speed_factor(self.velocity)
-
-            # dist-act reward
-            # rewards/penalizes the agent if it moves closer/farther in the current timestep, i.e. if the difference in
-            # distance is less/more since the start of the current timestep.
-            initial_distance = -self.distance(self.next_goal_position, pstart)
-            final_distance = -self.distance(self.next_goal_position, pend)
-            self.next_target_rew_act = (final_distance - initial_distance)*speed_factor
-
-            # steer reward
-            if action is not None:
-                self.steer_reward = self.calculate_steer_reward(self.steer_direction(action))
-
-    def reward_function(self):
-
-        step_reward = 0
-        terminated = False
-        truncated = False
-
-        # penelty for existing
-        self.reward -= 1 * self.rew_adj["passive"]
-
-        # distance reward
-        self.reward += self.next_target_rew * self.rew_adj["dist"]
-
-        # action-distance based reward
-        self.reward += (self.next_target_rew_act / 80) * self.rew_adj["act_dist"]
-
-        # reward for crossing sectors. reset the value after.
-        self.reward += self.sector_time_reward * self.rew_adj["sector_time"]
-        self.sector_time_reward = 0
-
-        # TODO aligning reward
-        self.reward += self.steer_reward * self.rew_adj["steer"]
-        self.steer_reward = 0
-
-        # if finish lap then truncated
-        if self.finish:
-            terminated = True
-            self.reward += 1000
-
-        # if collide with track then terminate
-        if self.out_of_track:
-            truncated = True
-            self.reward -= 500
-
-        step_reward = self.reward
-
-        return step_reward, terminated, truncated
 
     def render(self, mode):
 
@@ -587,7 +470,7 @@ class KartSim(gym.Env):
         self.ui_manager.draw_UI_icons(self.accel_break_value,
                                       self.steer_value,)
 
-        self.ui_manager.add_ui_text("next target", self.next_sector_name, "")
+        #self.ui_manager.add_ui_text("next target", self.next_sector_name, "")
         self.ui_manager.add_ui_text("distance to target", self.distance_to_next_goal, ".4f")
         self.ui_manager.add_ui_text("norm dist", self.norm_dist, ".3f")
         self.ui_manager.add_ui_text("total reward", self.reward, ".3f")
@@ -628,6 +511,10 @@ class KartSim(gym.Env):
                 pygame.image.save(self._window_surface, "screenshots/karts.png")
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
                 pass
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_k:
+                self.steer_test_start = 0
+
+
 
 
     def _add_walls(self) -> None:
@@ -651,22 +538,29 @@ class KartSim(gym.Env):
 
     def _add_sectors(self) -> None:
 
-        static_sector_lines, sector_midpoints = self.map.create_goals("static")
+        init_y = self.initial_pos[1] - 100
+        init_x = self.initial_pos[0] + (1 * PPM)
 
-        self._space.add(*static_sector_lines)
-        self._sector_midpoints = sector_midpoints
+        sensor_bodies = self._space.static_body
 
-        # collision
+        self._space.add(*self.calibrate_speed_sensors(sensor_bodies, init_x, init_y))
 
-        num_sectors = 0
-        # sectors collision
-        for i in range(len(static_sector_lines)):
-            col = self._space.add_collision_handler(0, i + 2)
-            col.data["number"] = i + 1
-            col.begin = self.sector_callback
-            num_sectors += 1
+    def calibrate_speed_sensors(self, sensor_bodies, init_x, init_y):
+        sensor_lines = []
 
-        self._num_sectors = num_sectors
+        sensor_lines.append(
+            pymunk.Segment(sensor_bodies, (0 * PPM + init_x, init_y), (0 * PPM + init_x, init_y + 200), 0.0))
+        sensor_lines.append(
+            pymunk.Segment(sensor_bodies, (1 * PPM + init_x, init_y), (1 * PPM + init_x, init_y + 200), 0.0))
+        sensor_lines[0].collision_type = 2
+        sensor_lines[0].sensor = True
+        sensor_lines[1].collision_type = 3
+        sensor_lines[1].sensor = True
+
+        self._space.add_collision_handler(0, 2).begin = self.speed_start
+        self._space.add_collision_handler(0, 3).begin = self.speed_end
+
+        return sensor_lines
 
     def _init_world(self):
         if self.map.missing_walls_flag:
@@ -834,54 +728,6 @@ class KartSim(gym.Env):
         self._playerShape = shape
         self._playerBody = body
 
-    def sector_callback(self, arbiter, space, data):
-
-        name = "sector " + str(data["number"])
-
-        # sets the next milestone name, limited by number of sectors
-        if self._num_sectors >= data["number"] + 1:
-            self.next_sector_name = "sector " + str(data["number"] + 1)
-            if data["number"] > self.highest_goal:
-                self.highest_goal = data["number"]
-
-        if self.sector_info.get(name)[0] == 0:
-            #print("visited " + name + " for the first time")
-            time_diff = self._current_episode_time - self._last_sector_time
-            self.sector_info[name][0] = time_diff
-            self._last_sector_time = self._current_episode_time
-
-            # reward based on sector time
-            self.sector_time_reward += self._calculate_sector_time_reward(time_diff)
-            #print(f"in : {time_diff} received : {self._calculate_reward(time_diff)}")
-
-            if data["number"] == self._num_sectors:
-                print("reached goal!")
-                self.num_finishes += 1
-                self.highest_goal = self._num_sectors
-                self.finish = True
-
-        # calculatd in step()
-        #if self.highest_goal == 1:
-        #    self.epsilon = 0.8
-
-        #if self.next_sector_name == "sector 2":
-        #    print("huh")
-
-        # TODO translate this to non ooga booga numbers
-        #if self.highest_goal == 2:
-        #    self.epsilon = 0.1
-
-        #if self.highest_goal == 3:
-        #    self.epsilon = 0.05
-
-        #if self.highest_goal == 4:
-        #    self.epsilon = 0.005
-
-        #if self.highest_goal == 5:
-        #    self.epsilon = 0
-
-        return True
-
     def track_callback_begin(self, arbiter, space, data):
         # print("exiting track")
         return True
@@ -894,10 +740,19 @@ class KartSim(gym.Env):
         # print(self.touch_track_counter)
         return True
 
-    def _calculate_sector_time_reward(self, time):
-        return 1 / 3 * math.exp(1 / 100 * -time + 7)
+    def speed_start(self, arbiter, space, data):
+        self.speed_test_start = pygame.time.get_ticks() / 1000
+        print(f"enter time {self.speed_test_start}")
+        print(f"enter speed {self.velocity}")
+        return True
 
+    def speed_end(self, arbiter, space, data):
+        self.speed_test_end = pygame.time.get_ticks() / 1000
+        print(f"exit time {self.speed_test_end}")
+        print(f"exit speed {self.velocity}")
+        print(f"diff time {self.speed_test_end - self.speed_test_start}")
 
+        return True
 
     def observation(self):
         obs_methods = {
