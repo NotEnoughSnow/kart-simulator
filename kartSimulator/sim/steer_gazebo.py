@@ -1,6 +1,7 @@
 import math
 import os
 from typing import Union, Optional
+import time
 
 import numpy as np
 import pymunk
@@ -38,11 +39,91 @@ window_length = 1000
 WORLD_CENTER = [500, 500]
 
 
+class Robot:
+    def __init__(self, player_max_velocity, player_rad_velocity):
+        self.player_max_velocity = player_max_velocity
+        self.player_rad_velocity = player_rad_velocity
+        self.input_velocity = 0
+        self.input_angle = 0
+
+        self.pending_command = (0, 0)
+        self.linear_timer = 0
+        self.angular_right_timer = 0
+        self.angular_left_timer = 0
+
+
+    def input_command(self, action_array):
+
+        if action_array[0] == 1:
+            self.pending_command = (0, 0)
+        elif action_array[1] == 1:
+            # self.input_velocity = 1 * self.player_max_velocity * PPM
+            # self.input_angle = 0
+            self.pending_command = (1, 0)
+            self.linear_timer += 2
+        elif action_array[2] == 1:
+            # self.input_velocity = 0
+            # self.input_angle = -1
+            self.pending_command = (0, -1)
+            self.angular_left_timer += 2
+        elif action_array[3] == 1:
+            # self.input_velocity = 0
+            # elf.input_angle = 1
+            self.pending_command = (0, 1)
+            self.angular_right_timer += 2
+
+        self.linear_timer -= 1
+        self.angular_right_timer -= 1
+        self.angular_left_timer -= 1
+
+
+    def update(self, body):
+
+
+        self.linear_timer = np.clip(a=self.linear_timer, a_min=0, a_max=25)
+        self.angular_right_timer = np.clip(a=self.angular_right_timer, a_min=0, a_max=25)
+        self.angular_left_timer = np.clip(a=self.angular_left_timer, a_min=0, a_max=25)
+
+        # This runs every frame
+        #if time.time() - self.command_applied_time >= self.command_delay:
+        # Only now we apply the input
+        linear_input, angular_input = self.pending_command
+
+        #if self.linear_timer > 10:
+        self.input_velocity = linear_input * self.player_max_velocity * PPM
+
+        #if self.angular_right_timer > 10 and angular_input>0:
+        self.input_angle = angular_input
+
+        if self.angular_left_timer > 10 and angular_input<0:
+            self.input_angle = angular_input
+
+        if linear_input == 0:
+            self.input_velocity = 0
+
+        if angular_input == 0:
+            self.input_angle = 0
+
+        self.pending_command = None  # Clear pending
+
+        # FIXME move angle calculations to a diff place
+        # FIXME angle changes when car moving only and based on car's vel
+
+        x = self.input_velocity * math.cos(body.angle - ANGLE_DIFF)
+        y = self.input_velocity * math.sin(body.angle - ANGLE_DIFF)
+
+        body.angular_velocity = self.input_angle * self.player_rad_velocity
+
+        body.velocity = (x, y)
+
+        # TODO stopping speed
+        # TODO max speed
+
 
 class KartSim(gym.Env):
     metadata = {"render_modes": [None, "human"],
                 "render_fps": 60,
-                "name": "kart2D steer_env",
+                "name": "kart2D steer_gazebo",
                 "track": "***",
                 "obs_seq": [],
                 "reset_time": 2000,
@@ -65,10 +146,8 @@ class KartSim(gym.Env):
         self.metadata["obs_seq"] = obs_seq
 
         # player stuff
-        self.max_velocity = player_args["max_velocity"] * PPM * 1.141
-        self.player_acc_rate = player_args["player_acc_rate"] * 1.141
-        self.player_break_rate = player_args["player_break_rate"] * 1.141
-        self.player_rad_velocity = player_args["rad_velocity"] * 5.803
+        self.player_max_velocity = player_args["player_acc_rate"]
+        self.player_rad_velocity = player_args["rad_velocity"]
         self.bot_size = player_args["bot_size"]
         self.bot_weight = player_args["bot_weight"]
 
@@ -115,7 +194,6 @@ class KartSim(gym.Env):
 
         self._playerShape = None
         self._playerBody = None
-        self._steerAngle = 0
         self.position = (0, 0)
         self.velocity = 0
         self.forward_direction = 0
@@ -156,7 +234,7 @@ class KartSim(gym.Env):
         
         self.observation_space = spaces.Box(low=-1, high=1, shape= (self.obs_len,), dtype=np.float32)
 
-        self.action_space = spaces.Discrete(5)
+        self.action_space = spaces.Discrete(4)
         # do nothing, accelerate, break, steer_left, steer_right
 
 
@@ -183,6 +261,7 @@ class KartSim(gym.Env):
 
         self.create_player()
 
+        self.robot = Robot(self.player_max_velocity, self.player_rad_velocity)
 
         # map walls
         # sector initiation
@@ -219,6 +298,9 @@ class KartSim(gym.Env):
 
         self.rew_adj = rew_adj
 
+        self.input_velocity = 0
+        self.input_angle = 0
+
     def reset(
             self,
             *,
@@ -244,6 +326,8 @@ class KartSim(gym.Env):
         else:
             position = import_position
 
+        angle = math.pi/2
+
         self._init_player(position, angle)
 
         observation = self.observation()
@@ -254,7 +338,6 @@ class KartSim(gym.Env):
 
         # return self.step(None)[0], {}
         return observation, info
-
 
     def step(self, action: Union[np.ndarray, int]):
 
@@ -280,18 +363,19 @@ class KartSim(gym.Env):
         #print(action)
 
         if action_array is not None:
-            # [0] does nothing
 
-            accel_value = self._accelerate(action_array[1])
-            break_value = self._break(action_array[2])
-            steer_left_value = self._steer_left(action_array[3])
-            steer_right_value = self._steer_right(action_array[4])
+            self.robot.input_command(action_array)
 
-        self.accel_value = accel_value
-        self.break_value = break_value
+            #accel_value = self._accelerate(action_array[1])
+            #break_value = self._break(action_array[2])
+            #steer_left_value = self._steer_left(action_array[3])
+            #steer_right_value = self._steer_right(action_array[4])
 
-        self.steer_left_value = steer_left_value
-        self.steer_right_value = steer_right_value
+        self.accel_value = 0
+        self.break_value = 0
+
+        self.steer_left_value = 0
+        self.steer_right_value = 0
 
         # TODO step based on FPS
         self._space.step(self._dt)
@@ -299,34 +383,20 @@ class KartSim(gym.Env):
 
         pend = self._playerBody.position
 
-        # FIXME move angle calculations to a diff place
-        # FIXME angle changes when car moving only and based on car's vel
-        angle_diff = self._steerAngle * 0.2
-        self._playerBody.angle += angle_diff
+        self.robot.update(self._playerBody)
 
-        x = self._playerBody.velocity[0] * math.cos(angle_diff) - self._playerBody.velocity[1] * math.sin(
-            angle_diff)
-        y = self._playerBody.velocity[0] * math.sin(angle_diff) + self._playerBody.velocity[1] * math.cos(
-            angle_diff)
-
-        self.velocity = self._playerBody.velocity.__abs__()
         direction = (math.cos(self._playerBody.angle - ANGLE_DIFF), math.sin(self._playerBody.angle - ANGLE_DIFF))
 
         self.forward_direction = direction[0] * self._playerBody.velocity[0] + direction[1] * self._playerBody.velocity[
             1]
 
-        self._playerBody.velocity = (x, y)
-        self._steerAngle /= 3
-        self._playerBody.velocity /= 1.005
-
-        # TODO stopping speed
-        # TODO max speed
+        self.velocity = self._playerBody.velocity.__abs__()
 
         step_reward = 0
         terminated = False
         truncated = False
 
-        self.check_standing_still(25, 120)
+        self.check_standing_still(25, 160)
         self.check_deserting(30)
 
 
@@ -465,17 +535,17 @@ class KartSim(gym.Env):
         # Check if the goal is to the right or left
         if angle_diff > 0:
             # Goal is to the left of the player
-            if action == 3:
+            if action == 2:
                 direction = -2
-            elif action == 4:
+            elif action == 3:
                 direction = 1
             else:
                 direction = 0
         else:
             # Goal is to the right of the player
-            if action == 4:
+            if action == 3:
                 direction = -2
-            elif action == 3:
+            elif action == 2:
                 direction = 1
             else:
                 direction = 0
@@ -595,6 +665,7 @@ class KartSim(gym.Env):
         self.ui_manager.add_ui_text("act.rew from target", self.next_target_rew_act, ".3f")
         self.ui_manager.add_ui_text("current angle", self.angles["current_angle"], ".4f")
         self.ui_manager.add_ui_text("angle to target", self.angles["angle_to_target"], ".4f")
+        self.ui_manager.add_ui_text("steer rew.", self.steer_reward, ".4f")
 
         self.ui_manager.add_ui_text("time in sec", (pygame.time.get_ticks() / 1000), ".2f")
         self.ui_manager.add_ui_text("fps", self._clock.get_fps(), ".2f")
@@ -608,6 +679,7 @@ class KartSim(gym.Env):
         self.ui_manager.add_ui_text("norm dist vec y", self.norm_dist_vec[1], ".3f")
 
         self.ui_manager.add_ui_text("standing_still_timesteps", self.standing_still_timesteps, ".0f")
+        self.ui_manager.add_ui_text("deserting timesteps", self.deserting_timesteps, ".0f")
 
         self.ui_manager.add_ui_text("epsilon", self.epsilon, ".4f")
         self.ui_manager.add_ui_text("epsilon distance", self.epsilon_lowest_dist, ".4f")
@@ -714,7 +786,7 @@ class KartSim(gym.Env):
         if value == 0:
             return value
         else:
-            self._steerAngle -= (self.player_rad_velocity / self.FPS) * value
+            self.input_angle -= 1
             return value
 
     def _steer_right(self, value):
@@ -729,7 +801,7 @@ class KartSim(gym.Env):
         if value == 0:
             return value
         else:
-            self._steerAngle += (self.player_rad_velocity / self.FPS) * value
+            self.input_angle += 1
             return value
 
     """
@@ -782,16 +854,12 @@ class KartSim(gym.Env):
         if value == 0:
             return value
         else:
-            if self.velocity < self.max_velocity:
-                self._playerBody.apply_impulse_at_local_point((0, self.player_acc_rate * value), (0, 0))
+            self.input_velocity = 1
+
             return value
 
     def _break(self, value):
-        """acceleration control
 
-        :param value: (0..1)
-        :return:
-        """
         # FIXME temp fix for ensuing that value is within (0,1)
         value = min(1, value)
         value = max(0, value)
@@ -799,10 +867,8 @@ class KartSim(gym.Env):
         if value == 0:
             return value
         else:
-            if self.forward_direction > 0:
-                self._playerBody.apply_impulse_at_local_point((0, -self.player_break_rate * value), (0, 0))
+            self.input_velocity = 0
             return value
-
 
     """"
     def _break(self, value):
@@ -925,8 +991,8 @@ class KartSim(gym.Env):
         velocity = self.velocity
 
         velocity = np.clip(normalize_vec_unsymmetric([velocity],
-                                 maximum=self.max_velocity,
-                                 minimum=0),
+                                                     maximum=self.player_max_velocity,
+                                                     minimum=0),
             a_max=1,
             a_min=-1)
 
@@ -934,7 +1000,6 @@ class KartSim(gym.Env):
 
     def observation_rotation(self):
         # normalize steer_angle
-        steer_angle = normalize_vec([self._steerAngle], 0.0142, -0.0142)
         player_angle = (self._playerBody.angle - ANGLE_DIFF)
 
         # Calculate the cosine and sine of the player's angle

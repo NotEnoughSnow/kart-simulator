@@ -79,7 +79,7 @@ class Train():
             'verbose': 2,
         }
 
-        seed = 7746312
+        seed = 223133
 
         saving = {
             "ghost": True,
@@ -99,7 +99,7 @@ class Train():
         # env = gym.make('LunarLander-v2')
         env = env_factory.createEnv(track_type, track_name, None)
 
-        total_timesteps = 1200000
+        total_timesteps = 500000
         #actor_state = "saves/projects/imitation-project/yeezy-1/ppo_actor.pth"
         #critic_state = "saves/projects/imitation-project/yeezy-1/ppo_critic.pth"
 

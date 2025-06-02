@@ -25,6 +25,8 @@ class PPO:
                  save_model,
                  record_output,
                  save_dir,
+                 description,
+                 run_name,
                  record_wandb,
                  train_config,
                  project_name,
@@ -62,8 +64,10 @@ class PPO:
                 # set the wandb project where this run will be logged
                 project=project_name,
                 # track hyperparameters and run metadata
-                config=train_config
+                config=train_config,
+                name = run_name,
             )
+            wandb.run.notes = description
 
         self.run_directory = save_dir
 

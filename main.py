@@ -1,6 +1,7 @@
 import os
 
 from kartSimulator.sim import calibrate_new
+from kartSimulator.sim import calibrate_new_2
 
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
@@ -13,6 +14,7 @@ from kartSimulator.runners.play import Play
 from kartSimulator.core.arguments import get_args
 
 import kartSimulator.sim.steer_env as steer_env
+import kartSimulator.sim.steer_gazebo as steer_gazebo
 import kartSimulator.sim.grid_env as grid_env
 from kartSimulator.core.modules.env_factory import EnvFactory
 
@@ -24,19 +26,24 @@ def main(args):
     # Save parameters
     # experiment_name : change to test out different conditions
 
+    description = (f"setting standing still frames back to 160, reverting penalties back to -2")
 
     save_config = {
-        "project_name": "new-gazebo",
-        "run_name": "ANN",
+        "project_name": "real-turtle",
+        "run_name": "delay-ANN",
         "save_dir": "./saves/",
+        "description": description,
     }
 
     # grid_env
     # steer_env
     # calibrate_new
-    env_name = steer_env
+    # calibrate_new_2
+    # steer_gazebo
+    env_name = steer_gazebo
     track_type = "loader"
     track_name = "big_S"
+
 
     env_factory = EnvFactory(env_name)
 
@@ -53,7 +60,6 @@ def main(args):
         Replay(track_type=track_type, track_name=track_name, env_factory=env_factory, save_config=save_config)
 
 
-
 if __name__ == "__main__":
     args = get_args()
 
@@ -61,6 +67,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, eval, replay
 
-    args.mode = "train"
+    args.mode = "play"
 
     main(args)

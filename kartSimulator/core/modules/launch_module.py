@@ -61,7 +61,7 @@ class Launcher():
                         action = 3
                     if keys[pygame.K_d]:
                         action = 4
-                else:
+                if env.metadata["name"] == "kart2D steer_env":
                     if keys[pygame.K_w]:
                         action = 1
                     if keys[pygame.K_SPACE]:
@@ -70,6 +70,13 @@ class Launcher():
                         action = 3
                     if keys[pygame.K_d]:
                         action = 4
+                if env.metadata["name"] == "kart2D steer_gazebo":
+                    if keys[pygame.K_w]:
+                        action = 1
+                    if keys[pygame.K_a]:
+                        action = 2
+                    if keys[pygame.K_d]:
+                        action = 3
 
                 for event in pygame.event.get():
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_r:

@@ -43,6 +43,7 @@ class Trainer():
         self.save_dir = save_config["save_dir"]
         self.project_name = save_config["project_name"]
         self.run_name = save_config["run_name"]
+        self.description = save_config["description"]
 
         self.saving = {
             "ghost": False,
@@ -75,24 +76,28 @@ class Trainer():
 
             save_path, ver_number = utils.get_next_run_directory_mod(base_dir, self.run_name)
 
+
             train_config = self.save_train_data(env,
                                                 save_path,
                                                 ver_number,
                                                 self.Ntype,
                                                 total_timesteps,
-                                                self.hyperparameters)
+                                                self.hyperparameters,
+                                                self.description)
 
         else:
             train_config = None
             save_path = None
+            ver_number = ""
 
         if self.Ntype == "ANN":
-            actor_state, critic_state = self.train_ANN(env,
-                                                       total_timesteps,
-                                                       save_path,
-                                                       train_config,
-                                                       actor_state,
-                                                       critic_state)
+            actor_state, critic_state = self.train_ANN(env=env,
+                                                       total_timesteps=total_timesteps,
+                                                       save_path=save_path,
+                                                       run_name=f"{self.run_name}-{ver_number}",
+                                                       train_config=train_config,
+                                                       actor_model=actor_state,
+                                                       critic_model=critic_state)
         if self.Ntype == "SNN":
             actor_state, critic_state = self.train_SNN(env,
                                                        total_timesteps,
@@ -107,21 +112,24 @@ class Trainer():
                   env,
                   total_timesteps,
                   save_path,
+                  run_name,
                   train_config,
                   actor_model,
                   critic_model,
                   ):
         # TODO change this back
         model = PPO(env=env,
-                       save_model=self.saving["models"],
-                       record_ghost=self.saving["ghost"],
-                       record_output=False,
-                       save_dir=save_path,
-                       record_wandb=self.saving["wandb"],
-                       train_config=train_config,
-                       expert_data=self.expert_data ,
+                    save_model=self.saving["models"],
+                    record_ghost=self.saving["ghost"],
+                    record_output=False,
+                    save_dir=save_path,
+                    description=self.description,
+                    run_name = run_name,
+                    record_wandb=self.saving["wandb"],
+                    train_config=train_config,
+                    expert_data=self.expert_data ,
                     project_name = self.project_name,
-                       **self.hyperparameters)
+                    **self.hyperparameters)
 
         if actor_model != None and critic_model != None:
             print(f"Loading in {actor_model} and {critic_model}...", flush=True)
@@ -189,7 +197,7 @@ class Trainer():
                   ):
         baselines.train(env, self.save_dir, self.record_output, self.experiment_name, steps=total_timesteps)
 
-    def save_train_data(self, env, save_dir, ver_number, alg, total_timesteps, hyperparameters):
+    def save_train_data(self, env, save_dir, ver_number, alg, total_timesteps, hyperparameters, description):
         # env name
         # map
         # obs
@@ -205,6 +213,7 @@ class Trainer():
             "obs types": env.metadata.get("obs_seq", "None"),
             "total timesteps": total_timesteps,
             "hyperparameters": hyperparameters,
+            "description": description,
         }
 
         save_dir = save_dir

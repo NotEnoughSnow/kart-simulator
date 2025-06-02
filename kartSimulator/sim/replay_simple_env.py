@@ -89,7 +89,7 @@ class KartSim(gym.Env):
         self.screen = pygame.display.set_mode((window_width, window_length))
         self.surface = pygame.Surface((window_width, window_length))
 
-        self.ui_manager = UImanager(self.screen, window_width, window_length)
+        self.ui_manager = UImanager(self.screen, window_width, window_length, None)
 
         self._draw_options = pymunk.pygame_util.DrawOptions(self.screen)
 

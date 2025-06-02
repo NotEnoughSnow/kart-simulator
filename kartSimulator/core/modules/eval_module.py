@@ -50,7 +50,7 @@ class Evaluator:
             self.actor = SNN_small(obs_dim, act_dim, num_steps=32, add_weight=0.1)
 
         # Load in the actor model saved by the PPO algorithm
-        self.actor.load_state_dict(torch.load(self.actor_model))
+        self.actor.load_state_dict(torch.load(self.actor_model, weights_only=False))
 
     def eval(self, n_eval_episodes=5):
 

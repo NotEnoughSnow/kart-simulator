@@ -2,6 +2,10 @@
 from kartSimulator.sim.maps.track_factory import TrackFactory
 import kartSimulator.sim.observation_types as obs_types
 import kartSimulator.sim.grid_env as simple_env
+import kartSimulator.sim.steer_env as steer_env
+import kartSimulator.sim.steer_gazebo as steer_gazebo
+
+from kartSimulator.sim import calibrate_new_2
 
 
 class EnvFactory:
@@ -76,10 +80,22 @@ class EnvFactory:
 
             "bot_size": 0.192,
             "bot_weight": 1,
-            "vision_length": 6,
+            "vision_length": 3.5,
             "vision_fov": 360,
             "vision_ray_count": 60,
         }
+
+        steer_gazebo_player_args = {
+            "player_acc_rate": 40 * 0.22, # based on max bot speed
+            "rad_velocity": 2.84 * 2, # based on max bot rad speed
+
+            "bot_size": 0.192,
+            "bot_weight": 1,
+            "vision_length": 3.5,
+            "vision_fov": 360,
+            "vision_ray_count": 60,
+        }
+
 
         '''        simple_env_player_args = {
             "player_acc_rate": 15,
@@ -112,14 +128,14 @@ class EnvFactory:
             # "initial_pos": [180, 100]
         }
 
-        self.rew_adj_simple = {
+        self.rew_adj_grid = {
             "passive": 0,
             "dist": 0,
             "act_dist": 1,
             "sector_time": 1,
         }
 
-        self.rew_adj_base = {
+        self.rew_adj_steer = {
             "passive": 0,
             "dist": 0,
             "act_dist": 0.5,
@@ -127,12 +143,34 @@ class EnvFactory:
             "steer": 0.7,
         }
 
+        player_args = None
+        rew_adj = None
+        obs_seq = None
+
+        if env_name == simple_env:
+            player_args = grid_env_player_args
+            rew_adj = self.rew_adj_grid
+            obs_seq = self.obs_grid
+        elif env_name == steer_env:
+            player_args = steer_env_player_args
+            rew_adj = self.rew_adj_steer
+            obs_seq = self.obs_steer
+        elif env_name == steer_gazebo:
+            player_args = steer_gazebo_player_args
+            rew_adj = self.rew_adj_steer
+            obs_seq = self.obs_steer
+        elif env_name == calibrate_new_2:
+            player_args = steer_gazebo_player_args
+            rew_adj = self.rew_adj_steer
+            obs_seq = self.obs_steer
+
+
         self.env_args = {
-            "obs_seq": self.obs_grid if env_name == simple_env else self.obs_steer,
+            "obs_seq": obs_seq,
             "reset_time": 10000,
             "track": None,
-            "player_args": grid_env_player_args if env_name == simple_env else steer_env_player_args,
-            "rew_adj": self.rew_adj_simple if env_name == simple_env else self.rew_adj_base,
+            "player_args": player_args,
+            "rew_adj": rew_adj,
         }
 
     def set_rew_adj(self, rew_adj):
