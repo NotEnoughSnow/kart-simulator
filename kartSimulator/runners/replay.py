@@ -10,11 +10,11 @@ class Replay:
 
         # extract information from save config
         project_name = save_config["project_name"]
-        run_name = "delay-ANN-7"
+        run_name = "mantis-delay-5"
 
         # Parameters for replays
         replay_files = [f"./saves/projects/{project_name}/{run_name}/ghost.hdf5"]
-        mode = "all"
+        mode = "all" 
 
         ReplayGhosts(locations=replay_files,
                      mode=mode,

@@ -9,6 +9,7 @@ import torch
 from torch import nn
 from torch.distributions import MultivariateNormal, Categorical
 from torch.optim.adam import Adam
+import kartSimulator.core.utils as utils
 
 import h5py
 
@@ -407,6 +408,21 @@ class PPO:
                 # FIXME actions are not in range(-1,1)
                 action, log_prob = self.get_action(obs)
                 val = self.critic(obs)
+
+                schedule_val, schedule_last = utils.update_scheduler(
+                    t=self.logger['t_so_far'],
+                    current_val=self.env.robot.delay_scheduler,
+                    last_update=self.env.robot.last_scheduler_update,
+                    start_t=350_000, #350_000
+                    end_t=700_000, #700_000
+                    min_val=0.0,
+                    max_val=10.0,
+                    step=1000,
+                )
+
+                #self.env.robot.delay_scheduler = schedule_val
+                #self.env.robot.last_scheduler_update = schedule_last
+
                 obs, rew, terminated, truncated, info = self.env.step(action)
 
                 done = terminated or truncated

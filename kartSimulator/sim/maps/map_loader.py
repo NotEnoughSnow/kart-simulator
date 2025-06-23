@@ -1,3 +1,4 @@
+import math
 import random
 
 from kartSimulator.sim.maps.map_manager import AbstractMap as abs_map
@@ -31,7 +32,8 @@ class MapLoader(abs_map):
 
         random_position = [self.initial_pos[0]+pos_variation_x, self.initial_pos[1]+pos_variation_y]
 
-        angle = 0
+        angle = random.uniform(-math.pi / 2, math.pi / 2)
+
         position = random_position
 
         if self.r_goal is not None:

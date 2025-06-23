@@ -5,7 +5,7 @@ import h5py
 import torch
 import yaml
 
-from kartSimulator.core import baselines
+#from kartSimulator.core import baselines
 from kartSimulator.core.ppo_IM import PPO_IM
 from kartSimulator.core.ppo import PPO
 from kartSimulator.core.ppo_snn import PPO_SNN
@@ -91,7 +91,7 @@ class Trainer():
             ver_number = ""
 
         if self.Ntype == "ANN":
-            actor_state, critic_state = self.train_ANN(env=env,
+            result_actor_state, result_critic_state = self.train_ANN(env=env,
                                                        total_timesteps=total_timesteps,
                                                        save_path=save_path,
                                                        run_name=f"{self.run_name}-{ver_number}",
@@ -99,14 +99,14 @@ class Trainer():
                                                        actor_model=actor_state,
                                                        critic_model=critic_state)
         if self.Ntype == "SNN":
-            actor_state, critic_state = self.train_SNN(env,
+            result_actor_state, result_critic_state = self.train_SNN(env,
                                                        total_timesteps,
                                                        save_path,
                                                        train_config,
                                                        actor_state,
                                                        critic_state)
 
-        return actor_state, critic_state
+        return result_actor_state, result_critic_state
 
     def train_ANN(self,
                   env,
@@ -195,7 +195,8 @@ class Trainer():
                   save_path,
                   train_config,
                   ):
-        baselines.train(env, self.save_dir, self.record_output, self.experiment_name, steps=total_timesteps)
+        pass
+        #baselines.train(env, self.save_dir, self.record_output, self.experiment_name, steps=total_timesteps)
 
     def save_train_data(self, env, save_dir, ver_number, alg, total_timesteps, hyperparameters, description):
         # env name

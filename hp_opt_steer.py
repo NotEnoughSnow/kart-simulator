@@ -7,7 +7,7 @@ import optuna
 from kartSimulator.core.ppo import PPO
 import numpy as np
 
-from kartSimulator.sim.env.steer_env import KartSim
+from kartSimulator.sim.steer_env import KartSim
 import kartSimulator.sim.observation_types as obs_types
 
 from torch.distributions import Categorical

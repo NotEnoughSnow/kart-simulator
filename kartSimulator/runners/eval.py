@@ -13,7 +13,7 @@ class Eval:
         env = env_factory.createEnv(track_type, track_name, "human")
         #env = gym.make('LunarLander-v2', render_mode="human")
 
-        actor_state = f"./saves/projects/real-turtle/delay-ANN-7/ppo_actor.pth"
+        actor_state = f"./saves/projects/real-turtle/mantis-delay-5/ppo_actor.pth"
 
 
         NType = "ANN"

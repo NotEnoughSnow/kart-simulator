@@ -51,6 +51,12 @@ class Robot:
         self.angular_right_timer = 0
         self.angular_left_timer = 0
 
+        self.delay_scheduler = 0
+        self.last_scheduler_update = None
+
+        self.accel_delay = 0
+        self.angular_delay = 0
+
 
     def input_command(self, action_array):
 
@@ -89,13 +95,13 @@ class Robot:
         # Only now we apply the input
         linear_input, angular_input = self.pending_command
 
-        #if self.linear_timer > 10:
-        self.input_velocity = linear_input * self.player_max_velocity * PPM
+        if self.linear_timer > self.accel_delay:
+            self.input_velocity = linear_input * self.player_max_velocity * PPM
 
-        #if self.angular_right_timer > 10 and angular_input>0:
-        self.input_angle = angular_input
+        if self.angular_right_timer > self.angular_delay and angular_input>0:
+            self.input_angle = angular_input
 
-        if self.angular_left_timer > 10 and angular_input<0:
+        if self.angular_left_timer > self.angular_delay and angular_input<0:
             self.input_angle = angular_input
 
         if linear_input == 0:
@@ -118,6 +124,17 @@ class Robot:
 
         # TODO stopping speed
         # TODO max speed
+
+        #if self.delay_scheduler < 10:
+            #self.delay_scheduler += 0.01
+        self.accel_delay = self.delay_scheduler
+        self.angular_delay = self.delay_scheduler
+
+    def reset(self):
+        pass
+        #self.delay_scheduler = 0
+        #self.accel_delay = 0
+        #self.angular_delay = 0
 
 
 class KartSim(gym.Env):
@@ -301,6 +318,8 @@ class KartSim(gym.Env):
         self.input_velocity = 0
         self.input_angle = 0
 
+        self.deserting_timesteps = 0
+
     def reset(
             self,
             *,
@@ -326,7 +345,13 @@ class KartSim(gym.Env):
         else:
             position = import_position
 
-        angle = math.pi/2
+        #angle = -math.pi/2
+
+
+        angle = 0
+        position = [800, 730]
+
+        print(angle)
 
         self._init_player(position, angle)
 
@@ -335,6 +360,10 @@ class KartSim(gym.Env):
         #print(self.resets)
 
         info = {"player pos": position}
+
+        self.deserting_timesteps = 0
+
+        self.robot.reset()
 
         # return self.step(None)[0], {}
         return observation, info
@@ -396,8 +425,8 @@ class KartSim(gym.Env):
         terminated = False
         truncated = False
 
-        self.check_standing_still(25, 160)
-        self.check_deserting(30)
+        #self.check_standing_still(25, 160)
+        #self.check_deserting(-10000 * 1.42 * self.rew_adj["act_dist"])
 
 
         if action is not None:
@@ -425,7 +454,7 @@ class KartSim(gym.Env):
 
         # truncation
         if self._current_episode_time > self.reset_time:
-            self.out_of_track = True
+            #self.out_of_track = True
             pass
 
         if self.render_mode == "human":
@@ -435,7 +464,6 @@ class KartSim(gym.Env):
         self.info["position"] = self._playerBody.position
         self.info["highest"] = self.highest_goal
         self.info["num_finishes"] = self.num_finishes
-
 
         #if self.highest_goal == 1:
 
@@ -474,15 +502,14 @@ class KartSim(gym.Env):
             self.out_of_track = True
             self.standing_still_timesteps = 0
 
-    def check_deserting(self, max_deserting_timesteps=200):
+    def check_deserting(self, max_deserting_penalty=200):
 
         if self.next_target_rew_act < 0:  # going opposite of target
-            self.deserting_timesteps += 1
-        else:
-            self.deserting_timesteps = 0  # Reset if moving
+            self.deserting_timesteps += self.next_target_rew_act
+
 
         # If agent has been still for too long, truncate the episode
-        if self.deserting_timesteps >= max_deserting_timesteps:
+        if self.deserting_timesteps <= max_deserting_penalty:
             #print("cut")
             self.out_of_track = True
             self.deserting_timesteps = 0
@@ -611,12 +638,12 @@ class KartSim(gym.Env):
         # if finish lap then truncated
         if self.finish:
             terminated = True
-            self.reward += 1000
+            self.reward += 1000 * self.rew_adj["finish"]
 
         # if collide with track then terminate
         if self.out_of_track:
             truncated = True
-            self.reward -= 500
+            self.reward -= 1000 * self.rew_adj["wall"]
 
         step_reward = self.reward
 
@@ -666,6 +693,8 @@ class KartSim(gym.Env):
         self.ui_manager.add_ui_text("current angle", self.angles["current_angle"], ".4f")
         self.ui_manager.add_ui_text("angle to target", self.angles["angle_to_target"], ".4f")
         self.ui_manager.add_ui_text("steer rew.", self.steer_reward, ".4f")
+        self.ui_manager.add_ui_text("delay sche", self.robot.delay_scheduler, ".7f")
+
 
         self.ui_manager.add_ui_text("time in sec", (pygame.time.get_ticks() / 1000), ".2f")
         self.ui_manager.add_ui_text("fps", self._clock.get_fps(), ".2f")
@@ -1011,6 +1040,7 @@ class KartSim(gym.Env):
 
         # sin y = 1 when agent is pointing down
 
+        #print(rotation)
         return rotation
 
     def observation_target_angle(self):
@@ -1036,6 +1066,7 @@ class KartSim(gym.Env):
         position_x = normalize_vec_unsymmetric([self._playerBody.position[0]], maximum=x_max, minimum=x_min)
         position_y = normalize_vec_unsymmetric([self._playerBody.position[1]], maximum=y_max, minimum=y_min)
 
+
         return [position_x[0], position_y[0]]
 
     def observation_distance(self):
@@ -1060,6 +1091,12 @@ class KartSim(gym.Env):
         vision_lengths = normalize_vec_unsymmetric(vision_lengths, maximum=self.vision.vision_upper_limit, minimum=0)
 
         self.vision_lengths = vision_lengths
+
+        key_indices = [0, 14, 29, 44]
+        key_readings = [self.vision_lengths[i] for i in key_indices]
+        print("Key LIDAR points (every 45°):", key_readings)
+        print("vision : ", self.vision_lengths)
+
         return self.vision_lengths
 
     def observation_LIDAR_CONV(self):

@@ -26,11 +26,11 @@ def main(args):
     # Save parameters
     # experiment_name : change to test out different conditions
 
-    description = (f"setting standing still frames back to 160, reverting penalties back to -2")
+    description = (f"runs with the same seed are the same. mantis delay-4 probably didnt have built in delay and something made it derivate from the seed.")
 
     save_config = {
         "project_name": "real-turtle",
-        "run_name": "delay-ANN",
+        "run_name": "mantis",
         "save_dir": "./saves/",
         "description": description,
     }

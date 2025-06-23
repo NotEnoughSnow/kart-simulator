@@ -38,7 +38,7 @@ class UImanager:
         # position
 
         self.text_labels = []
-        number_of_text_labels = 20
+        number_of_text_labels = 25
         self.position_counter = 0
 
         for i in range(number_of_text_labels):

@@ -79,7 +79,39 @@ class Train():
             'verbose': 2,
         }
 
-        seed = 223133
+        hyperparameters_gazebo_12 = {
+            'timesteps_per_batch': 2560,
+            'gamma': 0.9723727953756666,
+            'ent_coef': 0.0013258186155261317,
+            'n_updates_per_iteration': 9,
+            'lr': 0.0009756929138687892,
+            'num_minibatches': 128,
+            'gae_lambda': 0.9445920005319369,
+
+            'clip': 0.2,
+            'max_grad_norm': 0.5,
+            'render_every_i': 10,
+            'target_kl': None,
+            'verbose': 2,
+        }
+
+        hyperparameters_gazebo_28 = {
+            'timesteps_per_batch': 4096,
+            'gamma': 0.9660523586032805,
+            'ent_coef': 0.001004986805501314,
+            'n_updates_per_iteration': 5,
+            'lr': 0.0013550942974094524,
+            'num_minibatches': 112,
+            'gae_lambda': 0.9247541731348968,
+
+            'clip': 0.2,
+            'max_grad_norm': 0.5,
+            'render_every_i': 10,
+            'target_kl': None,
+            'verbose': 2,
+        }
+
+        seed = 382934
 
         saving = {
             "ghost": True,
@@ -91,7 +123,7 @@ class Train():
 
         # create agent : kart
 
-        trainer.set_hyperparameters(hyperparameters_SMRE_ANN)
+        trainer.set_hyperparameters(hyperparameters_gazebo_12)
         trainer.set_saving(saving)
         trainer.set_seed(seed)
         trainer.set_network(network_type)
@@ -99,9 +131,9 @@ class Train():
         # env = gym.make('LunarLander-v2')
         env = env_factory.createEnv(track_type, track_name, None)
 
-        total_timesteps = 500000
-        #actor_state = "saves/projects/imitation-project/yeezy-1/ppo_actor.pth"
-        #critic_state = "saves/projects/imitation-project/yeezy-1/ppo_critic.pth"
+        total_timesteps = 350_000
+        #actor_state = "saves/projects/real-turtle/mantis-1/ppo_actor.pth"
+        #critic_state = "saves/projects/real-turtle/mantis-1/ppo_critic.pth"
 
         actor_state = None
         critic_state = None

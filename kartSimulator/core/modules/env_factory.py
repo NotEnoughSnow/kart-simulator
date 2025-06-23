@@ -86,7 +86,7 @@ class EnvFactory:
         }
 
         steer_gazebo_player_args = {
-            "player_acc_rate": 40 * 0.22, # based on max bot speed
+            "player_acc_rate": 40 * 0.22 / 2 , # based on max bot speed
             "rad_velocity": 2.84 * 2, # based on max bot rad speed
 
             "bot_size": 0.192,
@@ -143,6 +143,16 @@ class EnvFactory:
             "steer": 0.7,
         }
 
+        self.rew_adj_gazebo = {
+            "passive": 0,
+            "dist": 0,
+            "act_dist": 0.2,
+            "sector_time": 2,
+            "steer": 0.7,
+            "finish": 500,
+            "wall": 1,
+        }
+
         player_args = None
         rew_adj = None
         obs_seq = None
@@ -157,17 +167,17 @@ class EnvFactory:
             obs_seq = self.obs_steer
         elif env_name == steer_gazebo:
             player_args = steer_gazebo_player_args
-            rew_adj = self.rew_adj_steer
+            rew_adj = self.rew_adj_gazebo
             obs_seq = self.obs_steer
         elif env_name == calibrate_new_2:
             player_args = steer_gazebo_player_args
-            rew_adj = self.rew_adj_steer
+            rew_adj = self.rew_adj_gazebo
             obs_seq = self.obs_steer
 
 
         self.env_args = {
             "obs_seq": obs_seq,
-            "reset_time": 10000,
+            "reset_time": 1500,
             "track": None,
             "player_args": player_args,
             "rew_adj": rew_adj,
