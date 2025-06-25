@@ -51,6 +51,7 @@ class Robot:
         self.angular_right_timer = 0
         self.angular_left_timer = 0
 
+        # yeet SET THIS TO ADD DELAY
         self.delay_scheduler = 0
         self.last_scheduler_update = None
 
@@ -348,10 +349,10 @@ class KartSim(gym.Env):
         #angle = -math.pi/2
 
 
-        angle = 0
-        position = [800, 730]
+        #angle = 0
+        #position = [800, 730]
 
-        print(angle)
+        #print(angle)
 
         self._init_player(position, angle)
 
@@ -425,8 +426,8 @@ class KartSim(gym.Env):
         terminated = False
         truncated = False
 
-        #self.check_standing_still(25, 160)
-        #self.check_deserting(-10000 * 1.42 * self.rew_adj["act_dist"])
+        self.check_standing_still(25, 100)
+        self.check_deserting(-10000 * 1.42 * self.rew_adj["act_dist"])
 
 
         if action is not None:
@@ -454,7 +455,7 @@ class KartSim(gym.Env):
 
         # truncation
         if self._current_episode_time > self.reset_time:
-            #self.out_of_track = True
+            self.out_of_track = True
             pass
 
         if self.render_mode == "human":
@@ -1087,15 +1088,18 @@ class KartSim(gym.Env):
         # apply circularity and convolution
         #wraparound_data = self.vision.apply_circularity(vision_lengths)
 
+        inverted = [self.vision.vision_upper_limit - x for x in vision_lengths]
+
         # normalize rays
-        vision_lengths = normalize_vec_unsymmetric(vision_lengths, maximum=self.vision.vision_upper_limit, minimum=0)
+        vision_lengths = normalize_vec_unsymmetric(inverted, maximum=self.vision.vision_upper_limit, minimum=0)
 
         self.vision_lengths = vision_lengths
 
+
         key_indices = [0, 14, 29, 44]
         key_readings = [self.vision_lengths[i] for i in key_indices]
-        print("Key LIDAR points (every 45°):", key_readings)
-        print("vision : ", self.vision_lengths)
+        #print("transformed :", key_readings)
+        #print("vision : ", self.vision_lengths)
 
         return self.vision_lengths
 

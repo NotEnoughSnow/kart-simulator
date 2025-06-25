@@ -24,7 +24,7 @@ class LIDAR_vision():
         self.ray_count = ray_count
         self.vision_fov = vision_fov
 
-        self.no_vision_constant = vision_length / 6
+        self.no_vision_constant = self.vision_length / 6
 
         self.vision_upper_limit = self.no_vision_constant + self.vision_length
 

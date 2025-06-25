@@ -99,12 +99,13 @@ class Trainer():
                                                        actor_model=actor_state,
                                                        critic_model=critic_state)
         if self.Ntype == "SNN":
-            result_actor_state, result_critic_state = self.train_SNN(env,
-                                                       total_timesteps,
-                                                       save_path,
-                                                       train_config,
-                                                       actor_state,
-                                                       critic_state)
+            result_actor_state, result_critic_state = self.train_SNN(env=env,
+                                                       total_timesteps=total_timesteps,
+                                                       save_path=save_path,
+                                                       run_name=f"{self.run_name}-{ver_number}",
+                                                       train_config=train_config,
+                                                       actor_model=actor_state,
+                                                       critic_model=critic_state)
 
         return result_actor_state, result_critic_state
 
@@ -154,21 +155,24 @@ class Trainer():
                   env,
                   total_timesteps,
                   save_path,
+                  run_name,
                   train_config,
                   actor_model,
                   critic_model,
                   ):
 
         model = PPO_SNN(env=env,
-                        save_model=self.saving["models"],
-                        record_ghost=self.saving["ghost"],
-                        record_output=False,
-                        save_dir=save_path,
-                        record_wandb=self.saving["wandb"],
-                        train_config=train_config,
-                        expert_data=self.expert_data,
-                        project_name = self.project_name,
-                        **self.hyperparameters)
+                    save_model=self.saving["models"],
+                    record_ghost=self.saving["ghost"],
+                    record_output=False,
+                    save_dir=save_path,
+                    description=self.description,
+                    run_name = run_name,
+                    record_wandb=self.saving["wandb"],
+                    train_config=train_config,
+                    expert_data=self.expert_data ,
+                    project_name = self.project_name,
+                    **self.hyperparameters)
 
         if actor_model != None and critic_model != None:
             print(f"Loading in {actor_model} and {critic_model}...", flush=True)

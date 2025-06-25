@@ -26,11 +26,11 @@ def main(args):
     # Save parameters
     # experiment_name : change to test out different conditions
 
-    description = (f"runs with the same seed are the same. mantis delay-4 probably didnt have built in delay and something made it derivate from the seed.")
+    description = (f"forgot to enable deserting with last run. setting deserting timesteps to 100")
 
     save_config = {
-        "project_name": "real-turtle",
-        "run_name": "mantis",
+        "project_name": "spiky-turtle",
+        "run_name": "base",
         "save_dir": "./saves/",
         "description": description,
     }
@@ -67,6 +67,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, eval, replay
 
-    args.mode = "play"
+    args.mode = "train"
 
     main(args)

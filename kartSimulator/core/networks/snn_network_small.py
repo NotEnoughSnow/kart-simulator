@@ -7,6 +7,9 @@ import numpy as np
 
 hidden_size = 64  # Number of hidden neurons
 
+import torch.nn.init as init
+
+
 class SNN_small(nn.Module):
     def __init__(self, input_size, output_size, num_steps, add_weight):
         super(SNN_small, self).__init__()
@@ -18,12 +21,21 @@ class SNN_small(nn.Module):
 
         # Define layers
         self.fc1 = nn.Linear(input_size, hidden_size, dtype=torch.float)
-        self.fc1.weight.data += add_weight
-        self.lif1 = snn.Leaky(beta=beta1, spike_grad=surrogate.fast_sigmoid())
+        #self.fc1.weight.data += add_weight
+        self.lif1 = snn.Leaky(beta=beta1, spike_grad=surrogate.fast_sigmoid(), threshold=0.7)
+
+        init.kaiming_uniform_(self.fc1.weight, a=0, mode='fan_in', nonlinearity='relu')
+        if self.fc1.bias is not None:
+            init.zeros_(self.fc1.bias)
 
         self.fc2 = nn.Linear(hidden_size, hidden_size, dtype=torch.float)
-        self.fc2.weight.data += add_weight
-        self.lif2 = snn.Leaky(beta=beta2, spike_grad=surrogate.fast_sigmoid())
+        #self.fc2.weight.data += add_weight
+        self.lif2 = snn.Leaky(beta=beta2, spike_grad=surrogate.fast_sigmoid(), threshold=0.7)
+
+        init.kaiming_uniform_(self.fc2.weight, a=0, mode='fan_in', nonlinearity='relu')
+        if self.fc2.bias is not None:
+            init.zeros_(self.fc2.bias)
+
 
         # Linear readout layer
         self.readout = nn.Linear(hidden_size, output_size)

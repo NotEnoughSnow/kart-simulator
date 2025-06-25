@@ -27,6 +27,8 @@ class PPO_SNN:
                  save_model,
                  record_output,
                  save_dir,
+                 description,
+                 run_name,
                  record_wandb,
                  train_config,
                  project_name,
@@ -62,11 +64,11 @@ class PPO_SNN:
             wandb.init(
                 # set the wandb project where this run will be logged
                 project=project_name,
-
                 # track hyperparameters and run metadata
-                config=train_config
+                config=train_config,
+                name = run_name,
             )
-
+            wandb.run.notes = description
 
         self.run_directory = save_dir
 
@@ -94,8 +96,11 @@ class PPO_SNN:
         #self.threshold = torch.tensor([1.5, 1.5, 5, 5, 3.14, 5, 1, 1])
         #self.shift = np.array([1.5, 1.5, 5, 5, 3.14, 5, 0, 0])
 
-        self.threshold = torch.tensor(env.high)
-        self.shift = np.abs(env.low)
+        #self.threshold = torch.full(env.high)
+        #self.shift = torch.full(env.low)
+
+        self.threshold = torch.full((self.obs_dim,), 1.0)
+        self.shift = torch.full((self.obs_dim,), -1.0)
 
 
         if self.verbose == 0:
@@ -431,6 +436,9 @@ class PPO_SNN:
 
                 t += 1  # Increment timesteps ran this batch so far
 
+                # scale up the observation array to avoid a silent first layer
+                obs = np.array(obs)*3
+
                 obs_st = SNN_utils.generate_spike_trains(obs,
                                                          num_steps=self.num_steps,
                                                          threshold=self.threshold,
@@ -534,15 +542,18 @@ class PPO_SNN:
 
         avg_spike_time, spike_ratio = SNN_utils.compute_spike_metrics(spikes)
 
+        print("spike ratio :", spike_ratio)
+        #print("array :", spikes)
+
 
 
         if self.continuous:
             # For continuous action spaces
             # TODO entry
             if self.decode_type == "first":
-                mean = SNN_utils.decode_first_spike(spk_output)
+                mean = SNN_utils.decode_first_spike(spikes)
             if self.decode_type == "count":
-                mean = SNN_utils.get_spike_counts(spk_output)
+                mean = SNN_utils.get_spike_counts(spikes)
             if self.decode_type == "lrl":
                 mean = spk_output
 
@@ -551,9 +562,9 @@ class PPO_SNN:
             # For discrete action spaces
             # TODO entry
             if self.decode_type == "first":
-                logits = SNN_utils.decode_first_spike(spk_output)
+                logits = SNN_utils.decode_first_spike(spikes)
             if self.decode_type == "count":
-                logits = SNN_utils.get_spike_counts(spk_output)
+                logits = SNN_utils.get_spike_counts(spikes)
             if self.decode_type == "lrl":
                 logits = spk_output
 
@@ -600,15 +611,15 @@ class PPO_SNN:
         if self.decode_type == "lrl":
             V = V_st.squeeze()
 
-        spk_output, _ = self.actor(batch_obs_st)
+        spk_output, spikes = self.actor(batch_obs_st)
 
         # Calculate the log probabilities of batch actions using most recent actor network
         if self.continuous:
             # TODO entry
             if self.decode_type == "first":
-                mean = SNN_utils.decode_first_spike_batched(spk_output)
+                mean = SNN_utils.decode_first_spike_batched(spikes)
             if self.decode_type == "count":
-                mean = SNN_utils.get_spike_counts_batched(spk_output)
+                mean = SNN_utils.get_spike_counts_batched(spikes)
             if self.decode_type == "lrl":
                 mean = spk_output
 
@@ -616,9 +627,9 @@ class PPO_SNN:
         else:
             # TODO entry
             if self.decode_type == "first":
-                logits = SNN_utils.decode_first_spike_batched(spk_output)
+                logits = SNN_utils.decode_first_spike_batched(spikes)
             if self.decode_type == "count":
-                logits = SNN_utils.get_spike_counts_batched(spk_output)
+                logits = SNN_utils.get_spike_counts_batched(spikes)
             if self.decode_type == "lrl":
                 logits = spk_output
 
