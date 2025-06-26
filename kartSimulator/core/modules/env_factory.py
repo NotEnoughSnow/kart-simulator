@@ -177,7 +177,7 @@ class EnvFactory:
 
         self.env_args = {
             "obs_seq": obs_seq,
-            "reset_time": 1500,
+            "reset_time": 2000,
             "track": None,
             "player_args": player_args,
             "rew_adj": rew_adj,

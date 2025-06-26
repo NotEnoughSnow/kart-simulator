@@ -130,9 +130,9 @@ class Train():
         seed = 382934
 
         saving = {
-            "ghost": False,
-            "models": False,
-            "wandb": False,
+            "ghost": True,
+            "models": True,
+            "wandb": True,
         }
 
         network_type = "SNN"

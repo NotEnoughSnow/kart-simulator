@@ -16,6 +16,7 @@ import h5py
 import wandb
 
 from kartSimulator.core.networks.snn_network_small import SNN_small
+from kartSimulator.core.networks.standard_network import FFNetwork
 
 
 
@@ -119,7 +120,7 @@ class PPO_SNN:
         # self.critic = CriticNetwork(self.obs_dim, 1)
 
         self.actor = SNN_small(self.obs_dim, self.act_dim, self.num_steps, add_weight=self.add_weight)
-        self.critic = SNN_small(self.obs_dim, 1, self.num_steps, add_weight=self.add_weight)
+        self.critic = FFNetwork(self.obs_dim, 1)
 
         # Initialize optimizers for actor and critic
         self.actor_optim = Adam(self.actor.parameters(), lr=self.lr)
@@ -177,13 +178,7 @@ class PPO_SNN:
             A_k = self.calculate_gae(batch_rews, batch_vals, batch_dones)
 
             # TODO entry
-            V_st, _ = self.critic(batch_obs_st)
-            if self.decode_type == "first":
-                V = SNN_utils.decode_first_spike_batched(V_st).squeeze()
-            if self.decode_type == "count":
-                V = SNN_utils.get_spike_counts_batched(V_st).squeeze()
-            if self.decode_type == "lrl":
-                V = V_st.squeeze()
+            V = self.critic(batch_obs).squeeze()
 
             batch_rtgs = A_k + V.detach()
 
@@ -243,7 +238,7 @@ class PPO_SNN:
                     mini_rtgs = batch_rtgs[idx]
 
                     # Calculate V_phi and pi_theta(a_t | s_t)
-                    V, curr_log_probs, dist, entropy_loss = self.evaluate(mini_obs_st, mini_acts)
+                    V, curr_log_probs, dist, entropy_loss = self.evaluate(mini_obs, mini_obs_st, mini_acts)
 
                     # Calculate the ratio pi_theta(a_t | s_t) / pi_theta_k(a_t | s_t)
                     # NOTE: we just subtract the logs, which is the same as
@@ -437,9 +432,9 @@ class PPO_SNN:
                 t += 1  # Increment timesteps ran this batch so far
 
                 # scale up the observation array to avoid a silent first layer
-                obs = np.array(obs)*3
+                obs_scaled = np.array(obs)*3
 
-                obs_st = SNN_utils.generate_spike_trains(obs,
+                obs_st = SNN_utils.generate_spike_trains(obs_scaled,
                                                          num_steps=self.num_steps,
                                                          threshold=self.threshold,
                                                          shift=self.shift)
@@ -451,13 +446,7 @@ class PPO_SNN:
                 action, log_prob = self.get_action(obs_st)
 
                 # TODO entry
-                val_st, _ = self.critic(obs_st)
-                if self.decode_type == "first":
-                    val = SNN_utils.decode_first_spike(val_st)
-                if self.decode_type == "count":
-                    val = SNN_utils.get_spike_counts(val_st)
-                if self.decode_type == "lrl":
-                    val = val_st
+                val = self.critic(obs)
 
                 obs, rew, terminated, truncated, info = self.env.step(action)
 
@@ -542,7 +531,7 @@ class PPO_SNN:
 
         avg_spike_time, spike_ratio = SNN_utils.compute_spike_metrics(spikes)
 
-        print("spike ratio :", spike_ratio)
+        #print("spike ratio :", spike_ratio)
         #print("array :", spikes)
 
 
@@ -584,7 +573,7 @@ class PPO_SNN:
         # Return the sampled action and the log probability of that action in our distribution
         return action.detach().numpy(), log_prob.detach()
 
-    def evaluate(self, batch_obs_st, batch_acts):
+    def evaluate(self, batch_obs, batch_obs_st, batch_acts):
         """
         Estimate the values of each observation, and the log probs of
         each action in the most recent batch with the most recent
@@ -603,13 +592,7 @@ class PPO_SNN:
 
         # Query critic network for a value V for each batch_obs
         # TODO entry
-        V_st, _ = self.critic(batch_obs_st)
-        if self.decode_type == "first":
-            V = SNN_utils.decode_first_spike_batched(V_st).squeeze()
-        if self.decode_type == "count":
-            V = SNN_utils.get_spike_counts_batched(V_st).squeeze()
-        if self.decode_type == "lrl":
-            V = V_st.squeeze()
+        V = self.critic(batch_obs).squeeze()
 
         spk_output, spikes = self.actor(batch_obs_st)
 

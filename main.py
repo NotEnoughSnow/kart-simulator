@@ -26,7 +26,7 @@ def main(args):
     # Save parameters
     # experiment_name : change to test out different conditions
 
-    description = (f"forgot to enable deserting with last run. setting deserting timesteps to 100")
+    description = (f"one agent died near the finish line because of the reset time. setting it to 2k")
 
     save_config = {
         "project_name": "spiky-turtle",
@@ -67,6 +67,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, eval, replay
 
-    args.mode = "train"
+    args.mode = "replay"
 
     main(args)
