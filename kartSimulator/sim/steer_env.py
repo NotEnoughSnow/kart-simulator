@@ -219,6 +219,8 @@ class KartSim(gym.Env):
 
         self.rew_adj = rew_adj
 
+        self.deserting_timesteps = 0
+
     def reset(
             self,
             *,
@@ -251,6 +253,8 @@ class KartSim(gym.Env):
         #print(self.resets)
 
         info = {"player pos": position}
+
+        self.deserting_timesteps = 0
 
         # return self.step(None)[0], {}
         return observation, info
@@ -541,12 +545,12 @@ class KartSim(gym.Env):
         # if finish lap then truncated
         if self.finish:
             terminated = True
-            self.reward += 1000
+            self.reward += 1000 * self.rew_adj["finish"]
 
         # if collide with track then terminate
         if self.out_of_track:
             truncated = True
-            self.reward -= 500
+            self.reward -= 500 * self.rew_adj["wall"]
 
         step_reward = self.reward
 
@@ -991,10 +995,19 @@ class KartSim(gym.Env):
         # apply circularity and convolution
         #wraparound_data = self.vision.apply_circularity(vision_lengths)
 
+        inverted = [self.vision.vision_upper_limit - x for x in vision_lengths]
+
         # normalize rays
-        vision_lengths = normalize_vec_unsymmetric(vision_lengths, maximum=self.vision.vision_upper_limit, minimum=0)
+        vision_lengths = normalize_vec_unsymmetric(inverted, maximum=self.vision.vision_upper_limit, minimum=0)
 
         self.vision_lengths = vision_lengths
+
+
+        key_indices = [0, 14, 29, 44]
+        key_readings = [self.vision_lengths[i] for i in key_indices]
+        #print("transformed :", key_readings)
+        #print("vision : ", self.vision_lengths)
+
         return self.vision_lengths
 
     def observation_LIDAR_CONV(self):

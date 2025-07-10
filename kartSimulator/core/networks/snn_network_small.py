@@ -39,6 +39,9 @@ class SNN_small(nn.Module):
 
         # Linear readout layer
         self.readout = nn.Linear(hidden_size, output_size)
+        init.kaiming_uniform_(self.readout.weight, a=0, mode='fan_in', nonlinearity='relu')
+        if self.readout.bias is not None:
+            init.zeros_(self.readout.bias)
 
     def forward(self, x):
 

@@ -69,7 +69,7 @@ class Train():
             'gamma': 0.9717,
             'ent_coef': 0.00993,
             'n_updates_per_iteration': 9,
-            'lr': 0.000174,
+            'lr': 0.00174,
             'clip': 0.2,
             'max_grad_norm': 0.5,
             'render_every_i': 10,
@@ -98,7 +98,7 @@ class Train():
         hyperparameters_gazebo_12_SNN = {
             'timesteps_per_batch': 2560,
             'gamma': 0.9723727953756666,
-            'ent_coef': 0.0013258186155261317,
+            'ent_coef': 0.00013258186155261317,
             'n_updates_per_iteration': 9,
             'lr': 0.009756929138687892,
             'num_minibatches': 128,
@@ -109,6 +109,7 @@ class Train():
             'render_every_i': 10,
             'target_kl': None,
             'verbose': 2,
+            'num_steps': 100,
         }
 
         hyperparameters_gazebo_28 = {
@@ -127,7 +128,7 @@ class Train():
             'verbose': 2,
         }
 
-        seed = 382934
+        seed = 4313
 
         saving = {
             "ghost": True,
@@ -135,11 +136,11 @@ class Train():
             "wandb": True,
         }
 
-        network_type = "SNN"
+        network_type = "ANN"
 
         # create agent : kart
 
-        trainer.set_hyperparameters(hyperparameters_gazebo_12_SNN)
+        trainer.set_hyperparameters(hyperparameters_GMRE_ANN)
         trainer.set_saving(saving)
         trainer.set_seed(seed)
         trainer.set_network(network_type)

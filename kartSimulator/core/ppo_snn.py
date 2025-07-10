@@ -16,6 +16,7 @@ import h5py
 import wandb
 
 from kartSimulator.core.networks.snn_network_small import SNN_small
+from kartSimulator.core.networks.snn_network_small_2 import SNN_small as SNN_2
 from kartSimulator.core.networks.standard_network import FFNetwork
 
 
@@ -433,17 +434,20 @@ class PPO_SNN:
 
                 # scale up the observation array to avoid a silent first layer
                 obs_scaled = np.array(obs)*3
-
+                
+                
                 obs_st = SNN_utils.generate_spike_trains(obs_scaled,
                                                          num_steps=self.num_steps,
                                                          threshold=self.threshold,
                                                          shift=self.shift)
+                
+
                 batch_obs_st.append(obs_st)
                 batch_obs.append(obs)
 
                 # Calculate action and make a step in the env.
                 # Note that rew is short for reward.
-                action, log_prob = self.get_action(obs_st)
+                action, log_prob = self.get_action(obs, obs_st)
 
                 # TODO entry
                 val = self.critic(obs)
@@ -515,7 +519,7 @@ class PPO_SNN:
 
         return batch_obs, batch_obs_st, batch_acts, batch_log_probs, batch_rews, batch_lens, batch_vals, batch_dones, batch_ghosts
 
-    def get_action(self, obs_st):
+    def get_action(self, obs, obs_st):
         """
         Queries an action from the actor network, should be called from rollout.
 
@@ -527,7 +531,10 @@ class PPO_SNN:
             log_prob - the log probability of the selected action in the distribution
         """
 
-        spk_output, spikes = self.actor(obs_st)
+        if self.encode_type == "linear":
+            spk_output, spikes = self.actor(obs)
+        else:
+            spk_output, spikes = self.actor(obs_st)
 
         avg_spike_time, spike_ratio = SNN_utils.compute_spike_metrics(spikes)
 
@@ -594,7 +601,10 @@ class PPO_SNN:
         # TODO entry
         V = self.critic(batch_obs).squeeze()
 
-        spk_output, spikes = self.actor(batch_obs_st)
+        if self.encode_type == "linear":
+            spk_output, spikes = self.actor(batch_obs)
+        else:
+            spk_output, spikes = self.actor(batch_obs_st)
 
         # Calculate the log probabilities of batch actions using most recent actor network
         if self.continuous:
@@ -656,6 +666,7 @@ class PPO_SNN:
         self.target_kl = None
         self.num_minibatches = 8
         self.gae_lambda = 0.95
+        self.encode_type = "rate"
         self.decode_type = "lrl"
         self.num_steps = 32
         self.add_weight = 0.01

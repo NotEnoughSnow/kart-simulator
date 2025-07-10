@@ -13,14 +13,18 @@ class Eval:
         env = env_factory.createEnv(track_type, track_name, "human")
         #env = gym.make('LunarLander-v2', render_mode="human")
 
-        actor_state = f"./saves/projects/real-turtle/mantis-delay-5/ppo_actor.pth"
+        actor_state = f"./saves/projects/spiky-turtle/base-6/ppo_actor.pth"
 
 
-        NType = "ANN"
+        NType = "SNN"
 
         evaluator = Evaluator(env, actor_state, NType=NType)
 
-        mean_rew = evaluator.eval_policy_ANN(n_eval_episodes=5)
+        if NType == "ANN":
+            mean_rew = evaluator.eval_policy_ANN(n_eval_episodes=5)
+        else:
+            mean_rew = evaluator.eval_policy_SNN(n_eval_episodes=5)
+
 
         #evaluator.eval_sb3(env)
 

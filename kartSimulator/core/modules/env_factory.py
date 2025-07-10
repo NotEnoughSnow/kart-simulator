@@ -58,8 +58,8 @@ class EnvFactory:
                          ]
 
         grid_env_player_args = {
-            "player_acc_rate": 15,
-            "max_velocity": 2,
+            "player_acc_rate": 30,
+            "max_velocity": 4,
             "bot_size": 0.192,
             "bot_weight": 1,
             "vision_length": 6,
@@ -67,11 +67,11 @@ class EnvFactory:
             "vision_ray_count": 60,
         }
         #max_vel = 0.22
-        max_vel = 3.5
+        max_vel = 3.5 * 1.5
         #rad_vel = 2.84
-        rad_vel = 0.86 * 2.84
+        rad_vel = 0.86 * 2.84 * 1.5
         steer_env_player_args = {
-            "player_acc_rate": max_vel / 0.66, # arbitrary
+            "player_acc_rate": max_vel / 0.8, # arbitrary
             "player_break_rate": max_vel / 0.5, # arbitrary
             #"max_velocity": 4, # based on max bot speed, multiplied for convenience
             "max_velocity": max_vel, # based on max bot speed, multiplied for convenience
@@ -133,6 +133,8 @@ class EnvFactory:
             "dist": 0,
             "act_dist": 1,
             "sector_time": 1,
+            "finish": 500,
+            "wall": 1,
         }
 
         self.rew_adj_steer = {
@@ -141,6 +143,8 @@ class EnvFactory:
             "act_dist": 0.5,
             "sector_time": 1,
             "steer": 0.7,
+            "finish": 500,
+            "wall": 1,
         }
 
         self.rew_adj_gazebo = {

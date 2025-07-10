@@ -26,11 +26,11 @@ def main(args):
     # Save parameters
     # experiment_name : change to test out different conditions
 
-    description = (f"one agent died near the finish line because of the reset time. setting it to 2k")
+    description = (f"")
 
     save_config = {
-        "project_name": "spiky-turtle",
-        "run_name": "base",
+        "project_name": "spiky-turtle-race",
+        "run_name": "LatEnv-ANN",
         "save_dir": "./saves/",
         "description": description,
     }
@@ -40,7 +40,7 @@ def main(args):
     # calibrate_new
     # calibrate_new_2
     # steer_gazebo
-    env_name = steer_gazebo
+    env_name = grid_env
     track_type = "loader"
     track_name = "big_S"
 
@@ -67,6 +67,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, eval, replay
 
-    args.mode = "replay"
+    args.mode = "train"
 
     main(args)

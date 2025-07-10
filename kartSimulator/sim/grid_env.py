@@ -124,8 +124,10 @@ class KartSim(gym.Env):
         high = []
 
         for obs_type in obs_seq:
-            if len(obs_type) == 3:
+            if len(obs_type) == 2:
+                self.obs_len += obs_type[1]
 
+            if len(obs_type) == 3:
                 self.obs_len += len(obs_type[1])
 
                 for item_low in obs_type[1]:
@@ -134,17 +136,18 @@ class KartSim(gym.Env):
                 for item_high in obs_type[2]:
                     high.append(item_high)
             if len(obs_type) == 4:
-
                 self.obs_len += obs_type[1]
 
                 for i in range(obs_type[1]):
                     low.append(-obs_type[2][0])
                     high.append(obs_type[3][0])
 
-        self.low = np.array(low).astype(np.float32)
-        self.high = np.array(high).astype(np.float32)
+        #self.low = np.array(low).astype(np.float32)
+        #self.high = np.array(high).astype(np.float32)
 
-        self.observation_space = spaces.Box(self.low, self.high)
+        #self.observation_space = spaces.Box(self.low, self.high)
+
+        self.observation_space = spaces.Box(low=-1, high=1, shape= (self.obs_len,), dtype=np.float32)
 
         self.action_space = spaces.Discrete(5)
         # do nothing, up, down, left, right
@@ -263,7 +266,7 @@ class KartSim(gym.Env):
 
         self.velocity = self._playerBody.velocity.__abs__()
 
-        self._playerBody.velocity /= 1.005
+        self._playerBody.velocity /= 1.05
 
         # TODO stopping speed
         # TODO max speed
@@ -387,12 +390,12 @@ class KartSim(gym.Env):
         # if finish lap then truncated
         if self.finish:
             terminated = True
-            self.reward += 1000
+            self.reward += 1000 * self.rew_adj["finish"]
 
         # if collide with track then terminate
         if self.out_of_track:
             truncated = True
-            self.reward -= 500
+            self.reward -= 500 * self.rew_adj["wall"]
 
 
         step_reward = self.reward
@@ -697,15 +700,13 @@ class KartSim(gym.Env):
     def observation_velocity(self):
         velocity = self.velocity
 
-        velocity = np.clip(
-            np.abs(normalize_vec([velocity],
+        velocity = np.clip(utils.normalize_vec_unsymmetric([velocity],
                                  maximum=self.max_velocity,
-                                 minimum=0)),
+                                 minimum=0),
             a_max=1,
-            a_min=0)[0]
+            a_min=-1)
 
-
-        return [velocity]
+        return velocity
 
     def observation_rotation(self):
         raise Exception("this version doesn't use agent's rotation")
@@ -729,11 +730,21 @@ class KartSim(gym.Env):
 
     def observation_position(self):
 
-        max_pos = max(window_width, window_length)/2
+        #max_pos = max(window_width, window_length)/2
 
-        position = normalize_vec(self._playerBody.position, maximum=max_pos, minimum=0)
+        #TODO min and max positions for x and y
 
-        return position
+        x_min = 54
+        y_min = 81
+
+        x_max = 990
+        y_max = 958
+
+
+        position_x = utils.normalize_vec_unsymmetric([self._playerBody.position[0]], maximum=x_max, minimum=x_min)
+        position_y = utils.normalize_vec_unsymmetric([self._playerBody.position[1]], maximum=y_max, minimum=y_min)
+
+        return [position_x[0], position_y[0]]
 
     def observation_distance(self):
         distance = [utils.normalize_vec([self.distance_to_next_goal], maximum=0, minimum=-MAX_TARGET_DISTANCE)[0]]
@@ -749,15 +760,23 @@ class KartSim(gym.Env):
     def observation_LIDAR(self):
         # LIDAR vision
         # collect vision rays
-        self.vision_points, vision_lengths = self.vision.cast_rays_lengths(self._space,
-                                                                      self._playerBody)
+        self.vision_points, vision_lengths = self.vision.cast_rays_lengths(self._space, self._playerBody)
         # apply circularity and convolution
-        #wraparound_data = vision.apply_circularity(vision_lengths)
+        #wraparound_data = self.vision.apply_circularity(vision_lengths)
+
+        inverted = [self.vision.vision_upper_limit - x for x in vision_lengths]
 
         # normalize rays
-        vision_lengths = normalize_vec(vision_lengths, maximum=self.vision.vision_upper_limit, minimum=0)
+        vision_lengths = utils.normalize_vec_unsymmetric(inverted, maximum=self.vision.vision_upper_limit, minimum=0)
 
         self.vision_lengths = vision_lengths
+
+
+        key_indices = [0, 14, 29, 44]
+        key_readings = [self.vision_lengths[i] for i in key_indices]
+        #print("transformed :", key_readings)
+        #print("vision : ", self.vision_lengths)
+
         return self.vision_lengths
 
     def observation_LIDAR_CONV(self):
