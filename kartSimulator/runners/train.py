@@ -128,7 +128,7 @@ class Train():
             'verbose': 2,
         }
 
-        seed = 4313
+        seed = 313114232
 
         saving = {
             "ghost": True,
@@ -136,11 +136,11 @@ class Train():
             "wandb": True,
         }
 
-        network_type = "ANN"
+        network_type = "SNN"
 
         # create agent : kart
 
-        trainer.set_hyperparameters(hyperparameters_GMRE_ANN)
+        trainer.set_hyperparameters(hyperparameters_gazebo_12_SNN)
         trainer.set_saving(saving)
         trainer.set_seed(seed)
         trainer.set_network(network_type)
@@ -148,7 +148,7 @@ class Train():
         # env = gym.make('LunarLander-v2')
         env = env_factory.createEnv(track_type, track_name, None)
 
-        total_timesteps = 500_000
+        total_timesteps = 1_200_000
         #actor_state = "saves/projects/real-turtle/mantis-1/ppo_actor.pth"
         #critic_state = "saves/projects/real-turtle/mantis-1/ppo_critic.pth"
 

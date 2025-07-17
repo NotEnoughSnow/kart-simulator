@@ -38,7 +38,7 @@ class Evaluator:
         obs_dim = self.env.observation_space.shape[0]
 
         if self.continuous:
-            self.act_dim = self.env.action_space.shape[0]
+            act_dim = self.env.action_space.shape[0]
         else:
             act_dim = self.env.action_space.n
 
@@ -47,10 +47,14 @@ class Evaluator:
         if NType == "ANN":
             self.actor = FFNetwork(obs_dim, act_dim)
         else:
-            self.actor = SNN_small(obs_dim, act_dim, num_steps=32, add_weight=0.1)
+            print("using SNNs")
+            self.actor = SNN_small(obs_dim, act_dim, num_steps=100, add_weight=0)
 
         # Load in the actor model saved by the PPO algorithm
         self.actor.load_state_dict(torch.load(self.actor_model, weights_only=False))
+
+        self.threshold = torch.full((obs_dim,), 1.0)
+        self.shift = torch.full((obs_dim,), -1.0)
 
     def eval(self, n_eval_episodes=5):
 
@@ -125,7 +129,7 @@ class Evaluator:
         mean_reward = np.mean(rewards)
         return mean_reward
 
-    def eval_policy_SNN(self, n_eval_episodes=5, num_steps=32, threshold=None, shift=None):
+    def eval_policy_SNN(self, n_eval_episodes=5, num_steps=32):
         """
         Evaluates the given actor (policy) in the environment for a fixed number of episodes.
 
@@ -143,10 +147,13 @@ class Evaluator:
             while not (terminated or truncated):
                 # Get action from the actor (policy network)
 
-                obs_st = SNN_utils.generate_spike_trains(obs,
+                # scale up the observation array to avoid a silent first layer
+                obs_scaled = np.array(obs)*3
+
+                obs_st = SNN_utils.generate_spike_trains(obs_scaled,
                                                          num_steps=num_steps,
-                                                         threshold=threshold,
-                                                         shift=shift)
+                                                         threshold=self.threshold,
+                                                         shift=self.shift)
 
                 logits, _ = self.actor.forward(obs_st)  # Assuming 'forward' method in actor handles the action logic
 

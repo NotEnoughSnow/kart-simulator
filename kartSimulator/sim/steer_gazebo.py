@@ -1082,13 +1082,19 @@ class KartSim(gym.Env):
         return distance
 
     def observation_LIDAR(self):
+
+        use_inverted = False
+
         # LIDAR vision
         # collect vision rays
         self.vision_points, vision_lengths = self.vision.cast_rays_lengths(self._space, self._playerBody)
         # apply circularity and convolution
         #wraparound_data = self.vision.apply_circularity(vision_lengths)
 
-        inverted = [self.vision.vision_upper_limit - x for x in vision_lengths]
+        if use_inverted :
+            inverted = [self.vision.vision_upper_limit - x for x in vision_lengths]
+        else :
+            inverted = vision_lengths
 
         # normalize rays
         vision_lengths = normalize_vec_unsymmetric(inverted, maximum=self.vision.vision_upper_limit, minimum=0)
