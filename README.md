@@ -124,4 +124,3 @@ Available environment types:
 - Migrate Simulation to Box2D instead of Pymunk
 - Experiment with different components and their effects on training
 - Implement and experiment with various computational neuroscience methodologies
->>>>>>> 364f21ff770ac08bf4f66164d151b4ea8edf2721
