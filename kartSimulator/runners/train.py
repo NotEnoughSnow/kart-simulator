@@ -128,7 +128,7 @@ class Train():
             'verbose': 2,
         }
 
-        seed = 313114232
+        seed = 66676
 
         saving = {
             "ghost": True,

@@ -1083,7 +1083,7 @@ class KartSim(gym.Env):
 
     def observation_LIDAR(self):
 
-        use_inverted = False
+        use_inverted = True
 
         # LIDAR vision
         # collect vision rays
