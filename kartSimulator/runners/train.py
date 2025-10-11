@@ -128,12 +128,12 @@ class Train():
             'verbose': 2,
         }
 
-        seed = 66676
+        seed = 9082
 
         saving = {
-            "ghost": True,
-            "models": True,
-            "wandb": True,
+            "ghost": False,
+            "models": False,
+            "wandb": False,
         }
 
         network_type = "SNN"

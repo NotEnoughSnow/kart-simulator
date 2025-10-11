@@ -10,8 +10,8 @@ class Replay:
 
         # extract information from save config
         #project_name = save_config["project_name"]
-        project_name = "real-turtle"
-        run_name = "mantis-5"
+        project_name = "spiky-turtle-race"
+        run_name = "SNN-4"
 
         # Parameters for replays
         replay_files = [f"./saves/projects/{project_name}/{run_name}/ghost.hdf5"]

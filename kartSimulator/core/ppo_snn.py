@@ -16,6 +16,7 @@ import h5py
 import wandb
 
 from kartSimulator.core.networks.snn_network_small import SNN_small
+from kartSimulator.core.networks.snn_network_small_standard import SNN_small as SNN_small_latency
 from kartSimulator.core.networks.snn_network_small_2 import SNN_small as SNN_2
 from kartSimulator.core.networks.standard_network import FFNetwork
 
@@ -39,6 +40,8 @@ class PPO_SNN:
         self.pid = os.getpid()
         # Initialize hyperparameters for training with PPO
         self._init_hyperparameters(hyperparameters)
+
+
 
 
         # Make sure the environment is compatible with our code
@@ -120,7 +123,11 @@ class PPO_SNN:
         # self.actor = ActorNetwork(self.obs_dim, self.act_dim)
         # self.critic = CriticNetwork(self.obs_dim, 1)
 
-        self.actor = SNN_small(self.obs_dim, self.act_dim, self.num_steps, add_weight=self.add_weight)
+        if self.decode_type == "first":
+            self.actor = SNN_small_latency(self.obs_dim, self.act_dim, self.num_steps)
+        if self.decode_type == "lrl":
+            self.actor = SNN_small(self.obs_dim, self.act_dim, self.num_steps, add_weight=self.add_weight)
+
         self.critic = FFNetwork(self.obs_dim, 1)
 
         # Initialize optimizers for actor and critic
@@ -454,6 +461,8 @@ class PPO_SNN:
 
                 obs, rew, terminated, truncated, info = self.env.step(action)
 
+                #print(obs)
+
                 done = terminated or truncated
 
                 # print("fps", info["fps"])
@@ -547,7 +556,7 @@ class PPO_SNN:
             # For continuous action spaces
             # TODO entry
             if self.decode_type == "first":
-                mean = SNN_utils.decode_first_spike(spikes)
+                mean = SNN_utils.soft_latency_decode_single(spikes)
             if self.decode_type == "count":
                 mean = SNN_utils.get_spike_counts(spikes)
             if self.decode_type == "lrl":
@@ -558,7 +567,7 @@ class PPO_SNN:
             # For discrete action spaces
             # TODO entry
             if self.decode_type == "first":
-                logits = SNN_utils.decode_first_spike(spikes)
+                logits = SNN_utils.soft_latency_decode_single(spikes)
             if self.decode_type == "count":
                 logits = SNN_utils.get_spike_counts(spikes)
             if self.decode_type == "lrl":
@@ -610,7 +619,7 @@ class PPO_SNN:
         if self.continuous:
             # TODO entry
             if self.decode_type == "first":
-                mean = SNN_utils.decode_first_spike_batched(spikes)
+                mean = SNN_utils.soft_latency_decode_batched(spikes)
             if self.decode_type == "count":
                 mean = SNN_utils.get_spike_counts_batched(spikes)
             if self.decode_type == "lrl":
@@ -620,7 +629,7 @@ class PPO_SNN:
         else:
             # TODO entry
             if self.decode_type == "first":
-                logits = SNN_utils.decode_first_spike_batched(spikes)
+                logits = SNN_utils.soft_latency_decode_batched(spikes)
             if self.decode_type == "count":
                 logits = SNN_utils.get_spike_counts_batched(spikes)
             if self.decode_type == "lrl":
