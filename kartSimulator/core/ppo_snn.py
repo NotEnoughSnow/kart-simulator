@@ -116,7 +116,8 @@ class PPO_SNN:
             print(f"obs shape :{self.obs_dim} \n"
                   f"action shape :{self.act_dim} \n"
                   f"using num steps: {self.num_steps} \n"
-                  f"adding weight: {self.add_weight} \n")
+                  f"adding weight: {self.add_weight} \n"
+                  f"decoding type: {self.decode_type}")
 
 
         # Initialize actor and critic networks
@@ -556,7 +557,7 @@ class PPO_SNN:
             # For continuous action spaces
             # TODO entry
             if self.decode_type == "first":
-                mean = SNN_utils.soft_latency_decode_single(spikes)
+                mean = SNN_utils.soft_latency_decode_single(spikes, self.num_steps)
             if self.decode_type == "count":
                 mean = SNN_utils.get_spike_counts(spikes)
             if self.decode_type == "lrl":
@@ -567,7 +568,7 @@ class PPO_SNN:
             # For discrete action spaces
             # TODO entry
             if self.decode_type == "first":
-                logits = SNN_utils.soft_latency_decode_single(spikes)
+                logits = SNN_utils.soft_latency_decode_single(spikes, self.num_steps)
             if self.decode_type == "count":
                 logits = SNN_utils.get_spike_counts(spikes)
             if self.decode_type == "lrl":
@@ -619,7 +620,7 @@ class PPO_SNN:
         if self.continuous:
             # TODO entry
             if self.decode_type == "first":
-                mean = SNN_utils.soft_latency_decode_batched(spikes)
+                mean = SNN_utils.soft_latency_decode_batched(spikes, self.num_steps)
             if self.decode_type == "count":
                 mean = SNN_utils.get_spike_counts_batched(spikes)
             if self.decode_type == "lrl":
@@ -629,7 +630,7 @@ class PPO_SNN:
         else:
             # TODO entry
             if self.decode_type == "first":
-                logits = SNN_utils.soft_latency_decode_batched(spikes)
+                logits = SNN_utils.soft_latency_decode_batched(spikes, self.num_steps)
             if self.decode_type == "count":
                 logits = SNN_utils.get_spike_counts_batched(spikes)
             if self.decode_type == "lrl":
@@ -676,7 +677,7 @@ class PPO_SNN:
         self.num_minibatches = 8
         self.gae_lambda = 0.95
         self.encode_type = "rate"
-        self.decode_type = "lrl"
+        self.decode_type = "first"
         self.num_steps = 32
         self.add_weight = 0.01
         self.verbose = 2

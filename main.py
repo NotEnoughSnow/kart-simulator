@@ -29,8 +29,8 @@ def main(args):
     description = (f"")
 
     save_config = {
-        "project_name": "spiky-turtle-race",
-        "run_name": "GazeboEnv-SNN-Desktop",
+        "project_name": "decoding",
+        "run_name": "LatEnv-SNN-Desktop-real",
         "save_dir": "./saves/",
         "description": description,
     }
@@ -40,7 +40,7 @@ def main(args):
     # calibrate_new
     # calibrate_new_2
     # steer_gazebo
-    env_name = steer_gazebo
+    env_name = grid_env
     track_type = "loader"
     track_name = "big_S"
 
