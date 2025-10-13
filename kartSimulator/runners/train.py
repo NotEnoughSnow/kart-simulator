@@ -45,7 +45,7 @@ class Train():
             'num_minibatches': 112,
             'gae_lambda': 0.9665,
             'verbose': 2,
-            'num_steps': 50,
+            'num_steps': 100,
             'add_weight': 0.05,
         }
 
@@ -128,7 +128,7 @@ class Train():
             'verbose': 2,
         }
 
-        seed = 19981
+        seed = 44421
 
         saving = {
             "ghost": True,

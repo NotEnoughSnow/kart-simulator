@@ -10,8 +10,8 @@ class Replay:
 
         # extract information from save config
         #project_name = save_config["project_name"]
-        project_name = "spiky-turtle-race"
-        run_name = "SNN-4"
+        project_name = "decoding"
+        run_name = "LatEnv-SNN-Desktop-real-1"
 
         # Parameters for replays
         replay_files = [f"./saves/projects/{project_name}/{run_name}/ghost.hdf5"]

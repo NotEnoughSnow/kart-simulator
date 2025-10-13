@@ -544,14 +544,16 @@ class PPO_SNN:
         if self.encode_type == "linear":
             spk_output, spikes = self.actor(obs)
         else:
-            spk_output, spikes = self.actor(obs_st)
+            if self.decode_type == "lrl":
+                spk_output, spikes = self.actor(obs_st)
+            if self.decode_type == "first":
+                spk_output, mem = self.actor(obs_st)
+                spikes = spk_output
 
         avg_spike_time, spike_ratio = SNN_utils.compute_spike_metrics(spikes)
 
         #print("spike ratio :", spike_ratio)
         #print("array :", spikes)
-
-
 
         if self.continuous:
             # For continuous action spaces
@@ -575,6 +577,7 @@ class PPO_SNN:
                 logits = spk_output
 
             dist = Categorical(logits=logits)
+
 
         # Sample an action from the distribution
         action = dist.sample()
@@ -614,7 +617,13 @@ class PPO_SNN:
         if self.encode_type == "linear":
             spk_output, spikes = self.actor(batch_obs)
         else:
-            spk_output, spikes = self.actor(batch_obs_st)
+
+            if self.decode_type == "lrl":
+                spk_output, spikes = self.actor(batch_obs_st)
+
+            if self.decode_type == "first":
+                spk_output, mem = self.actor(batch_obs_st)
+                spikes = spk_output
 
         # Calculate the log probabilities of batch actions using most recent actor network
         if self.continuous:
