@@ -125,7 +125,7 @@ class PPO_SNN:
         if self.decode_type == "lrl":
             self.actor = SNN_small(self.obs_dim, self.act_dim, self.num_steps, add_weight=self.add_weight)
         if self.decode_type == "first":
-            self.actor = SNN_small_standard(self.obs_dim, self.act_dim, self.num_steps, add_weight=self.add_weight)
+            self.actor = SNN_small_standard(self.obs_dim, self.act_dim, self.num_steps)
 
         self.critic = FFNetwork(self.obs_dim, 1)
 
