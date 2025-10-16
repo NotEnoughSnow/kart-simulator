@@ -16,6 +16,7 @@ import h5py
 import wandb
 
 from kartSimulator.core.networks.snn_network_small import SNN_small
+from kartSimulator.core.networks.snn_network_small_standard import SNN_small as SNN_small_standard
 from kartSimulator.core.networks.snn_network_small_2 import SNN_small as SNN_2
 from kartSimulator.core.networks.standard_network import FFNetwork
 
@@ -113,14 +114,19 @@ class PPO_SNN:
             print(f"obs shape :{self.obs_dim} \n"
                   f"action shape :{self.act_dim} \n"
                   f"using num steps: {self.num_steps} \n"
-                  f"adding weight: {self.add_weight} \n")
+                  f"adding weight: {self.add_weight} \n"
+                  f"decoding type: {self.decode_type} \n")
 
 
         # Initialize actor and critic networks
         # self.actor = ActorNetwork(self.obs_dim, self.act_dim)
         # self.critic = CriticNetwork(self.obs_dim, 1)
 
-        self.actor = SNN_small(self.obs_dim, self.act_dim, self.num_steps, add_weight=self.add_weight)
+        if self.decode_type == "lrl":
+            self.actor = SNN_small(self.obs_dim, self.act_dim, self.num_steps, add_weight=self.add_weight)
+        if self.decode_type == "first":
+            self.actor = SNN_small_standard(self.obs_dim, self.act_dim, self.num_steps, add_weight=self.add_weight)
+
         self.critic = FFNetwork(self.obs_dim, 1)
 
         # Initialize optimizers for actor and critic
@@ -531,9 +537,10 @@ class PPO_SNN:
             log_prob - the log probability of the selected action in the distribution
         """
 
-        if self.encode_type == "linear":
-            spk_output, spikes = self.actor(obs)
-        else:
+        if self.decode_type == "first":
+            spk_output, mem = self.actor(obs_st)
+            spikes = spk_output
+        if self.decode_type == "lrl":
             spk_output, spikes = self.actor(obs_st)
 
         avg_spike_time, spike_ratio = SNN_utils.compute_spike_metrics(spikes)
@@ -542,29 +549,15 @@ class PPO_SNN:
         #print("array :", spikes)
 
 
+        # For discrete action spaces
+        if self.decode_type == "first":
+            logits = SNN_utils.soft_latency_decode_single(spk_output, num_steps=self.num_steps)
+        if self.decode_type == "count":
+            logits = SNN_utils.get_spike_counts(spikes)
+        if self.decode_type == "lrl":
+            logits = spk_output
 
-        if self.continuous:
-            # For continuous action spaces
-            # TODO entry
-            if self.decode_type == "first":
-                mean = SNN_utils.decode_first_spike(spikes)
-            if self.decode_type == "count":
-                mean = SNN_utils.get_spike_counts(spikes)
-            if self.decode_type == "lrl":
-                mean = spk_output
-
-            dist = MultivariateNormal(mean, self.cov_mat)
-        else:
-            # For discrete action spaces
-            # TODO entry
-            if self.decode_type == "first":
-                logits = SNN_utils.decode_first_spike(spikes)
-            if self.decode_type == "count":
-                logits = SNN_utils.get_spike_counts(spikes)
-            if self.decode_type == "lrl":
-                logits = spk_output
-
-            dist = Categorical(logits=logits)
+        dist = Categorical(logits=logits)
 
         # Sample an action from the distribution
         action = dist.sample()
@@ -601,32 +594,21 @@ class PPO_SNN:
         # TODO entry
         V = self.critic(batch_obs).squeeze()
 
-        if self.encode_type == "linear":
-            spk_output, spikes = self.actor(batch_obs)
-        else:
+        if self.decode_type == "first":
+            spk_output, mem = self.actor(batch_obs_st)
+            spikes = spk_output
+        if self.decode_type == "lrl":
             spk_output, spikes = self.actor(batch_obs_st)
 
-        # Calculate the log probabilities of batch actions using most recent actor network
-        if self.continuous:
-            # TODO entry
-            if self.decode_type == "first":
-                mean = SNN_utils.decode_first_spike_batched(spikes)
-            if self.decode_type == "count":
-                mean = SNN_utils.get_spike_counts_batched(spikes)
-            if self.decode_type == "lrl":
-                mean = spk_output
 
-            dist = MultivariateNormal(mean, self.cov_mat)
-        else:
-            # TODO entry
-            if self.decode_type == "first":
-                logits = SNN_utils.decode_first_spike_batched(spikes)
-            if self.decode_type == "count":
-                logits = SNN_utils.get_spike_counts_batched(spikes)
-            if self.decode_type == "lrl":
-                logits = spk_output
+        if self.decode_type == "first":
+            logits = SNN_utils.soft_latency_decode_batched(spk_output, num_steps=self.num_steps)
+        if self.decode_type == "count":
+            logits = SNN_utils.get_spike_counts_batched(spikes)
+        if self.decode_type == "lrl":
+            logits = spk_output
 
-            dist = Categorical(logits=logits)
+        dist = Categorical(logits=logits)
 
 
         # Calculate entropy loss for regularization

@@ -128,7 +128,7 @@ class Train():
             'verbose': 2,
         }
 
-        seed = 4313
+        seed = 98487
 
         saving = {
             "ghost": True,
@@ -136,11 +136,11 @@ class Train():
             "wandb": True,
         }
 
-        network_type = "ANN"
+        network_type = "SNN"
 
         # create agent : kart
 
-        trainer.set_hyperparameters(hyperparameters_GMRE_ANN)
+        trainer.set_hyperparameters(hyperparameters_GMRE_SNN)
         trainer.set_saving(saving)
         trainer.set_seed(seed)
         trainer.set_network(network_type)

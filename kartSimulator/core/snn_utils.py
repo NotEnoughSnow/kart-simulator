@@ -249,4 +249,40 @@ def compute_spike_metrics(spk_output):
 
     return avg_spike_time.detach(), spike_ratio.detach()
 
+def soft_latency_decode_batched(spk_train, num_steps, smooth_factor=10.0):
+    """
+    spk_train: [batch_size, num_steps, obs_size]
+    returns: [batch_size, obs_size]
+    """
+    device = spk_train.device
+    t = torch.arange(num_steps, device=device).float().unsqueeze(0).unsqueeze(-1)  # [1, num_steps, 1]
 
+    # Earlier spikes get higher weight
+    weights = torch.exp(-t / smooth_factor)
+    weighted_sum = (spk_train * weights).sum(dim=1)
+
+    # Normalization range [-1, 1]
+    max_weight = torch.exp(torch.tensor(0.0, device=device))
+    min_weight = torch.exp(torch.tensor(-float(num_steps) / smooth_factor, device=device))
+    normalized = 2 * ((weighted_sum - min_weight) / (max_weight - min_weight)) - 1
+
+    return normalized
+
+def soft_latency_decode_single(spk_train, num_steps, smooth_factor=10.0):
+    """
+    spk_train: [num_steps, obs_size]
+    returns: [obs_size]
+    """
+    device = spk_train.device
+    t = torch.arange(num_steps, device=device).float().unsqueeze(1)  # [num_steps, 1]
+
+    # Earlier spikes get higher weight
+    weights = torch.exp(-t / smooth_factor)
+    weighted_sum = (spk_train * weights).sum(dim=0)
+
+    # Normalization range [-1, 1] based on num_steps
+    max_weight = torch.exp(torch.tensor(0.0, device=device))
+    min_weight = torch.exp(torch.tensor(-float(num_steps) / smooth_factor, device=device))
+    normalized = 2 * ((weighted_sum - min_weight) / (max_weight - min_weight)) - 1
+
+    return normalized

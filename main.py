@@ -29,8 +29,8 @@ def main(args):
     description = (f"")
 
     save_config = {
-        "project_name": "spiky-turtle-race",
-        "run_name": "LatEnv-ANN",
+        "project_name": "decoding",
+        "run_name": "LatEnv-SNN-desktop-lrl",
         "save_dir": "./saves/",
         "description": description,
     }

@@ -11,37 +11,27 @@ import torch.nn.init as init
 
 
 class SNN_small(nn.Module):
-    def __init__(self, input_size, output_size, num_steps, add_weight):
+    def __init__(self, input_size, output_size, num_steps):
         super(SNN_small, self).__init__()
 
         self.num_steps = num_steps
         beta1 = 0.9
-        beta2 = 0.9
-        #beta2 = torch.rand((output_size), dtype=torch.float)  # Independent decay rate for each output neuron
+        beta2 = torch.rand((output_size), dtype=torch.float)  # Independent decay rate for each output neuron
 
         # Define layers
         self.fc1 = nn.Linear(input_size, hidden_size, dtype=torch.float)
-        #self.fc1.weight.data += add_weight
-        self.lif1 = snn.Leaky(beta=beta1, spike_grad=surrogate.fast_sigmoid(), threshold=0.7)
+        self.lif1 = snn.Leaky(beta=beta1)
 
         init.kaiming_uniform_(self.fc1.weight, a=0, mode='fan_in', nonlinearity='relu')
         if self.fc1.bias is not None:
             init.zeros_(self.fc1.bias)
 
-        self.fc2 = nn.Linear(hidden_size, hidden_size, dtype=torch.float)
-        #self.fc2.weight.data += add_weight
-        self.lif2 = snn.Leaky(beta=beta2, spike_grad=surrogate.fast_sigmoid(), threshold=0.7)
+        self.fc2 = nn.Linear(hidden_size, output_size, dtype=torch.float)
+        self.lif2 = snn.Leaky(beta=beta2, learn_beta=True)
 
         init.kaiming_uniform_(self.fc2.weight, a=0, mode='fan_in', nonlinearity='relu')
         if self.fc2.bias is not None:
             init.zeros_(self.fc2.bias)
-
-
-        # Linear readout layer
-        self.readout = nn.Linear(hidden_size, output_size)
-        init.kaiming_uniform_(self.readout.weight, a=0, mode='fan_in', nonlinearity='relu')
-        if self.readout.bias is not None:
-            init.zeros_(self.readout.bias)
 
     def forward(self, x):
 
@@ -76,34 +66,15 @@ class SNN_small(nn.Module):
             spk2_rec.append(spk2)
             mem2_rec.append(mem2)
 
-        # Shape: [batch_size, num_steps, output_size]
-        spk2_stacked = torch.stack(spk2_rec, dim=1)
-        mem2_stacked = torch.stack(mem2_rec, dim=1)
 
-        # Take the average membrane potential across time (summarize spikes)
-        # Shape: [batch_size, output_size]
-        avg_spk2 = torch.mean(spk2_stacked, dim=1)
-        avg_mem2 = torch.mean(mem2_stacked, dim=1)
-
-        # Apply the linear readout layer to the average membrane potential
-        # Shape: [batch_size, output_size]
-        readout_output_spk = self.readout(avg_spk2)
-        readout_output_mem = self.readout(avg_mem2)
+        output_spk = torch.stack(spk2_rec, dim=1)  # Shape: [batch_size, num_steps, output_size]
+        output_mem = torch.stack(mem2_rec, dim=1)  # Shape: [batch_size, num_steps, output_size]
 
         if not is_batched:
             # Remove the batch dimension if it was added
-            readout_output_spk = readout_output_spk.squeeze(0)  # Shape becomes [output_size]
-            readout_output_mem = readout_output_mem.squeeze(0)  # Shape becomes [output_size]
+            output_spk = output_spk.squeeze(0)  # Shape becomes [num_steps, output_size]
+            output_mem = output_mem.squeeze(0)  # Shape becomes [num_steps, output_size]
 
-            spk2_stacked = spk2_stacked.squeeze(0)  # Shape becomes [num_steps, output_size]
+        #print("should not be none :", output_spk.grad_fn)  # This should not be None
 
-
-
-        return readout_output_spk, spk2_stacked
-
-
-    # TODO compare weight changes for every step before and after, layer 1
-    # TODO average output spike time, ratio of output spikes that spike at least once
-    # TODO linear readout layer, all spike trains => feed the spike trains through a FF network
-    # TODO sum over a sequence : will be the logits
-    # linear readout layer
+        return output_spk, output_mem
