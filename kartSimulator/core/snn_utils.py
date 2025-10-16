@@ -286,3 +286,52 @@ def soft_latency_decode_single(spk_train, num_steps, smooth_factor=10.0):
     normalized = 2 * ((weighted_sum - min_weight) / (max_weight - min_weight)) - 1
 
     return normalized
+
+def gaussian_population_decode_batched(spike_train, sigma=0.8):
+    """
+    spike_train: [B, T, N]  -> usually the output spikes over time
+    num_actions: number of output actions
+    sigma: width of Gaussian tuning curve
+    """
+    B, T, N = spike_train.shape
+
+    # Compute total spike count over time: [B, N]
+    spike_counts = spike_train.sum(dim=1)
+
+    # Define preferred neuron positions for each action
+    neuron_idx = torch.arange(N, dtype=torch.float32, device=spike_train.device)
+    centers = torch.linspace(0, N - 1, N, device=spike_train.device)
+
+    # Compute Gaussian weights for each action w_ij = exp(- (i - c_j)^2 / 2σ²)
+    # Shape: [num_actions, N]
+    gaussian_weights = torch.exp(-0.5 * ((neuron_idx.unsqueeze(0) - centers.unsqueeze(1)) / sigma) ** 2)
+
+    # Normalize per action (optional but helps scale stability)
+    gaussian_weights = gaussian_weights / (gaussian_weights.sum(dim=1, keepdim=True) + 1e-6)
+
+    # Weighted sum → logits [B, num_actions]
+    logits = spike_counts @ gaussian_weights.T
+
+    return logits
+
+def gaussian_population_decode_single(spike_train, sigma=0.8):
+    """
+    spike_train: [T, N]
+    num_actions: number of output actions
+    """
+    T, N = spike_train.shape
+
+    # Spike count per neuron
+    spike_counts = spike_train.sum(dim=0)  # [N]
+
+    # Neuron tuning centers
+    neuron_idx = torch.arange(N, dtype=torch.float32, device=spike_train.device)
+    centers = torch.linspace(0, N - 1, N, device=spike_train.device)
+
+    # Gaussian weights
+    gaussian_weights = torch.exp(-0.5 * ((neuron_idx.unsqueeze(0) - centers.unsqueeze(1)) / sigma) ** 2)
+    gaussian_weights = gaussian_weights / (gaussian_weights.sum(dim=1, keepdim=True) + 1e-6)
+
+    # Decode
+    logits = spike_counts @ gaussian_weights.T  # [num_actions]
+    return logits

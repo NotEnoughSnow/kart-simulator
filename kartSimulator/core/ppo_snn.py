@@ -124,7 +124,7 @@ class PPO_SNN:
 
         if self.decode_type == "lrl":
             self.actor = SNN_small(self.obs_dim, self.act_dim, self.num_steps, add_weight=self.add_weight)
-        if self.decode_type == "first":
+        if self.decode_type == "first" or self.decode_type == "population":
             self.actor = SNN_small_standard(self.obs_dim, self.act_dim, self.num_steps)
 
         self.critic = FFNetwork(self.obs_dim, 1)
@@ -540,6 +540,9 @@ class PPO_SNN:
         if self.decode_type == "first":
             spk_output, mem = self.actor(obs_st)
             spikes = spk_output
+        if self.decode_type == "population":
+            spk_output, mem = self.actor(obs_st)
+            spikes = spk_output
         if self.decode_type == "lrl":
             spk_output, spikes = self.actor(obs_st)
 
@@ -552,8 +555,8 @@ class PPO_SNN:
         # For discrete action spaces
         if self.decode_type == "first":
             logits = SNN_utils.soft_latency_decode_single(spk_output, num_steps=self.num_steps)
-        if self.decode_type == "count":
-            logits = SNN_utils.get_spike_counts(spikes)
+        if self.decode_type == "population":
+            logits = SNN_utils.gaussian_population_decode_batched(spk_output)
         if self.decode_type == "lrl":
             logits = spk_output
 
@@ -597,14 +600,17 @@ class PPO_SNN:
         if self.decode_type == "first":
             spk_output, mem = self.actor(batch_obs_st)
             spikes = spk_output
+        if self.decode_type == "population":
+            spk_output, mem = self.actor(batch_obs_st)
+            spikes = spk_output
         if self.decode_type == "lrl":
             spk_output, spikes = self.actor(batch_obs_st)
 
 
         if self.decode_type == "first":
             logits = SNN_utils.soft_latency_decode_batched(spk_output, num_steps=self.num_steps)
-        if self.decode_type == "count":
-            logits = SNN_utils.get_spike_counts_batched(spikes)
+        if self.decode_type == "population":
+            logits = SNN_utils.gaussian_population_decode_single(spk_output)
         if self.decode_type == "lrl":
             logits = spk_output
 
@@ -649,7 +655,7 @@ class PPO_SNN:
         self.num_minibatches = 8
         self.gae_lambda = 0.95
         self.encode_type = "rate"
-        self.decode_type = "lrl"
+        self.decode_type = "population"
         self.num_steps = 32
         self.add_weight = 0.01
         self.verbose = 2

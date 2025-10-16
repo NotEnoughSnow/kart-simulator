@@ -30,7 +30,7 @@ def main(args):
 
     save_config = {
         "project_name": "decoding",
-        "run_name": "LatEnv-SNN-desktop-lrl",
+        "run_name": "LatEnv-SNN-nipg-latency-new",
         "save_dir": "./saves/",
         "description": description,
     }
