@@ -556,7 +556,7 @@ class PPO_SNN:
         if self.decode_type == "first":
             logits = SNN_utils.soft_latency_decode_single(spk_output, num_steps=self.num_steps)
         if self.decode_type == "population":
-            logits = SNN_utils.gaussian_population_decode_batched(spk_output)
+            logits = SNN_utils.gaussian_population_decode_single(spk_output)
         if self.decode_type == "lrl":
             logits = spk_output
 
@@ -610,7 +610,7 @@ class PPO_SNN:
         if self.decode_type == "first":
             logits = SNN_utils.soft_latency_decode_batched(spk_output, num_steps=self.num_steps)
         if self.decode_type == "population":
-            logits = SNN_utils.gaussian_population_decode_single(spk_output)
+            logits = SNN_utils.gaussian_population_decode_batched(spk_output)
         if self.decode_type == "lrl":
             logits = spk_output
 
