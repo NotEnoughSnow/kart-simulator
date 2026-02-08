@@ -78,7 +78,6 @@ The project aims to:
 
 ### About the simulation
 
-TODO about the sim.
 The simlation includes:
 - a pymunk physics implementation to set up the player and track dynamics
 - UI
