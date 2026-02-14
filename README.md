@@ -78,7 +78,16 @@ The project aims to:
 
 ## Simulations and Environments
 
+<<<<<<< HEAD
 ### Gymnasium Environments
+=======
+The simlation includes:
+- a pymunk physics implementation to set up the player and track dynamics
+- UI
+- ray-casting 2d vision
+- gym env structure; step, reset, render methods
+- extendable methods for observations, actions, ect.. 
+>>>>>>> 0bb30e9efbf55fb9f4265b291940d406177d3845
 
 The project houses 3 different top-down pygame/gymnasium racing environments with varying difficulties (ascending):
 - **Grid-Env** : an environment with 4-directional mouvement. The agent can accelerate freely in all directions.
@@ -199,6 +208,11 @@ Available environment types:
 
 - Collect and compare data from different methodologies
 - Migrate Simulation to Box2D instead of Pymunk
+<<<<<<< HEAD
 - Improve the pipeline, while using better fitting tools and environments such as IsaacGym, which has GPU support. This will cut the SNNs train time, which is significant.
 - Improve the study by testing on real life robots.
 - Include neuromorphic hardware for evaluation. Also allows us to measure energy consumption metrics.
+=======
+- Experiment with different components and their effects on training
+- Implement and experiment with various computational neuroscience methodologies
+>>>>>>> 0bb30e9efbf55fb9f4265b291940d406177d3845
