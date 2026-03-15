@@ -2,8 +2,13 @@
 from kartSimulator.sim.maps.track_factory import TrackFactory
 import kartSimulator.sim.observation_types as obs_types
 import kartSimulator.sim.grid_env as simple_env
+import kartSimulator.sim.grid_test as simple_test
+import kartSimulator.sim.grid_LIDAR as simple_lidar
 import kartSimulator.sim.steer_env as steer_env
+import kartSimulator.sim.steer_env_eval as steer_env_eval
+import kartSimulator.sim.steer_test as steer_test
 import kartSimulator.sim.steer_gazebo as steer_gazebo
+import kartSimulator.sim.gazebo_test as gazebo_test
 
 from kartSimulator.sim import calibrate_new_2
 
@@ -161,15 +166,15 @@ class EnvFactory:
         rew_adj = None
         obs_seq = None
 
-        if env_name == simple_env:
+        if env_name == simple_env or env_name==simple_test or env_name == simple_lidar:
             player_args = grid_env_player_args
             rew_adj = self.rew_adj_grid
             obs_seq = self.obs_grid
-        elif env_name == steer_env:
+        elif env_name == steer_env or env_name==steer_test or env_name == steer_env_eval:
             player_args = steer_env_player_args
             rew_adj = self.rew_adj_steer
             obs_seq = self.obs_steer
-        elif env_name == steer_gazebo:
+        elif env_name == steer_gazebo or env_name==gazebo_test:
             player_args = steer_gazebo_player_args
             rew_adj = self.rew_adj_gazebo
             obs_seq = self.obs_steer

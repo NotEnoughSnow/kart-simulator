@@ -88,6 +88,24 @@ class LIDAR_vision():
                 else:
                     pygame.draw.line(window_surface, (255, 255, 255), anchor, point + anchor, 1)
 
+    def draw_rays_temp(self, window_surface, anchor, contact_point, scalar, draw_contact, draw_lines):
+
+        for i in range(len(contact_point)):
+            point = contact_point[i][0] * scalar, contact_point[i][1] * scalar
+
+            # Draw a red dot at the point of intersection
+            if draw_contact and contact_point != (0, 0):
+                if i == len(contact_point)//2 + 1:
+                    pygame.draw.circle(window_surface, (255, 0, 0), point + anchor, 2)
+                else:
+                    pygame.draw.circle(window_surface, (255, 0, 0), point + anchor, 2)
+
+            # Draw the segment
+            if draw_lines and contact_point != (0, 0):
+                if i == len(contact_point)//2 + 1:
+                    pygame.draw.line(window_surface, (255, 255, 255), anchor, point + anchor, 1)
+                else:
+                    pygame.draw.line(window_surface, (255, 255, 255), anchor, point + anchor, 1)
 
     def draw_cone(self, window_surface, body):
 

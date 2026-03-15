@@ -159,7 +159,6 @@ class KartSim(gym.Env):
         self.action_space = spaces.Discrete(5)
         # do nothing, accelerate, break, steer_left, steer_right
 
-
         self.initial_angle = 0 + ANGLE_DIFF
         self.vision_points = []
         self.vision_lengths = []

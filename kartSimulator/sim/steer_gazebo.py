@@ -426,9 +426,11 @@ class KartSim(gym.Env):
         terminated = False
         truncated = False
 
-        self.check_standing_still(25, 100)
-        self.check_deserting(-10000 * 1.42 * self.rew_adj["act_dist"])
+        #self.check_standing_still(25, 100)
+        #self.check_deserting(-10000 * 1.42 * self.rew_adj["act_dist"])
 
+
+        print("bruhhh ", self._playerBody.angle)
 
         if action is not None:
 

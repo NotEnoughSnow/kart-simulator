@@ -62,7 +62,7 @@ class UImanager:
                                                              manager=self._guiManager))
 
     def draw_vision_points(self, vision_points):
-        self.vision.draw_rays(self.window_surface, Vec2d(ui_start_x + 250, 850), vision_points, 0.3, True, True)
+        self.vision.draw_rays_temp(self.window_surface, Vec2d(ui_start_x + 150,  800), vision_points, 1, True, True)
 
     def draw_vision_cone(self, player_body):
         self.vision.draw_cone(self.window_surface, player_body)

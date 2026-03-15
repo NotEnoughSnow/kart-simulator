@@ -2,6 +2,7 @@ from kartSimulator.core.modules import env_factory
 from kartSimulator.core.modules.eval_module import Evaluator
 
 import kartSimulator.sim.steer_env as steer_env
+import kartSimulator.sim.steer_env_eval as steer_env_eval
 import kartSimulator.sim.steer_gazebo as steer_gazebo
 import kartSimulator.sim.grid_env as grid_env
 from kartSimulator.core.modules.env_factory import EnvFactory
@@ -11,7 +12,7 @@ class Eval:
 
     def __init__(self, track_type, track_name, env_factory, save_config):
 
-        env_name = steer_gazebo
+        env_name = steer_env_eval
         env_factory = EnvFactory(env_name)
 
         save_config["save_dir"] = save_config["save_dir"] + "projects/"
@@ -19,7 +20,7 @@ class Eval:
         env = env_factory.createEnv(track_type, track_name, "human")
         #env = gym.make('LunarLander-v2', render_mode="human")
 
-        actor_state = f"./saves/projects/spiky-turtle/base-6/ppo_actor.pth"
+        actor_state = f"./saves/projects/spiky-turtle-race/SNN-3/ppo_actor.pth"
         #actor_state = f"./saves/projects/real-turtle/mantis-5/ppo_actor.pth"
 
 

@@ -14,8 +14,13 @@ from kartSimulator.runners.play import Play
 from kartSimulator.core.arguments import get_args
 
 import kartSimulator.sim.steer_env as steer_env
+import kartSimulator.sim.steer_env_eval as steer_env_eval
+#import kartSimulator.sim.steer_test as steer_env
 import kartSimulator.sim.steer_gazebo as steer_gazebo
+#import kartSimulator.sim.gazebo_test as steer_gazebo
 import kartSimulator.sim.grid_env as grid_env
+#import kartSimulator.sim.grid_test as grid_env
+#import kartSimulator.sim.grid_LIDAR as grid_env
 from kartSimulator.core.modules.env_factory import EnvFactory
 
 def main(args):
@@ -40,7 +45,7 @@ def main(args):
     # calibrate_new
     # calibrate_new_2
     # steer_gazebo
-    env_name = grid_env
+    env_name = steer_env_eval
     track_type = "loader"
     track_name = "big_S"
 
@@ -67,6 +72,6 @@ if __name__ == "__main__":
     # args.mode = "train"
     # modes : play, train, eval, replay
 
-    args.mode = "train"
+    args.mode = "play"
 
     main(args)
