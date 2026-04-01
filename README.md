@@ -14,6 +14,8 @@ The youtube video (1 min) showcases the results of the project, including:
 - Evaluation on robotics (Gazebo/ROS)
 
 https://www.youtube.com/watch?v=a3TkSxlVKyY
+
+
 [![video](https://img.youtube.com/vi/a3TkSxlVKyY/0.jpg)](https://www.youtube.com/watch?v=a3TkSxlVKyY)
 
 
