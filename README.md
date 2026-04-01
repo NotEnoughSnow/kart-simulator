@@ -6,6 +6,17 @@
 
 ![demonstration](media/latest_cropped.gif)
 
+### Quick Youtube Video
+
+The youtube video (1 min) showcases the results of the project, including:
+- SNN vs ANN comparison
+- Network visualization
+- Evaluation on robotics (Gazebo/ROS)
+
+https://www.youtube.com/watch?v=a3TkSxlVKyY
+[![video](https://img.youtube.com/vi/a3TkSxlVKyY/0.jpg)](https://www.youtube.com/watch?v=a3TkSxlVKyY)
+
+
 # Quickstart
 
 ### Installation
