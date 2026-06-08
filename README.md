@@ -169,6 +169,12 @@ SteerEnv ANN vs SNN visual comparison:
 ![steer-ANN](media/steer_ANN.gif)
 ![steer-SNN](media/steer_SNN.gif)
 
+Implementation on gazebo:
+![gazebo](media/gazebo.png)
+
+https://github.com/user-attachments/assets/9e4cb4f2-defb-4e65-a7b9-58bee704998b
+
+
 Performance of SNN policies compared to ANNs across all environments:
 
 | Environment-Model              | First Finish | 300 Finishes | % of ANN   |
